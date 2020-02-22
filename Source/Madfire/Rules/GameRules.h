@@ -1,0 +1,216 @@
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "Engine/UserDefinedEnum.h"
+#include "GameRules.generated.h"
+
+/**
+ * 
+ */
+ 
+	UENUM(BlueprintType)
+	enum class EMagicSchool : uint8
+	{
+		No				UMETA(DisplayName = "No"),
+		Abjuration		UMETA(DisplayName = "Abjuration"),
+		Conjeration		UMETA(DisplayName = "Conjeration"),
+		Divination		UMETA(DisplayName = "Divination"),
+		Enchantment		UMETA(DisplayName = "Enchantment"),
+		Evocation		UMETA(DisplayName = "Evocation"),
+		Illusion		UMETA(DisplayName = "Illusion"),
+		Necromancy		UMETA(DisplayName = "Necromancy"),
+		Transmutation	UMETA(DisplayName = "Transmutation"),
+		Universal		UMETA(DisplayName = "Universal")
+	};
+
+	UENUM(BlueprintType)
+	enum class EItemMaterial : uint8
+	{
+		None				UMETA(DisplayName = "None"),
+		Wood				UMETA(DisplayName = "Abjuration"),
+		Steel				UMETA(DisplayName = "Steel"),
+		Silver				UMETA(DisplayName = "Silver"),
+		Adamantine			UMETA(DisplayName = "Adamantine"),
+		Darkwood			UMETA(DisplayName = "Darkwood"),
+		ColdIron			UMETA(DisplayName = "ColdIron"),
+		AlchemicalSilver	UMETA(DisplayName = "AlchemicalSilver"),
+		Mithril				UMETA(DisplayName = "Mithril"),
+		Glass				UMETA(DisplayName = "Glass")
+		//Какая_то_неведомая_хрень
+	};
+
+
+	//enum EStats      
+	UENUM(BlueprintType)
+	enum class EAttributes : uint8
+	{
+		Str = 0 	UMETA(DisplayName = "Strength"),	//  Strength;        //Styrkur          //0
+		Dex = 1		UMETA(DisplayName = "Dexterity"),	//  Dexterity;       //Ловкость         //1
+		Con = 2		UMETA(DisplayName = "Constitution"),//  Constitution;    //Эээ              //2
+		Int = 3		UMETA(DisplayName = "Intelligence"),//  Intelligence;    //Интилэкт         //3
+		Wis = 4		UMETA(DisplayName = "Wisdom"),		//  Wisdom;          //Viska            //4
+		Cha = 5		UMETA(DisplayName = "Charisma"),	//  Charisma;        //Persónutöfrar    //5
+		Max			UMETA(Hidden)
+	};
+
+
+	//TODO: Обновить!
+	UENUM(BlueprintType)
+	enum class ESkill : uint8   //Название Скилов (Модификатор)
+	{
+		Appraise = 0		UMETA(DisplayName = "Appraise"),		//Оценка (Int)
+		Bluff	 = 1		UMETA(DisplayName = "Bluff"),			//Блеф (Cha)
+		Intimidate = 2		UMETA(DisplayName = "Intimidate"),		//Угроза (Cha)
+		Diplomacy = 3		UMETA(DisplayName = "Diplomacy"),		//Дипломатия (Cha)
+		Perform	= 4 		UMETA(DisplayName = "Perform"),			//Представление (Cha)
+		Perception = 5		UMETA(DisplayName = "Perception"),		//Восприятие (Wis)
+		SleightOfHand = 6	UMETA(DisplayName = "SleightOfHand"),	//Ловкость рук (Dex)
+		OpenLock = 7		UMETA(DisplayName = "OpenLock"),		//Взлом замков (Dex)
+		Knowledge = 8		UMETA(DisplayName = "Knowledge"),		//Знание (Int)
+		Sneakiness = 9		UMETA(DisplayName = "Sneakiness"),		//Скрытность (Dex)
+		MoveSilently = 10	UMETA(DisplayName = "MoveSilently"),	//Скрытное перемещение (Dex)
+		Listen = 11			UMETA(DisplayName = "Listen"),			//Слух (Wis)
+		Balance	= 12		UMETA(DisplayName = "Balance"),			//Баланс (Dex)
+		Concetration = 13	UMETA(DisplayName = "Concetration"),	//Концентрация (Con)
+		Tumble = 14			UMETA(DisplayName = "Tumble"),			//Акробатика (Dex)
+		Survival = 15		UMETA(DisplayName = "Survival"),		//Выживание (Wis)
+		Blacksmithing = 16	UMETA(DisplayName = "Blacksmithing"),	//Кузнечество (Str)
+		Alchemy = 17		UMETA(DisplayName = "Alchemy"),			//Алхимия (Int)
+		Enchantment = 18	UMETA(DisplayName = "Enchantment"),		//Зачарование предметов (Int)		
+		HandleAnimal = 19	UMETA(DisplayName = "HandleAnimal"),	//Сочуствие животным (Cha)
+		Max					UMETA(Hidden)
+	};
+
+	UENUM(BlueprintType)
+	enum class EAmmoType : uint8
+	{
+		Bolt			UMETA(DisplayName = "Bolt"),
+		Arrow			UMETA(DisplayName = "Arrow"),
+		SomethingElse	UMETA(DisplayName = "Something"),
+	};
+
+	UENUM(BlueprintType)
+	enum class EDamageType : uint8
+	{
+		Slashing		UMETA(DisplayName = "Slashing"),
+		Bludgeoning		UMETA(DisplayName = "Bludgeoning"),          //Туповатый
+		Piercing		UMETA(DisplayName = "Piercing"),
+		Sonic			UMETA(DisplayName = "Sonic"),
+		Fire			UMETA(DisplayName = "Fire"),
+		Cold			UMETA(DisplayName = "Cold"),
+		Lightning		UMETA(DisplayName = "Lightning"),
+		Acid			UMETA(DisplayName = "Acid"),
+		NegativeEnergy	UMETA(DisplayName = "NegativeEnergy"),
+		PositiveEnergy	UMETA(DisplayName = "PositiveEnergy"),
+		Max				UMETA(Hidden)
+	};
+
+
+	//Weapon attack modifiers
+	UENUM(BlueprintType)
+	enum class EWeaponSize : uint8 
+	{
+		Diminutive	= 0		UMETA(DisplayName = "Diminutive"),
+		Tiny		= 2		UMETA(DisplayName = "Tiny"),
+		Small		= 4		UMETA(DisplayName = "Small"),
+		Medium		= 6		UMETA(DisplayName = "Medium"),
+		Large		= 8		UMETA(DisplayName = "Large"),
+		Huge		= 10	UMETA(DisplayName = "Huge"),
+		Gargantum	= 12	UMETA(DisplayName = "Gargantum"),
+	};
+
+
+	UENUM(BlueprintType)
+	enum class EWeaponType : uint8
+	{
+		Dagger		UMETA(DisplayName = "Dagger"),
+		Mace		UMETA(DisplayName = "Mace"),
+		Sickle		UMETA(DisplayName = "Sickle"),
+		Club		UMETA(DisplayName = "Club"),
+		Morningstar UMETA(DisplayName = "Morningstar"),
+		Shortspear	UMETA(DisplayName = "Shortspear"),
+		Handaxe		UMETA(DisplayName = "Handaxe"),
+		Quaterstaff UMETA(DisplayName = "Quaterstaff"),
+		Spear		UMETA(DisplayName = "Spear"),
+		Crossbow	UMETA(DisplayName = "Crossbow"),
+		Dart		UMETA(DisplayName = "Dart"),
+		Battleaxe	UMETA(DisplayName = "Battleaxe"),
+		Longsword	UMETA(DisplayName = "Longsword"),
+		Scimitar	UMETA(DisplayName = "Scimitar"),
+		Warhammer	UMETA(DisplayName = "Warhammer"),
+		Falchion	UMETA(DisplayName = "Falchion"),
+		Greateaxe	UMETA(DisplayName = "Greateaxe"),
+		Greatclub	UMETA(DisplayName = "Greatclub"),
+		Halberd		UMETA(DisplayName = "Halberd"),
+		Longbow		UMETA(DisplayName = "Longbow"),
+		Shortbow	UMETA(DisplayName = "Shortbow"),
+		Warglave	UMETA(DisplayName = "Warglave"),
+		Shortsword	UMETA(DisplayName = "Shortsword"),
+		Shield		UMETA(DisplayName = "Shield")
+	};
+
+
+	UENUM(BlueprintType)
+	enum class EShieldType : uint8
+	{
+		TowerShield UMETA(DisplayName = "TowerShield"),
+		SmallShield UMETA(DisplayName = "SmallShield"),
+		HeavyShield UMETA(DisplayName = "HeavyShield"),
+		Buckler		UMETA(DisplayName = "Buckler"),
+	};
+
+	UENUM(BlueprintType)
+	enum class EArmorType : uint8
+	{
+		Clothes			UMETA(DisplayName = "Clothes"),
+		//Light		
+		Padded			UMETA(DisplayName = "Padded"),
+		Leather			UMETA(DisplayName = "Leather"),
+		StuddedLeather	UMETA(DisplayName = "StuddedLeather"),
+		Chainshirt		UMETA(DisplayName = "Chainshirt"),
+		//Medium
+		Hide			UMETA(DisplayName = "Hide"),
+		Scalemail		UMETA(DisplayName = "Scalemail"),
+		Chainmail		UMETA(DisplayName = "Chainmail"),
+		Breastplate		UMETA(DisplayName = "Breastplate"),
+		//Heavy
+		Splintmail		UMETA(DisplayName = "Splintmail"),
+		Bandedmail		UMETA(DisplayName = "Bandedmail"),
+		Halfplate		UMETA(DisplayName = "Halfplate"),
+		Fullplate		UMETA(DisplayName = "Fullplate"),
+	};
+
+
+	UENUM(BlueprintType)
+	enum class EItemSlot : uint8
+	{
+		ChestSlot			UMETA(DisplayName = "Chest Slot"),   // Armor Slot 
+		HeadSlot			UMETA(DisplayName = "Head Slot"),	 // Armor Slot
+		LegSlot				UMETA(DisplayName = "Leg Slot"),     // Armor Slot
+		FootSlot			UMETA(DisplayName = "Foot Slot"),    // Armor Slot
+		HandsSlot			UMETA(DisplayName = "Hands Slot"),   // Armor Slot
+		//BeltSlot			UMETA(DisplayName = "Belt Slot"),
+
+	    NeckSlot			UMETA(DisplayName = "Neck Slot"),   // M
+		RightRingSlot		UMETA(DisplayName = "Right Ring Slot"),	 // M
+		LeftRingSlot		UMETA(DisplayName = "Left Ring Slot"),   // M
+
+		MainWeaponSlot		UMETA(DisplayName = "Right Weapon Slot"),   //Weapon
+		OffMeaponSlot		UMETA(DisplayName = "Left Weapon Slot"),   //Weapon
+		
+		MainWeaponSlotSet2	UMETA(DisplayName = "Right Weapon Slot set 2"),   //Weapon
+		OffWeaponSlotSet2	UMETA(DisplayName = "Left Weapon Slot set 2"),   //Weapon
+
+		AmmoSlot            UMETA(DisplayName = "Ammo Slot"),    //Ammo
+		
+		Max					UMETA(Hidden)
+	};
+
+
+
+
+
+
+
+

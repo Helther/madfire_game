@@ -1,0 +1,29 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
+#include "ItemBase.h"
+#include "Attributes/DamageMap.h"
+#include "../Rules/GameRules.h"
+#include "ItemArmor.generated.h"
+
+UCLASS(config = Game, EditInlineNew, BlueprintType, Blueprintable)
+class UItemArmor : public UItemBase
+{
+	GENERATED_BODY()
+	
+public:
+	UItemArmor(const class FObjectInitializer &ObjectInititalizer);
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Weapon Stats")
+		EArmorType ArmorType;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Weapon Stats")
+		FDamageAbsorb DamageLimit;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Weapon Stats")
+		FDamageResistance DamageResistance;
+};
+
