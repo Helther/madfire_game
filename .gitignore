@@ -16,3 +16,7 @@ Content
 *.xcodeproj
 *.xcworkspace
 *.user
+build
+*.txt
+*.pri
+*.pro

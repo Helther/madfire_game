@@ -17,7 +17,7 @@ class MADFIRE_API UCombatComponent : public UActorComponent
 
 public:	
 	// Sets default values for this component's properties
-	UCombatComponent();
+	UCombatComponent(const class FObjectInitializer &ObjectInitilizer);
 
 protected:
 

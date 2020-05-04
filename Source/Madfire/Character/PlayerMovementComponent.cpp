@@ -66,9 +66,21 @@ void UBaseMovementComponent::Update()
     check(Character != nullptr && "No pawn");
     //add a function for setting max/min values for calculations
     //max fall height calculation
-    const int32 DexMod = UAttributesHelper::GetModifier(Character->CurrentAttributes,
+    const int32 DexMod = UAttributesHelper::GetModifier(Character->GetAttributesComponent()->CurrentAttributes,
                                                         EAttributes::Dex); //temp
     MaxFallHeightMod = 1 + DexMod;//temp
+}
+
+void UBaseMovementComponent::CalculateMaxSpeed(float SpeedModifier)
+{
+	MaxWalkSpeed = MaxWalkSpeedDefault;
+	MaxWalkSpeedCrouched = MaxWalkSpeedCrouchedDefault;
+	MaxRunSpeed = MaxRunSpeedDefault * SpeedModifier;
+	MaxRunSpeedCrouched = MaxRunSpeedCrouchedDefault * SpeedModifier;
+	MaxSprintSpeed = MaxSprintSpeedDefault * SpeedModifier;
+	MaxCustomMovementSpeed = MaxWallClimbSpeedDefault * SpeedModifier;
+	MaxSwimSpeed = MaxSwimSpeedDefault * SpeedModifier;
+	MaxFlySpeed = MaxFlySpeedDefault * SpeedModifier;
 }
 
 FTraceSpawnParams UBaseMovementComponent::GetHorizTraceSpawnParams(const bool& IsLow)
@@ -281,16 +293,18 @@ FVector UBaseMovementComponent::GetClimbStartLoc(const FTraceSpawnParams& startT
     //vert trace
     if(FinalLocation != FVector::ZeroVector)
     {
-        const FRotator offsetDir(0,HitWallH.ImpactNormal.Rotation().Yaw - 180,0);///wall normal direction is suboptimal
+        ///wall normal direction is suboptimal
+        const FRotator offsetDir(0,HitWallH.ImpactNormal.Rotation().Yaw - 180,0);
         FTraceSpawnParams sParamsV;
         sParamsV.Start = sParamsV.End = FinalLocation + offsetDir.Vector();
         sParamsV.Start.Z = maxHeight;
         sParamsV.End.Z = minHeight;
         FHitResult HitWallV;
-        UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params, sParamsV,
-                                                HitWallV, EWallChannel, false);
+        UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params,
+                                                sParamsV, HitWallV,
+                                                EWallChannel, false);
         if(HitWallV.GetActor() == nullptr)
-            UE_LOG(LogTemp,Warning, TEXT("GetClimbStartLoc: vert trace miss"))
+            UE_LOG(LogTemp, Warning, TEXT("GetClimbStartLoc: vert trace miss"))
         else
             FinalLocation.Z = HitWallV.ImpactPoint.Z;
     }
@@ -932,7 +946,7 @@ bool UBaseMovementComponent::FallDamageCheck()
 void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
 {
     float damage = 0;
-    damage = Cast<ACharacterBase>(GetOwner())->MaxHealth; //добавить в персонажа геттер максимального конечного хп
+    damage = Cast<ACharacterBase>(GetOwner())->GetAttributesComponent()->MaxHealth; //добавить в персонажа геттер максимального конечного хп
     if (FallDistance < MaxfallHeightThresholdBase * MaxFallHeightMod)
         damage *= (FallDistance - fallHeightThreshold) / fallHeightThreshold; // учесть модификатор ловкости
     //UE_LOG(LogTemp, Warning, TEXT("fall damage %f"), damage);

@@ -8,7 +8,8 @@ FLevelInfo::FLevelInfo() :
 
 
 
-ULevelComponent::ULevelComponent() 
+ULevelComponent::ULevelComponent(const class FObjectInitializer &ObjectInitilizer) :
+	Super(ObjectInitilizer)
 {
 	LevelList.Reserve(MaxLevel);
 }

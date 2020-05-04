@@ -12,6 +12,7 @@ ACharacterBase::ACharacterBase(const FObjectInitializer& ObjectInitializer) :
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	AttributesComponent = CreateDefaultSubobject<UAttributesComponent>("AttributesComponent");
 	LevelComponent = CreateDefaultSubobject<ULevelComponent>("LevelComponent");
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
     CurrentCCState = ECCState::NONE;
@@ -23,20 +24,34 @@ ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitilizer) :
 
 }*/
 
-UBaseMovementComponent *ACharacterBase::GetMovementComponent() const
+UBaseMovementComponent* ACharacterBase::GetMovementComponent() const
 {
 	return Cast<UBaseMovementComponent>(ACharacter::GetMovementComponent());
 }
 
-UCombatComponent * ACharacterBase::GetCombatComponent() const
+UCombatComponent* ACharacterBase::GetCombatComponent() const
 {
 	check(CombatComponent != nullptr && "No CombatComponent")
-
 	return CombatComponent;
 
 }
 
-float ACharacterBase::TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent, class AController *EventInstigator, AActor *DamageCauser)
+UAttributesComponent* ACharacterBase::GetAttributesComponent() const
+{	
+	check(AttributesComponent != nullptr && "No AttrComponent")
+	return AttributesComponent;
+}
+
+ULevelComponent* ACharacterBase::GetLevelComponent() const
+{	
+	check(LevelComponent != nullptr && "No LevelComponent")
+	return LevelComponent;
+}
+
+float ACharacterBase::TakeDamage(float DamageAmount,
+								const struct FDamageEvent &DamageEvent,
+								class AController *EventInstigator,
+								AActor *DamageCauser)
 {
 	auto DamageType = DamageEvent.DamageTypeClass.GetDefaultObject();
 
@@ -47,13 +62,13 @@ float ACharacterBase::TakeDamage(float DamageAmount, const struct FDamageEvent &
 	{
 		auto Type = PhysD->Type;
 		auto Force = PhysD->Force;
-		DamageAmount -= CurrentDamageAbsorb.DamageMap[(int32)Type];
-		DamageAmount = DamageAmount * (CurrentDamageResistance.DamageMap[(int32)Type] - 100) / 100;
+		DamageAmount -= GetAttributesComponent()->CurrentDamageAbsorb.DamageMap[(int32)Type];
+		DamageAmount = DamageAmount * (GetAttributesComponent()->CurrentDamageResistance.DamageMap[(int32)Type] - 100) / 100;
 		
-		CurrentHealth += DamageAmount;
+		GetAttributesComponent()->CurrentHealth += DamageAmount;
 
-		if (CurrentHealth > MaxHealth)
-			CurrentHealth = MaxHealth;
+		if (GetAttributesComponent()->CurrentHealth > GetAttributesComponent()->MaxHealth)
+			GetAttributesComponent()->CurrentHealth = GetAttributesComponent()->MaxHealth;
 		//TODO: Death, Force, DamageItem
 		return DamageAmount;
 	}
@@ -61,20 +76,20 @@ float ACharacterBase::TakeDamage(float DamageAmount, const struct FDamageEvent &
 	{
 		auto Type = MagicD->Type;
 		auto MagicSchool = MagicD->MagicSchool;
-		DamageAmount -= CurrentDamageAbsorb.DamageMap[(int32)Type];
-		DamageAmount = DamageAmount * (CurrentDamageResistance.DamageMap[(int32)Type] - 100) / 100;
+		DamageAmount -= GetAttributesComponent()->CurrentDamageAbsorb.DamageMap[(int32)Type];
+		DamageAmount = DamageAmount * (GetAttributesComponent()->CurrentDamageResistance.DamageMap[(int32)Type] - 100) / 100;
 
 		//TODO: Magic Armor
-		CurrentHealth += DamageAmount;
+		GetAttributesComponent()->CurrentHealth += DamageAmount;
 
-		if (CurrentHealth > MaxHealth)
-			CurrentHealth = MaxHealth;
+		if (GetAttributesComponent()->CurrentHealth > GetAttributesComponent()->MaxHealth)
+			GetAttributesComponent()->CurrentHealth = GetAttributesComponent()->MaxHealth;
 
 		return DamageAmount;
 	}
 	else if (DamageType) //if damage nor Physical or Magical, then itВґs raw Damage
 	{
-		CurrentHealth -= DamageAmount;
+		GetAttributesComponent()->CurrentHealth -= DamageAmount;
 		return DamageAmount;
 	}
 
@@ -97,30 +112,32 @@ void ACharacterBase::update()
 {
 	LevelComponent->update();
 
-	float hk = CurrentHealth / MaxHealth; //РЎРѕРѕС‚РЅРѕС€РµРЅРёРµ Р—РґРѕСЂРѕРІСЊСЏ
-	float sk = CurrentStamina / MaxStamina; //РЎРѕРѕС‚РЅРѕС€РµРЅРёРµ РЎС‚Р°РјРёРЅС‹
+	float hk = GetAttributesComponent()->CurrentHealth / GetAttributesComponent()->MaxHealth; 
+	float sk = GetAttributesComponent()->CurrentStamina / GetAttributesComponent()->MaxStamina; 
 
-	CurrentAttributes = BaseAttributes + LevelComponent->LevelAttributes;
-	CurrentSkills = BaseSkills + LevelComponent->LevelSkills;
-	CurrentDamageResistance = BaseDamageResistance; // + Other Damage Resistance
-	CurrentDamageAbsorb = BaseDamageAbsorb; // + Other Damage Absorb
-	CurrentDamageBonus = BaseDamageBonus; // + Other Damage Bonus
+	GetAttributesComponent()->CurrentAttributes = GetAttributesComponent()->BaseAttributes + 
+	LevelComponent->LevelAttributes;
+	GetAttributesComponent()->CurrentSkills = GetAttributesComponent()->BaseSkills + 
+	LevelComponent->LevelSkills;
+	GetAttributesComponent()->CurrentDamageResistance = GetAttributesComponent()->BaseDamageResistance; // + Other Damage Resistance
+	GetAttributesComponent()->CurrentDamageAbsorb = GetAttributesComponent()->BaseDamageAbsorb; // + Other Damage Absorb
+	GetAttributesComponent()->CurrentDamageBonus = GetAttributesComponent()->BaseDamageBonus; // + Other Damage Bonus
 
-	auto ConMod = UAttributesHelper::GetModifier(CurrentAttributes, EAttributes::Con);
+	auto ConMod = UAttributesHelper::GetModifier(GetAttributesComponent()->CurrentAttributes, EAttributes::Con);
 	if (ConMod < 0) 
 		ConMod = 0;
 
-	MaxHealth = LevelComponent->LevelHealthBonus + (ConMod * LevelComponent->GetLevelNum());
-	CurrentHealth = MaxHealth * hk;
+	GetAttributesComponent()->MaxHealth = LevelComponent->LevelHealthBonus + (ConMod * LevelComponent->GetLevelNum());
+	GetAttributesComponent()->CurrentHealth = GetAttributesComponent()->MaxHealth * hk;
 
-	auto StrMod = UAttributesHelper::GetModifier(CurrentAttributes, EAttributes::Con);
+	auto StrMod = UAttributesHelper::GetModifier(GetAttributesComponent()->CurrentAttributes, EAttributes::Con);
 	if (StrMod < 0)
 		StrMod = 0;
-	MaxStamina = 100 + (LevelComponent->GetLevelNum() * ConMod) + (LevelComponent->GetLevelNum() * StrMod);
-	CurrentStamina = MaxStamina * sk;
+	GetAttributesComponent()->MaxStamina = 100 + (LevelComponent->GetLevelNum() * ConMod) + (LevelComponent->GetLevelNum() * StrMod);
+	GetAttributesComponent()->CurrentStamina = GetAttributesComponent()->MaxStamina * sk;
 
 	//Max Speed update
-	CalculateMaxSpeed(1); //TODO
+	GetMovementComponent()->CalculateMaxSpeed(1); //TODO: calculate actual mod
 
 	//other calculation
 }
@@ -131,14 +148,20 @@ void ACharacterBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+
+////////////////
+/////////////////////////////////////PLAYER CHAR SECTION///////////////////////
 // Called to bind functionality to input
 void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 }
-
-void ACharacterBase::OnWalkingOffLedge_Implementation(const FVector &PreviousFloorImpactNormal, const FVector &PreviousFloorContactNormal, const FVector &PreviousLocation, float TimeDelta)
+//todo: рефактор
+void ACharacterBase::OnWalkingOffLedge_Implementation(const FVector &PreviousFloorImpactNormal, 
+													const FVector &PreviousFloorContactNormal, 
+													const FVector &PreviousLocation, 
+													float TimeDelta)
 {
     UE_LOG(LogTemp, Warning, TEXT("OnWalkingOffLedge"));
     ABasePlayerController *PlayerController = Cast<ABasePlayerController>(GetController());
@@ -148,17 +171,3 @@ void ACharacterBase::OnWalkingOffLedge_Implementation(const FVector &PreviousFlo
         GetMovementComponent()->ClimbDownWall();
     }
 }
-
-void ACharacterBase::CalculateMaxSpeed(float SpeedModifier)
-{
-	GetMovementComponent()->MaxWalkSpeed = GetMovementComponent()->MaxWalkSpeedDefault;
-	GetMovementComponent()->MaxWalkSpeedCrouched = GetMovementComponent()->MaxWalkSpeedCrouchedDefault;
-	GetMovementComponent()->MaxRunSpeed = GetMovementComponent()->MaxRunSpeedDefault * SpeedModifier;
-	GetMovementComponent()->MaxRunSpeedCrouched = GetMovementComponent()->MaxRunSpeedCrouchedDefault * SpeedModifier;
-	GetMovementComponent()->MaxSprintSpeed = GetMovementComponent()->MaxSprintSpeedDefault * SpeedModifier;
-	GetMovementComponent()->MaxCustomMovementSpeed = GetMovementComponent()->MaxWallClimbSpeedDefault * SpeedModifier;
-	GetMovementComponent()->MaxSwimSpeed = GetMovementComponent()->MaxSwimSpeedDefault * SpeedModifier;
-	GetMovementComponent()->MaxFlySpeed = GetMovementComponent()->MaxFlySpeedDefault * SpeedModifier;
-
-}
-

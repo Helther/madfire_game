@@ -19,7 +19,6 @@ struct FInputKeyNames
     static const FName ClimbDownTest;
 };
 
-
 enum class EPawnGameplayState
 {
 	InWorld = 0,
@@ -32,11 +31,6 @@ enum class EPawnGameplayState
 
 	MAX //dlc stuff
 }; //состояние персонажа с точки зрения режима контроллера
-
-/**
- * 
- */
-
 
 UCLASS()
 class MADFIRE_API ABasePlayerController : public APlayerController

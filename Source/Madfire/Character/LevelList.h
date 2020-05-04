@@ -33,7 +33,7 @@ class ULevelComponent : public UActorComponent
 {
 	GENERATED_BODY()
 public:
-	ULevelComponent();
+	ULevelComponent(const class FObjectInitializer &ObjectInitilizer);
 
 	UFUNCTION(BlueprintCallable, Category = "Character Attributes")
 		void ResetLevel();
@@ -43,12 +43,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Character Attributes")
 		FORCEINLINE int32 GetLevelNum() const { return LevelList.Num(); }
 
-	UFUNCTION(BlueprintCallable, Category = "Character Attriburtes")
+	UFUNCTION(BlueprintCallable, Category = "Character Attributes")
 		void update();
-	UFUNCTION(BlueprintPure, Category = "Character Attriburtes")
+	UFUNCTION(BlueprintPure, Category = "Character Attributes")
 		FORCEINLINE bool CanLevelUp() const { return (CurrentExpirience >= RequiredExpirience) && (LevelList.Num() <= MaxLevel); }
 
-	UFUNCTION(BlueprintPure, Category = "Character Attriburtes")
+	UFUNCTION(BlueprintPure, Category = "Character Attributes")
 		static FORCEINLINE uint8 GetMaxPossibleLevel() { return MaxLevel; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")

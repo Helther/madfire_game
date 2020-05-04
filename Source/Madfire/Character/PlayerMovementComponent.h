@@ -17,7 +17,7 @@ enum ECustomMovementMode
 };
 
 //possible results of wall climbing check for available space
-enum  EClimbTraceResult
+enum EClimbTraceResult
 {
     SuccessStand = 0,
     SuccessCrouch,
@@ -46,7 +46,9 @@ public:
 
 	/////////////////////////////////////////////////////
 	///////////////////////////////Speeds/////////////////
-
+    
+    // для обновления максимальныз скоростей
+	void CalculateMaxSpeed(float SpeedModifier); 
 	//////////Default max speeds
 	//////Non combat
     //базовая скорость бега
