@@ -5,7 +5,6 @@
 
 
 
-// Sets default values
 
 ACharacterBase::ACharacterBase(const FObjectInitializer& ObjectInitializer) :
 	Super(ObjectInitializer.SetDefaultSubobjectClass<UBaseMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -17,12 +16,6 @@ ACharacterBase::ACharacterBase(const FObjectInitializer& ObjectInitializer) :
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
     CurrentCCState = ECCState::NONE;
 }
-/*
-ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitilizer) : 
-	Super(ObjectInitilizer.SetDefaultSubobjectClass<ULevelComponent>("LevelComponent"))
-{
-
-}*/
 
 UBaseMovementComponent* ACharacterBase::GetMovementComponent() const
 {

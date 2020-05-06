@@ -14,13 +14,13 @@
 UENUM(BluePrintType)
 enum class ECCState : uint8
 {
-	NONE,
-	Stun,
-	KnockDown,
-	LossOfBalance,
-	Stasis,
-	Sleep,
-	MAX
+	NONE = 1,
+	Stun = 2,
+	KnockDown = 4,
+	LossOfBalance = 8,
+	Stasis = 16,
+	Sleep = 32,
+	MAX = 64
 }; // состояния контроля персонажа
 
 UCLASS()
@@ -31,7 +31,6 @@ class MADFIRE_API ACharacterBase : public ACharacter
 public:
 	// Sets default values for this character's properties
 	ACharacterBase(const FObjectInitializer& ObjectInitializer);
-	//ACharacterBase(const FObjectInitializer &ObjectInitilizer);
 
 	float TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent,
 					class AController *EventInstigator,
@@ -67,11 +66,14 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	
-	UPROPERTY(BlueprintReadWrite, Category = "Character Components")
+	UPROPERTY(BlueprintReadWrite, Category = "Character Components", 
+		VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
 		UCombatComponent *CombatComponent;
-	UPROPERTY(BlueprintReadWrite, Category = "Character Components")
+	UPROPERTY(BlueprintReadWrite, Category = "Character Components",
+		VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
 		UAttributesComponent *AttributesComponent;
-	UPROPERTY(BlueprintReadWrite, Category = "Character Components")
+	UPROPERTY(BlueprintReadWrite, Category = "Character Components", 
+		VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
 		ULevelComponent *LevelComponent;		
 
 };

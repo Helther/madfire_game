@@ -235,7 +235,7 @@ void ABasePlayerController::UnSprintAction()
 	}
 }
 
-void ABasePlayerController::CrouchAction()//to do
+void ABasePlayerController::CrouchAction()//todo
 {
 	check(PawnOwner != nullptr && "No pawn");
 
@@ -276,7 +276,7 @@ void ABasePlayerController::CrouchAction()//to do
 	}
 }
 
-void ABasePlayerController::JumpAction()//to do
+void ABasePlayerController::JumpAction()//todo
 {
 	check(PawnOwner != nullptr && "No pawn");
 
@@ -299,7 +299,7 @@ void ABasePlayerController::JumpAction()//to do
 				}
 				else if (PawnOwner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
 				{
-					//to do for parkur
+					//todo for parkur
                     switch (PawnOwner->GetMovementComponent()->CustomMovementMode)
                     {
                         case ECustomMovementMode::ClimbingLedge:

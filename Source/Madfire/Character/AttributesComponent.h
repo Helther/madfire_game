@@ -11,14 +11,14 @@
 #include "AttributesComponent.generated.h"
 
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent), BlueprintType )
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MADFIRE_API UAttributesComponent : public UActorComponent
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
 
 public:	
 	// Sets default values for this component's properties
-	UAttributesComponent(const class FObjectInitializer &ObjectInitilizer);
+	UAttributesComponent();
 	
 	//Base stats
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
