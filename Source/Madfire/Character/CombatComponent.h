@@ -26,11 +26,11 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
-	int32 IsInCombat : 1;
-	int32 IsWeaponDrawn : 1;
-	int32 IsAttacking : 1;
-	int32 IsParrying : 1;
-	int32 IsBlocking : 1;
+	uint32 IsInCombat : 1;
+	uint32 IsWeaponDrawn : 1;
+	uint32 IsAttacking : 1;
+	uint32 IsParrying : 1;
+	uint32 IsBlocking : 1;
 
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;

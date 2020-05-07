@@ -20,3 +20,4 @@ build
 *.txt
 *.pri
 *.pro
+*.code-workspace

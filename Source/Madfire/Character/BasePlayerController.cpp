@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "BasePlayerController.h"
-#include "CharacterBase.h"
+#include "CharacterPlayer.h"///заменить на игрового перса
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/PlayerInput.h"
 
@@ -23,8 +23,8 @@ ABasePlayerController::ABasePlayerController()
 void ABasePlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-	PawnOwner = Cast<ACharacterBase>(GetPawn());
-	check(PawnOwner != nullptr && "No pawn");
+	Player = Cast<ACharacterPlayer>(GetPawn());
+	check(Player != nullptr && "No pawn");
     CurrentGameplayState = EPawnGameplayState::InWorld; //care
 }
 void ABasePlayerController::Tick(float DeltaTime)
@@ -73,23 +73,22 @@ bool ABasePlayerController::IsActionKeyPressed(const FName &ActionKey)
 
 void ABasePlayerController::MoveForward(float AxisValue)
 {
-	check(PawnOwner != nullptr && "No pawn");
+	check(Player != nullptr && "No pawn");
 	switch(CurrentGameplayState)
 	{
 		case(EPawnGameplayState::InWorld):
 		{
-			if (AxisValue != 0.0f && PawnOwner->CurrentCCState == ECCState::NONE)
+			if (AxisValue != 0.0f && Player->CurrentCCState == ECCState::NONE)
 			{
-				if (PawnOwner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Swimming)
+				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Swimming)
 				{
 					const FVector Direction = UKismetMathLibrary::GetForwardVector(FRotator(GetControlRotation().Pitch, GetControlRotation().Yaw, 0.f));
-					PawnOwner->AddMovementInput(Direction, AxisValue, false);
-                    UE_LOG(LogTemp, Warning, TEXT("waaalk"));
+					Player->AddMovementInput(Direction, AxisValue, false);
 				}
-				else if (PawnOwner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
+				else if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
 				{
-					//to do for parkur
-					switch(PawnOwner->GetMovementComponent()->CustomMovementMode)
+					//todo for parkur
+					switch(Player->GetMovementComponent()->CustomMovementMode)
 					{
 						case(ECustomMovementMode::ClimbingLedge):
 						case(ECustomMovementMode::Slide):
@@ -104,7 +103,7 @@ void ABasePlayerController::MoveForward(float AxisValue)
 					FRotator Rotation = FRotator(0.f, GetControlRotation().Yaw, 0.f);
 					const FVector Direction = UKismetMathLibrary::GetForwardVector(Rotation);
 					//UE_LOG(LogTemp, Warning, TEXT("Forward vector %s"), *Direction.ToString());
-                    PawnOwner->AddMovementInput(Direction, AxisValue, false);
+                    Player->AddMovementInput(Direction, AxisValue, false);
 				}
             }
             break;
@@ -116,17 +115,17 @@ void ABasePlayerController::MoveForward(float AxisValue)
 
 void ABasePlayerController::MoveRight(float AxisValue)
 {
-	check(PawnOwner != nullptr && "No pawn");
+	check(Player != nullptr && "No pawn");
 	switch (CurrentGameplayState)
 	{
 		case(EPawnGameplayState::InWorld):
 		{
-			if (AxisValue != 0.0f && PawnOwner->CurrentCCState == ECCState::NONE)
+			if (AxisValue != 0.0f && Player->CurrentCCState == ECCState::NONE)
 			{
-				if (PawnOwner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
+				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
 				{
-                    //to do for parkur
-                    switch(PawnOwner->GetMovementComponent()->CustomMovementMode)
+                    //todo for parkur
+                    switch(Player->GetMovementComponent()->CustomMovementMode)
                     {
                         case(ECustomMovementMode::ClimbingLedge):
                         case(ECustomMovementMode::Slide):
@@ -138,9 +137,9 @@ void ABasePlayerController::MoveRight(float AxisValue)
 				}
 				else
 				{
-					const FRotator Rotation = FRotator(0.f, PawnOwner->GetControlRotation().Yaw, 0.f);
+					const FRotator Rotation = FRotator(0.f, Player->GetControlRotation().Yaw, 0.f);
 					const FVector Direction = UKismetMathLibrary::GetRightVector(Rotation);
-					PawnOwner->AddMovementInput(Direction, AxisValue, false);
+					Player->AddMovementInput(Direction, AxisValue, false);
 				}
             }
 		}
@@ -179,16 +178,16 @@ void ABasePlayerController::CameraYaw(float AxisValue)
 
 void ABasePlayerController::RunAction()
 {
-	check(PawnOwner != nullptr && "No pawn");
+	check(Player != nullptr && "No pawn");
 
 	switch (CurrentGameplayState)
 	{
 	case(EPawnGameplayState::InWorld):
 	{
-		if (PawnOwner->GetMovementComponent()->bIsRunning)
-			PawnOwner->GetMovementComponent()->bIsRunning = false;
+		if (Player->GetMovementComponent()->bIsRunning)
+			Player->GetMovementComponent()->bIsRunning = false;
 		else
-			PawnOwner->GetMovementComponent()->bIsRunning = true;
+			Player->GetMovementComponent()->bIsRunning = true;
 	}
 	default:
 		return;
@@ -197,19 +196,19 @@ void ABasePlayerController::RunAction()
 
 void ABasePlayerController::SprintAction()///add equipment weight check
 {
-	check(PawnOwner != nullptr && "No pawn");
+	check(Player != nullptr && "No pawn");
 
 	switch (CurrentGameplayState)
 	{
 	case(EPawnGameplayState::InWorld):
 	{
-		if (PawnOwner->GetMovementComponent()->IsMovingOnGround() && PawnOwner->CurrentCCState == ECCState::NONE)
+		if (Player->GetMovementComponent()->IsMovingOnGround() && Player->CurrentCCState == ECCState::NONE)
 		{
-            if(PawnOwner->GetCombatComponent()->IsWeaponDrawn && InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.0f)
+            if(Player->GetCombatComponent()->IsWeaponDrawn && InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.0f)
                 return;
-			PawnOwner->GetMovementComponent()->bWantToSprint = true;
-			if (PawnOwner->bIsCrouched)
-				PawnOwner->UnCrouch();
+			Player->GetMovementComponent()->bWantToSprint = true;
+			if (Player->bIsCrouched)
+				Player->UnCrouch();
 		}
 	}
 	default:
@@ -219,15 +218,15 @@ void ABasePlayerController::SprintAction()///add equipment weight check
 
 void ABasePlayerController::UnSprintAction()
 {
-	check(PawnOwner != nullptr && "No pawn");
+	check(Player != nullptr && "No pawn");
 
 	switch (CurrentGameplayState)
 	{
 	case(EPawnGameplayState::InWorld):
 	{
-		if (PawnOwner->GetMovementComponent()->bWantToSprint)
+		if (Player->GetMovementComponent()->bWantToSprint)
 		{
-			PawnOwner->GetMovementComponent()->bWantToSprint = false;
+			Player->GetMovementComponent()->bWantToSprint = false;
 		}
 	}
 	default:
@@ -237,28 +236,28 @@ void ABasePlayerController::UnSprintAction()
 
 void ABasePlayerController::CrouchAction()//todo
 {
-	check(PawnOwner != nullptr && "No pawn");
+	check(Player != nullptr && "No pawn");
 
 	switch (CurrentGameplayState)
 	{
 		case(EPawnGameplayState::InWorld):
 		{
-			if (PawnOwner->CurrentCCState == ECCState::NONE)
+			if (Player->CurrentCCState == ECCState::NONE)
 			{
-				if (PawnOwner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
+				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
 				{
-					if (PawnOwner->GetMovementComponent()->IsCrouching())
-						PawnOwner->UnCrouch();
-					else if (!PawnOwner->GetMovementComponent()->IsSwimming())
-						PawnOwner->Crouch();
+					if (Player->GetMovementComponent()->IsCrouching())
+						Player->UnCrouch();
+					else if (!Player->GetMovementComponent()->IsSwimming())
+						Player->Crouch();
 				}
-				else if (PawnOwner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
+				else if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
 				{
                     //to do for parkur
-                    switch (PawnOwner->GetMovementComponent()->CustomMovementMode)
+                    switch (Player->GetMovementComponent()->CustomMovementMode)
                     {
                         case ECustomMovementMode::ClimbingWall:
-                            PawnOwner->GetMovementComponent()->GetOffWall();
+                            Player->GetMovementComponent()->GetOffWall();
                             break;
                         case ECustomMovementMode::ClimbingLedge:
                         case ECustomMovementMode::ClimbingLadder:
@@ -278,35 +277,35 @@ void ABasePlayerController::CrouchAction()//todo
 
 void ABasePlayerController::JumpAction()//todo
 {
-	check(PawnOwner != nullptr && "No pawn");
+	check(Player != nullptr && "No pawn");
 
 	switch (CurrentGameplayState)
 	{
 		case(EPawnGameplayState::InWorld):
 		{
-			if (PawnOwner->CurrentCCState == ECCState::NONE)
+			if (Player->CurrentCCState == ECCState::NONE)
 			{
-				if (PawnOwner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
+				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
 				{
                     if(InputComponent->GetAxisValue(FInputKeyNames::MoveForward) != 0.0f || InputComponent->GetAxisValue(FInputKeyNames::MoveRight) != 0.f)
                     {
-                        if(PawnOwner->GetMovementComponent()->CanVaultOrClimb(true))
+                        if(Player->GetMovementComponent()->CanVaultOrClimb(true))
                             return;
-                        else if(PawnOwner->GetMovementComponent()->CanVaultOrClimb(false))
+                        else if(Player->GetMovementComponent()->CanVaultOrClimb(false))
                             return;
                     }
-                    PawnOwner->Jump(); ///add stamina calculation and usage
+                    Player->Jump(); ///add stamina calculation and usage
 				}
-				else if (PawnOwner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
+				else if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
 				{
 					//todo for parkur
-                    switch (PawnOwner->GetMovementComponent()->CustomMovementMode)
+                    switch (Player->GetMovementComponent()->CustomMovementMode)
                     {
                         case ECustomMovementMode::ClimbingLedge:
-                            //PawnOwner->GetMovementComponent()->SetMovementMode(MOVE_Walking);///debug
+                            //Player->GetMovementComponent()->SetMovementMode(MOVE_Walking);///debug
                             break;
                         case ECustomMovementMode::ClimbingWall:
-                            PawnOwner->GetMovementComponent()->ClimbWall();
+                            Player->GetMovementComponent()->ClimbWall();
                             break;
                         case ECustomMovementMode::ClimbingLadder:
                         case ECustomMovementMode::Dodge:
@@ -316,9 +315,9 @@ void ABasePlayerController::JumpAction()//todo
                     }
 
 				}
-                else if (PawnOwner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling && PawnOwner->GetMovementComponent()->bCanHangAgain)
+                else if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling && Player->GetMovementComponent()->bCanHangAgain)
                 {
-                    PawnOwner->GetMovementComponent()->HangOnWall();
+                    Player->GetMovementComponent()->HangOnWall();
                 }
 			}
             break;
@@ -334,11 +333,11 @@ void ABasePlayerController::JumpRepAction()
     {
         case(EPawnGameplayState::InWorld):
         {
-            if (PawnOwner->CurrentCCState == ECCState::NONE)
+            if (Player->CurrentCCState == ECCState::NONE)
             {
-                if (PawnOwner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling && PawnOwner->GetMovementComponent()->bCanHangAgain)
+                if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling && Player->GetMovementComponent()->bCanHangAgain)
                 {
-                    PawnOwner->GetMovementComponent()->HangOnWall();
+                    Player->GetMovementComponent()->HangOnWall();
                 }
             }
             break;

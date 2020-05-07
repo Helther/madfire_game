@@ -6,12 +6,14 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "LevelList.h"
-#include "PlayerMovementComponent.h"
+#include "MovementComponentBase.h"
 #include "CombatComponent.h"
 #include "AttributesComponent.h"
 #include "CharacterBase.generated.h"
 
+
 UENUM(BluePrintType)
+// состояния контроля персонажа
 enum class ECCState : uint8
 {
 	NONE = 1,
@@ -21,8 +23,11 @@ enum class ECCState : uint8
 	Stasis = 16,
 	Sleep = 32,
 	MAX = 64
-}; // состояния контроля персонажа
+};
 
+/**
+ * 
+ */
 UCLASS()
 class MADFIRE_API ACharacterBase : public ACharacter
 {
@@ -32,7 +37,8 @@ public:
 	// Sets default values for this character's properties
 	ACharacterBase(const FObjectInitializer& ObjectInitializer);
 
-	float TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent,
+	float TakeDamage(float DamageAmount, 
+                    const struct FDamageEvent &DamageEvent,
 					class AController *EventInstigator,
 					AActor *DamageCauser) override;
 
@@ -41,7 +47,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Character Base")
 		void OnUpdate(); //!< Blueprint interface  for Blueprints
 
-	class UBaseMovementComponent* GetMovementComponent() const override;
+	UBaseMovementComponent* GetMovementComponent() const override;
 
     UCombatComponent* GetCombatComponent() const;
 
@@ -51,14 +57,6 @@ public:
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input 
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-    virtual void OnWalkingOffLedge_Implementation( const FVector & PreviousFloorImpactNormal,
-                                                   const FVector & PreviousFloorContactNormal,
-                                                   const FVector & PreviousLocation,
-                                                   float TimeDelta) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
 		ECCState CurrentCCState;											   

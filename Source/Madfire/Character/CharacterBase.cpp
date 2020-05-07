@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "CharacterBase.h"
-#include "BasePlayerController.h"
+#include "BasePlayerController.h"// перенести в игрока
 
 
 
@@ -128,9 +128,8 @@ void ACharacterBase::update()
 		StrMod = 0;
 	GetAttributesComponent()->MaxStamina = 100 + (LevelComponent->GetLevelNum() * ConMod) + (LevelComponent->GetLevelNum() * StrMod);
 	GetAttributesComponent()->CurrentStamina = GetAttributesComponent()->MaxStamina * sk;
-
 	//Max Speed update
-	GetMovementComponent()->CalculateMaxSpeed(1); //TODO: calculate actual mod
+	GetMovementComponent()->CalculateMaxSpeed(1); //TODO: calculate actual mod from dex
 
 	//other calculation
 }
@@ -141,26 +140,3 @@ void ACharacterBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-
-////////////////
-/////////////////////////////////////PLAYER CHAR SECTION///////////////////////
-// Called to bind functionality to input
-void ACharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-}
-//todo: рефактор
-void ACharacterBase::OnWalkingOffLedge_Implementation(const FVector &PreviousFloorImpactNormal, 
-													const FVector &PreviousFloorContactNormal, 
-													const FVector &PreviousLocation, 
-													float TimeDelta)
-{
-    UE_LOG(LogTemp, Warning, TEXT("OnWalkingOffLedge"));
-    ABasePlayerController *PlayerController = Cast<ABasePlayerController>(GetController());
-    if(PlayerController->IsActionKeyPressed(FInputKeyNames::ClimbDownTest))
-    {
-        UE_LOG(LogTemp, Warning, TEXT("climb down"));
-        GetMovementComponent()->ClimbDownWall();
-    }
-}

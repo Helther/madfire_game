@@ -10,7 +10,9 @@
 #include "../Attributes/Damage.h"
 #include "AttributesComponent.generated.h"
 
-
+/**
+ * 
+ */
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MADFIRE_API UAttributesComponent : public UActorComponent
 {
@@ -19,7 +21,7 @@ class MADFIRE_API UAttributesComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	UAttributesComponent();
-	
+	//todo добавить текущие максимальные значения хп и стамины как минимум
 	//Base stats
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
 		float MaxHealth = 100;		//!< Максимальное здоровье (базовое, без учётов бонусов)

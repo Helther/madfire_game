@@ -19,6 +19,7 @@ struct FInputKeyNames
     static const FName ClimbDownTest;
 };
 
+//состояние персонажа с точки зрения режима контроллера
 enum class EPawnGameplayState
 {
 	InWorld = 0,
@@ -30,8 +31,11 @@ enum class EPawnGameplayState
 	InMountMode,
 
 	MAX //dlc stuff
-}; //состояние персонажа с точки зрения режима контроллера
+};
 
+/**
+ * 
+ */
 UCLASS()
 class MADFIRE_API ABasePlayerController : public APlayerController
 {
@@ -80,7 +84,7 @@ private:
 	// нажатие кнопки взаимодействия
 	void InteractAction();
 
-	class ACharacterBase* PawnOwner;
+	class ACharacterPlayer* Player;
 
 protected:
 	ABasePlayerController();

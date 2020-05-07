@@ -70,7 +70,7 @@ public:
 	//UPROPERTY(BlueprintReadOnly, Category = "Item Info")
 		//EItemType
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EInteractType"), Category = "Item Info")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EItemFlags"), Category = "Item Info")
 		uint8 ItemFlags;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")

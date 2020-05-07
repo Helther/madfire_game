@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "./TraceFunctional/TraceFunctional.h"
-#include "PlayerMovementComponent.generated.h"
+#include "MovementComponentBase.generated.h"
 
 UENUM(BlueprintType)
 
@@ -25,7 +25,21 @@ enum EClimbTraceResult
     FailAtEnd
 };
 
+UENUM(BlueprintType, meta = (Bitflags))
+enum EMoveAbilities     //!< Флаги возможностей передвижения.
+{
+	CanJump = 1			    UMETA(DisplayName = "CanJump"),
+	CanClimb = 2		    UMETA(DisplayName = "CanClimb"),
+	CanLadder = 4			UMETA(DisplayName = "CanLadder"),
+	CanSlide = 8			UMETA(DisplayName = "CanSlide"),
+	CanDodge = 16			UMETA(DisplayName = "CanDodge"),
+	CanSprint = 32	        UMETA(DisplayName = "CanSprint")
+};
+ENUM_CLASS_FLAGS(EMoveAbilities)
 
+/**
+ * 
+ */
 UCLASS()
 class MADFIRE_API UBaseMovementComponent : public UCharacterMovementComponent
 {
@@ -40,7 +54,10 @@ public:
 	bool bIsSprinting{}; // тру если персонаж в режиме спринта
 	bool bIsTeleporting{}; // тру если сейчас телепортируется
 
-
+    //todo добавить проверки  на возможность перед перед действиями в том числе стандартными
+    //todo для использования таких масок в блупринтах приходится создавать местную переменную там
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EMoveAbilities"), Category = "General")
+		uint8 MoveAbilities;
 
 	/////////////////////////////////////////////////////
 	///////////////////////////////Speeds/////////////////
@@ -121,9 +138,8 @@ public:
 
 private:
 	float fallLocationHeight{}; //высота персонажа в момент потери контакта с поверхностью
-    float MaxFallHeightMod{}; //модифиатор макс высоты падения завсящий от статов
-
 	bool FallDamageCheck();	//проверка на получение урона от падения
+
 	void ApplyFallDamage(float FallDistance); //нанесение урона от падения
 	
 

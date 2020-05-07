@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "PlayerMovementComponent.h"
+#include "MovementComponentBase.h"
 #include "Runtime/Engine/Public/DrawDebugHelpers.h"
 #include "CharacterBase.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -22,6 +22,7 @@ UBaseMovementComponent::UBaseMovementComponent(const class FObjectInitializer &O
     MinClimbWallHeight = 80;
     LedgeTraceLength = 70;
     LedgeTraceRadius = 30;
+    MoveAbilities = 0xff;
     ///////////End Degbug
     /*
     bUseControllerDesiredRotation
@@ -36,9 +37,8 @@ UBaseMovementComponent::UBaseMovementComponent(const class FObjectInitializer &O
 void UBaseMovementComponent::BeginPlay()
 {
     Super::BeginPlay();
-    Character = Cast<ACharacterBase>(PawnOwner);
+    Character = Cast<ACharacterBase>(PawnOwner);//для игрока каст в игрового перса
     check(Character != nullptr && "No pawn")
-    // temp (can't climb over the walls that higher than pelvis)
 }
 
 void UBaseMovementComponent::NotifyJumpApex()
@@ -65,10 +65,7 @@ void UBaseMovementComponent::Update()
     //animation play rate (dex)
     check(Character != nullptr && "No pawn");
     //add a function for setting max/min values for calculations
-    //max fall height calculation
-    const int32 DexMod = UAttributesHelper::GetModifier(
-        Character->GetAttributesComponent()->CurrentAttributes,EAttributes::Dex); //TODO temp
-    MaxFallHeightMod = 1 + DexMod;//temp
+
 }
 
 void UBaseMovementComponent::CalculateMaxSpeed(float SpeedModifier)
@@ -606,7 +603,7 @@ bool UBaseMovementComponent::IsCharacterCapsuleOk(const FVector &centerLoc,
     Rotation = Character->GetActorRotation().Quaternion();
     FHitResult HitWall;
     FTraceParams params;
-    params.ActorsToIgnore.Add(CharacterOwner);
+    params.ActorsToIgnore.Add(CharacterOwner);// проверить
     UTraceManager::SphereTraceSingleByChannel(Character->GetWorld(),
                                                Character->GetCapsuleComponent()->GetScaledCapsuleRadius(),
                                                params, sParams, HitWall,
@@ -900,7 +897,7 @@ void UBaseMovementComponent::PhysFalling(float deltaTime, int32 Iterations)
     Super::PhysFalling(deltaTime, Iterations);
 }
 
-void UBaseMovementComponent::PhysCustom(float deltaTime, int32 Iterations)///TODO
+void UBaseMovementComponent::PhysCustom(float deltaTime, int32 Iterations)///TODO разобраться в стандартной реализации
 {
     //UE_LOG(LogTemp,Warning, TEXT("root %s"),Character->IsPlayingRootMotion() ? TEXT("true" : TEXT("false")));
     if (deltaTime < MIN_TICK_TIME)
@@ -997,6 +994,10 @@ void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
      //TODO добавить в персонажа геттер максимального конечного хп
     damage = Cast<ACharacterBase>(GetOwner())->GetAttributesComponent()->MaxHealth;
      //TODO учесть модификатор ловкости
+    //max fall height calculation
+    const int32 DexMod = UAttributesHelper::GetModifier(
+        Character->GetAttributesComponent()->CurrentAttributes,EAttributes::Dex); //TODO temp
+    auto MaxFallHeightMod = 1 + DexMod;//temp
     if (FallDistance < MaxfallHeightThresholdBase * MaxFallHeightMod)
         damage *= (FallDistance - fallHeightThreshold) / fallHeightThreshold;
     //UE_LOG(LogTemp, Warning, TEXT("fall damage %f"), damage);
