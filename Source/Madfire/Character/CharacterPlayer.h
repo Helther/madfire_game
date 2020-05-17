@@ -13,9 +13,11 @@ UCLASS()
 class MADFIRE_API ACharacterPlayer : public ACharacterBase
 {
 	GENERATED_BODY()
-	
+
+public:
 	ACharacterPlayer(const FObjectInitializer& ObjectInitializer);
-	
+    
+protected:
 	// Called to bind functionality to input 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 

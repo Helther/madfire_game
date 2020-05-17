@@ -31,6 +31,7 @@ public:
 	uint32 IsAttacking : 1;
 	uint32 IsParrying : 1;
 	uint32 IsBlocking : 1;
+	uint32 IsCasting : 1;
 
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -46,13 +47,18 @@ public:
 
     float CalculateDamage(AActor *Target, UItemWeapon *Weapon);
     float CalculatePower(AActor *Target, UItemWeapon *Weapon);
+	void On_StanceChanged();
+	void On_Weapon_OnOff();
+	void On_Blocking();
+	void On_Casting();
 
-	
-private:
+	UCombatStance* GetCurrentCombatStance();
+protected:
 
 	UItemWeapon *DefaultWeapon;
 	UCombatStance *CurrentCombatStance;
     TSet<AActor> CharactersHit;
-
+	class ACharacterBase *Character;
     bool HasAlreadyHitTarget(AActor *Target);
+	
 };

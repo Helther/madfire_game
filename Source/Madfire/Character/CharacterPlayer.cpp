@@ -6,13 +6,12 @@
 
 ACharacterPlayer::ACharacterPlayer(const FObjectInitializer& ObjectInitializer) :
     Super(ObjectInitializer)
-{CurrentCCState = ECCState::NONE;}
+{}
 
 // Called to bind functionality to input
 void ACharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 }
 
 void ACharacterPlayer::OnWalkingOffLedge_Implementation(const FVector &PreviousFloorImpactNormal, 

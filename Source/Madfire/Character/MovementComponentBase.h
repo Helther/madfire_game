@@ -33,7 +33,8 @@ enum EMoveAbilities     //!< Флаги возможностей передви�
 	CanLadder = 4			UMETA(DisplayName = "CanLadder"),
 	CanSlide = 8			UMETA(DisplayName = "CanSlide"),
 	CanDodge = 16			UMETA(DisplayName = "CanDodge"),
-	CanSprint = 32	        UMETA(DisplayName = "CanSprint")
+	CanSprint = 32	        UMETA(DisplayName = "CanSprint"),
+    CanCrouch = 64          UMETA(DisplayName = "CanCrouch")
 };
 ENUM_CLASS_FLAGS(EMoveAbilities)
 
@@ -48,24 +49,12 @@ class MADFIRE_API UBaseMovementComponent : public UCharacterMovementComponent
 public:
 	UBaseMovementComponent(const class FObjectInitializer &ObjectInitilizer);
 
-	void NotifyJumpApex() override;
-	bool bWantToSprint{}; //тру если пытается перейти на спринт
-	bool bIsRunning{}; // тру если персонаж в режима бега
-	bool bIsSprinting{}; // тру если персонаж в режиме спринта
-	bool bIsTeleporting{}; // тру если сейчас телепортируется
-
-    //todo добавить проверки  на возможность перед перед действиями в том числе стандартными
-    //todo для использования таких масок в блупринтах приходится создавать местную переменную там
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EMoveAbilities"), Category = "General")
-		uint8 MoveAbilities;
-
 	/////////////////////////////////////////////////////
-	///////////////////////////////Speeds/////////////////
+	/////////////////////====== Speeds ==========/////////////////
     
-    // для обновления максимальныз скоростей
-	void CalculateMaxSpeed(float SpeedModifier); 
+
 	//////////Default max speeds
-	//////Non combat
+	///////////////////////Non combat////////////////////////
     //базовая скорость бега
 	UPROPERTY(EditAnywhere, Category = "Character Default Speeds")
         float MaxRunSpeedDefault{};
@@ -90,11 +79,17 @@ public:
     //базовая скорость полета
 	UPROPERTY(EditAnywhere, Category = "Character Default Speeds")
         float MaxFlySpeedDefault{};
+    
+    void CalculateMaxCombatSpeeds(float SpeedModifier);
+    void CalculateMaxSpeeds(float SpeedModifier);
+    void CalculateMaxBlockingSpeed(float SpeedModifier);
+    void CalculateMaxCastingSpeed(float SpeedModifier);
+
+protected:
+    // для обновления максимальныз скоростей
 
 
-	////////////////////////////max default speeds//////////////////
-	//max walk speeds
-	////Unreal created speeds:
+	/////////////////////// max ue4 current speeds //////
 	//MaxWalkSpeed
 	//MaxWalkSpeedCrouched
 	//MaxSwimSpeed
@@ -105,30 +100,13 @@ public:
 	float MaxRunSpeed{};
 	float MaxSprintSpeed{};
 	float MaxRunSpeedCrouched{};
-								  
-/*
-	//combat
-	UPROPERTY(EditAnywhere, Category = "Character Speeds")
-		float MaxCombatRunSpeed;
 
-	UPROPERTY(EditAnywhere, Category = "Character Speeds")
-		float MaxCombatWalkSpeed;
 
-	UPROPERTY(EditAnywhere, Category = "Character Speeds")
-		float MaxCombatSprintSpeed;
+	////////////////=========== Speeds end =========/////////////////
 
-	UPROPERTY(EditAnywhere, Category = "Character Speeds")
-        float MaxCastSpeed; //Max move speed during cast
-	
-    UPROPERTY(EditAnywhere, Category = "Character Speeds")
-        float MaxBlockSpeed; //Max move speed during blocking
-
-	//////////////////////Speeds end//////////////////
-*/
-
-	////////////////////Fall damage//////////////////
+	/////////////////======= Fall damage ========//////////////////
 public:
-    bool bFallDamageInvul{}; // блокировка урона от падения
+    bool bFallDamageInvul{false}; // блокировка урона от падения
     //высота падения при которой начинает наносится дамаг
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fall Damage")
         float fallHeightThreshold{};
@@ -137,11 +115,14 @@ public:
         float MaxfallHeightThresholdBase{};
 
 private:
-	float fallLocationHeight{}; //высота персонажа в момент потери контакта с поверхностью
-	bool FallDamageCheck();	//проверка на получение урона от падения
-
-	void ApplyFallDamage(float FallDistance); //нанесение урона от падения
+     //высота персонажа в момент потери контакта с поверхностью
+	float fallLocationHeight{false};
+    //проверка на получение урона от падения
+	bool FallDamageCheck();
+    //нанесение урона от падения
+	void ApplyFallDamage(float FallDistance);
 	
+	/////////////////======= Fall damage END ========//////////////////
 
     ////////////////////////=========Parkour shit========/////////////////////////
 public:
@@ -150,26 +131,27 @@ public:
         float MaxClimbRotationAngle;
 
 private:
-    //check if there is enough space for character capsule before teleport for anim, where location is the center of the capsule
+    // check if there is enough space for character capsule before teleport for anim,
+    // where location is the center of the capsule
     EClimbTraceResult IsEnoughSpace(const FVector& StartLocation,
                                     const FVector& EndLocation = FVector(0,0,0),
-                                    const ECollisionChannel &startCC = ECollisionChannel::ECC_WorldStatic,
+                                    const ECollisionChannel &startCC =
+                                        ECollisionChannel::ECC_WorldStatic,
                                     const ECollisionChannel &endCC = EWallChannel);
-    //check if character playing root motion or teleporting
+    // check if character playing root motion or teleporting
     bool IsRootOrTeleport();
 
-    //does trace in character's capsule shape
+    // does trace in character's capsule shape для проверки на лаличие достаточного места
     bool IsCharacterCapsuleOk(const FVector& centerLoc, const bool& crouching,
                               const bool &H2L = true, const ECollisionChannel &CC =
                                 ECollisionChannel::ECC_WorldStatic) const;
   
     //////////////////////////////Wall Climb//////////////////////////////
 public:
-    bool bCanHangAgain{}; // тру если чарактер может повиснуть на стене
-
+    // проверяет что персонаж упал ниже нужной величины прежде чем повторно зацепиться
+    bool CheckCanHangAgain();
     // min distance between character and ground underneath allowed
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
-        float MinClimbWallHeight{};
+    // MinClimbWallHeight = Character->GetDefaultHalfHeight() / 2;
     // offset value in direction opposite to the wall
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
         float HangLocationHorizOffset = 1;
@@ -177,15 +159,14 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
         float HangLocationVertOffset = 0;
     ////////// montages
+    // монтаж залезания на стену с присядом в конце
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
-        UAnimMontage *ClimbWallAnimStand;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
-        UAnimMontage *ClimbWallAnimCrouched;
-    // монтаж залезания на стену
+        UAnimMontage *ClimbWallCrouchedMontage;
+    // монтаж залезания на стену стоя
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
         UAnimMontage *ClimbWallMontage;
 
-    //check if there is a  climbababe wall
+    //check if there is a  climbable wall
     void IsClimbableWall(FHitResult HitWallH, bool CheckCharacterRotation);
     //allows to get on top of wall while hanging
     void ClimbWall();
@@ -199,7 +180,8 @@ public:
     void JumpOffWall();
 
 private:
-
+    bool bCanHangAgain{true}; // тру если чарактер может повиснуть на стене
+    float CanHangAgainDistance; //todo временное значение пути падения для повтора повиса
     // возвращает локацию или ротатор для повисания персонажа рассчитанную
     // с учетом размеров его капсулы
     FVector FindHangLoc(const FHitResult &HitH, const FHitResult &HitV) const;
@@ -209,10 +191,8 @@ private:
 	//////////////////////////Ledge Climb///////////////////////////
 
 public:
-    // наибольшая высота препятствия относительно днища персонажа
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Ledge")
-        float MaxClimbLedgeHeight{}; /// приравнена к половине высоты капсулы
-    //макс ширина препятствия в горизонтальной плоскости на которой можно сделать vault
+    // макс размер тлт длина препятствия в горизонтальной плоскости
+    // на которой можно сделать vault
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Ledge")
         float MaxVaultLedgeSize{};
     //монтаж перелезания
@@ -236,41 +216,36 @@ public:
     //trace params
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Ledge")
         FVector HorizLedgeTraceOffset;
+    //horizontal length of the trace
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Ledge")
-        float LedgeTraceLength{}; //horizontal length of the ray
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Ledge")
-        FVector VerticalLedgeTraceOffset{};
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Ledge")
-        float LedgeTraceHeight{}; //vertical distance for the trace from center of the character
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Ledge")
-        float LedgeTraceWidth{};
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Ledge")
-        float LedgeTraceRadius{};
+        float LedgeTraceLength{};
 
     //проверка препятствия на vault  и climb, 
     //если low = true высота от ступеньки до пояса, иначе от пояса до макушки
-    bool CanVaultOrClimb(const bool &IsLow);
+    bool CanVaultOrClimb(bool IsLow);
 
 private:
-
+    //наличие места над узким препядствием
+    bool LedgeHeightCheck(const float WallZHeight, const float charAndWallAngle, 
+                            bool IsLow);
     //телепорт к нужной локации и установка ориентации чарактера,
     // активация монтажа vault, включение режима climbLedge
-    bool DoVault(const FHitResult &HorizHit,const FHitResult &VertHit, const bool& IsLow);
+    bool DoVault(const FHitResult &HorizHit,const FHitResult &VertHit, 
+                bool IsLow);
     //телепорт к нужной локации и установка ориентации чарактера,
     // активация монтажа climb, включение режима climbLedge
-    bool DoClimbLedge(const FHitResult &HorizHit,const FHitResult &VertHit, const bool& IsLow);
+    bool DoClimbLedge(const FHitResult &HorizHit,const FHitResult &VertHit, 
+                        bool IsLow);
     //проверка на попадание стены в нужный диапазон высот
-    bool LedgeHeightCheck(const float WallZHeight, const float charAndWallAngle, const bool& IsLow);
-    //наличие места над узким препядствием
     bool VaultSpaceCheck(const FHitResult& HorizHit,const FHitResult& VertHit);
-    //поиск оптимальной точки на стене по горизонтали для клаймб паркура
+    //поиск оптимальной точки на стене для начала клаймб паркура
     //(отклонения высоты относительно дна капсулы)
-    FVector GetClimbStartLoc(const FTraceSpawnParams& startTrace,const float& maxHeight = 0,
-                             const float& minHeight = 0);
+    FVector* GetClimbStartLoc(const FTraceSpawnParams& startTrace,const float& minHeight = 0,
+                             const float& maxHeight = 0);
 
-    FTraceSpawnParams GetHorizTraceSpawnParams(const bool& IsLow);
+    FTraceSpawnParams GetHorizTraceSpawnParams(bool IsLow);
 
-    FTraceSpawnParams GetVertTraceSpawnParams(const FHitResult& Hit, const bool& IsLow);
+    FTraceSpawnParams GetVertTraceSpawnParams(const FHitResult& Hit, bool IsLow);
 
     ////Ladder Climb
 
@@ -283,12 +258,24 @@ private:
 
 	////////////////////===========Parkour shit END============/////////////////////////
 
-    class ACharacterBase* Character;//todo поменять на класс игрового перса
+    //////////////////=========== Общие вспомогательные =======/////////////////////////
 public:
     void Update(); ///todo
+
+	bool bWantToSprint{false}; //тру если пытается перейти на спринт
+	bool bIsRunning{false}; // тру если персонаж в режима бега
+	bool bIsSprinting{false}; // тру если персонаж в режиме спринта
+	bool bIsTeleporting{false}; // тру если сейчас телепортируется
+    // false если перс перегружен или замедлен до остановки 
+    bool CanMove(); 
+    //todo для использования таких масок в блупринтах приходится создавать местную переменную там
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EMoveAbilities"),
+            Category = "Character Movement")
+		uint8 MoveAbilitiesDefault;
+    uint8 MoveAbilitiesCurrent;
 protected:
     /// наследованный мусор
-    ///From CharacterMovementComponent
+    ///
     ///
 	void OnMovementModeChanged(EMovementMode, uint8) override;
 	float GetMaxSpeed() const override;
@@ -296,7 +283,16 @@ protected:
     void PhysWalking(float deltaTime, int32 Iterations) override;
 	void PhysFalling(float deltaTime, int32 Iterations) override;
     void PhysCustom(float deltaTime, int32 Iterations) override;
+    //todo добавить функции проверки возможности паркура тут и использовать их в контроллере
+	virtual void NotifyJumpApex() override;
+    virtual void Crouch(bool bClientSimulation = false) override;
+    virtual bool DoJump(bool bReplayingMoves) override;
 	//From unreal engine's Uobject
 	void BeginPlay() override;
-	void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
+	void TickComponent(float DeltaTime,
+                        enum ELevelTick TickType,
+                        FActorComponentTickFunction *ThisTickFunction) override;
+
+private:
+    class ACharacterBase* Character;
 };

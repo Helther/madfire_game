@@ -24,8 +24,8 @@ void ABasePlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 	Player = Cast<ACharacterPlayer>(GetPawn());
-	check(Player != nullptr && "No pawn");
-    CurrentGameplayState = EPawnGameplayState::InWorld; //care
+	check(Player != nullptr && "ABasePlayerController: No pawn");
+    CurrentGameplayState = EPawnGameplayState::InWorld; // debug
 }
 void ABasePlayerController::Tick(float DeltaTime)
 {
@@ -60,9 +60,9 @@ bool ABasePlayerController::IsActionKeyPressed(const FName &ActionKey)
         UE_LOG(LogTemp, Warning, TEXT("No keys set for action %s"), *ActionKey.ToString());
         return false;
     }
-    for(int32 i = 0;i < KeyListTest.Num();++i)
+    for(const auto i : KeyListTest)
     {
-        if(IsInputKeyDown(KeyListTest[i].Key))
+        if(IsInputKeyDown(i.Key))
         {
             UE_LOG(LogTemp, Warning, TEXT("Pressing %s"), *ActionKey.ToString());
             return true;
@@ -73,8 +73,8 @@ bool ABasePlayerController::IsActionKeyPressed(const FName &ActionKey)
 
 void ABasePlayerController::MoveForward(float AxisValue)
 {
-	check(Player != nullptr && "No pawn");
-	switch(CurrentGameplayState)
+	check(Player != nullptr && "ABasePlayerController: No pawn");
+	switch(CurrentGameplayState)//todo учесть другие состояния
 	{
 		case(EPawnGameplayState::InWorld):
 		{
@@ -115,8 +115,8 @@ void ABasePlayerController::MoveForward(float AxisValue)
 
 void ABasePlayerController::MoveRight(float AxisValue)
 {
-	check(Player != nullptr && "No pawn");
-	switch (CurrentGameplayState)
+	check(Player != nullptr && "ABasePlayerController: No pawn");
+	switch (CurrentGameplayState)//todo учесть другие состояния
 	{
 		case(EPawnGameplayState::InWorld):
 		{
@@ -150,7 +150,7 @@ void ABasePlayerController::MoveRight(float AxisValue)
 
 void ABasePlayerController::CameraPitch(float AxisValue)
 {
-	switch (CurrentGameplayState)
+	switch (CurrentGameplayState)//todo учесть другие состояния
 	{
 	case(EPawnGameplayState::InWorld):
 	case(EPawnGameplayState::InMountMode):
@@ -164,7 +164,7 @@ void ABasePlayerController::CameraPitch(float AxisValue)
 
 void ABasePlayerController::CameraYaw(float AxisValue)
 {
-	switch (CurrentGameplayState)
+	switch (CurrentGameplayState)//todo учесть другие состояния
 	{
 		case(EPawnGameplayState::InWorld):
 		case(EPawnGameplayState::InMountMode):
@@ -178,11 +178,11 @@ void ABasePlayerController::CameraYaw(float AxisValue)
 
 void ABasePlayerController::RunAction()
 {
-	check(Player != nullptr && "No pawn");
+	check(Player != nullptr && "ABasePlayerController: No pawn");
 
 	switch (CurrentGameplayState)
 	{
-	case(EPawnGameplayState::InWorld):
+	case(EPawnGameplayState::InWorld)://todo учесть другие состояния
 	{
 		if (Player->GetMovementComponent()->bIsRunning)
 			Player->GetMovementComponent()->bIsRunning = false;
@@ -196,11 +196,11 @@ void ABasePlayerController::RunAction()
 
 void ABasePlayerController::SprintAction()///add equipment weight check
 {
-	check(Player != nullptr && "No pawn");
+	check(Player != nullptr && "ABasePlayerController: No pawn");
 
 	switch (CurrentGameplayState)
 	{
-	case(EPawnGameplayState::InWorld):
+	case(EPawnGameplayState::InWorld)://todo учесть другие состояния
 	{
 		if (Player->GetMovementComponent()->IsMovingOnGround() && Player->CurrentCCState == ECCState::NONE)
 		{
@@ -218,9 +218,9 @@ void ABasePlayerController::SprintAction()///add equipment weight check
 
 void ABasePlayerController::UnSprintAction()
 {
-	check(Player != nullptr && "No pawn");
+	check(Player != nullptr && "ABasePlayerController: No pawn");
 
-	switch (CurrentGameplayState)
+	switch (CurrentGameplayState)//todo учесть другие состояния
 	{
 	case(EPawnGameplayState::InWorld):
 	{
@@ -234,13 +234,13 @@ void ABasePlayerController::UnSprintAction()
 	}
 }
 
-void ABasePlayerController::CrouchAction()//todo
+void ABasePlayerController::CrouchAction()
 {
-	check(Player != nullptr && "No pawn");
+	check(Player != nullptr && "ABasePlayerController: No pawn");
 
 	switch (CurrentGameplayState)
 	{
-		case(EPawnGameplayState::InWorld):
+		case(EPawnGameplayState::InWorld)://todo учесть другие состояния
 		{
 			if (Player->CurrentCCState == ECCState::NONE)
 			{
@@ -248,12 +248,12 @@ void ABasePlayerController::CrouchAction()//todo
 				{
 					if (Player->GetMovementComponent()->IsCrouching())
 						Player->UnCrouch();
-					else if (!Player->GetMovementComponent()->IsSwimming())
-						Player->Crouch();
+					else 
+						Player->Crouch();///todo вызывать из компонента движения
 				}
 				else if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
 				{
-                    //to do for parkur
+                    //todo for parkur
                     switch (Player->GetMovementComponent()->CustomMovementMode)
                     {
                         case ECustomMovementMode::ClimbingWall:
@@ -277,9 +277,9 @@ void ABasePlayerController::CrouchAction()//todo
 
 void ABasePlayerController::JumpAction()//todo
 {
-	check(Player != nullptr && "No pawn");
+	check(Player != nullptr && "ABasePlayerController: No pawn");
 
-	switch (CurrentGameplayState)
+	switch (CurrentGameplayState)//todo учесть другие состояния
 	{
 		case(EPawnGameplayState::InWorld):
 		{
@@ -294,7 +294,8 @@ void ABasePlayerController::JumpAction()//todo
                         else if(Player->GetMovementComponent()->CanVaultOrClimb(false))
                             return;
                     }
-                    Player->Jump(); ///add stamina calculation and usage
+                    Player->Jump();
+					return;
 				}
 				else if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
 				{
@@ -315,9 +316,10 @@ void ABasePlayerController::JumpAction()//todo
                     }
 
 				}
-                else if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling && Player->GetMovementComponent()->bCanHangAgain)
+                else if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling)
                 {
-                    Player->GetMovementComponent()->HangOnWall();
+					if(!Player->GetMovementComponent()->CheckCanHangAgain())
+                    	Player->GetMovementComponent()->HangOnWall();
                 }
 			}
             break;
@@ -329,15 +331,16 @@ void ABasePlayerController::JumpAction()//todo
 
 void ABasePlayerController::JumpRepAction()
 {
-    switch (CurrentGameplayState)
+    switch (CurrentGameplayState)//todo учесть другие состояния
     {
         case(EPawnGameplayState::InWorld):
         {
             if (Player->CurrentCCState == ECCState::NONE)
             {
-                if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling && Player->GetMovementComponent()->bCanHangAgain)
+                if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling)
                 {
-                    Player->GetMovementComponent()->HangOnWall();
+					if(!Player->GetMovementComponent()->CheckCanHangAgain())
+                    	Player->GetMovementComponent()->HangOnWall();
                 }
             }
             break;

@@ -19,9 +19,8 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitili
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// ...
-	
+    Character = Cast<ACharacterBase>(GetOwner());//для игрока каст в игрового перса
+    check(Character != nullptr && "UBaseMovementComponent: No pawn")
 }
 
 
@@ -29,8 +28,6 @@ void UCombatComponent::BeginPlay()
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
 }
 
 void UCombatComponent::Update()
@@ -76,3 +73,33 @@ bool UCombatComponent::HasAlreadyHitTarget(AActor * Target)
 	return false;
 }
 
+UCombatStance* UCombatComponent::GetCurrentCombatStance()
+{
+	check(CurrentCombatStance != nullptr && "Combat component: no combat stance")
+	return CurrentCombatStance;
+}
+
+void UCombatComponent::On_StanceChanged()
+{
+	//todo получить актуальный модификатор скоростей
+	if(IsWeaponDrawn)
+		Character->GetMovementComponent()->CalculateMaxCombatSpeeds(1);
+}
+
+void UCombatComponent::On_Weapon_OnOff()
+{
+	//todo получить актуальный модификатор скоростей
+	Character->GetMovementComponent()->CalculateMaxSpeeds(1);
+}
+
+void UCombatComponent::On_Blocking()
+{
+	//todo получить актуальный модификатор скоростей
+	Character->GetMovementComponent()->CalculateMaxBlockingSpeed(1);
+}
+
+void UCombatComponent::On_Casting()
+{
+	//todo получить актуальный модификатор скоростей
+	Character->GetMovementComponent()->CalculateMaxCastingSpeed(1);
+}

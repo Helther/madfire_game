@@ -103,15 +103,14 @@ void ACharacterBase::OnUpdate()
 
 void ACharacterBase::update()
 {
-	LevelComponent->update();
-
+	GetLevelComponent()->update();
 	float hk = GetAttributesComponent()->CurrentHealth / GetAttributesComponent()->MaxHealth; 
 	float sk = GetAttributesComponent()->CurrentStamina / GetAttributesComponent()->MaxStamina; 
 
 	GetAttributesComponent()->CurrentAttributes = GetAttributesComponent()->BaseAttributes + 
-	LevelComponent->LevelAttributes;
+	GetLevelComponent()->LevelAttributes;
 	GetAttributesComponent()->CurrentSkills = GetAttributesComponent()->BaseSkills + 
-	LevelComponent->LevelSkills;
+	GetLevelComponent()->LevelSkills;
 	GetAttributesComponent()->CurrentDamageResistance = GetAttributesComponent()->BaseDamageResistance; // + Other Damage Resistance
 	GetAttributesComponent()->CurrentDamageAbsorb = GetAttributesComponent()->BaseDamageAbsorb; // + Other Damage Absorb
 	GetAttributesComponent()->CurrentDamageBonus = GetAttributesComponent()->BaseDamageBonus; // + Other Damage Bonus
@@ -120,17 +119,17 @@ void ACharacterBase::update()
 	if (ConMod < 0) 
 		ConMod = 0;
 
-	GetAttributesComponent()->MaxHealth = LevelComponent->LevelHealthBonus + (ConMod * LevelComponent->GetLevelNum());
+	GetAttributesComponent()->MaxHealth = GetLevelComponent()->LevelHealthBonus + (ConMod * GetLevelComponent()->GetLevelNum());
 	GetAttributesComponent()->CurrentHealth = GetAttributesComponent()->MaxHealth * hk;
 
 	auto StrMod = UAttributesHelper::GetModifier(GetAttributesComponent()->CurrentAttributes, EAttributes::Con);
 	if (StrMod < 0)
 		StrMod = 0;
-	GetAttributesComponent()->MaxStamina = 100 + (LevelComponent->GetLevelNum() * ConMod) + (LevelComponent->GetLevelNum() * StrMod);
+	GetAttributesComponent()->MaxStamina = 100 + (GetLevelComponent()->GetLevelNum() * ConMod) + (GetLevelComponent()->GetLevelNum() * StrMod);
 	GetAttributesComponent()->CurrentStamina = GetAttributesComponent()->MaxStamina * sk;
-	//Max Speed update
-	GetMovementComponent()->CalculateMaxSpeed(1); //TODO: calculate actual mod from dex
 
+	GetMovementComponent()->Update();
+	
 	//other calculation
 }
 
