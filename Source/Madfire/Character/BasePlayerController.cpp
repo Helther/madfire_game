@@ -318,8 +318,8 @@ void ABasePlayerController::JumpAction()//todo
 				}
                 else if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling)
                 {
-					if(!Player->GetMovementComponent()->CheckCanHangAgain())
-                    	Player->GetMovementComponent()->HangOnWall();
+					if(Player->GetMovementComponent()->CheckCanHangAgain())
+                    	Player->GetMovementComponent()->HangOnFall();
                 }
 			}
             break;
@@ -340,7 +340,7 @@ void ABasePlayerController::JumpRepAction()
                 if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling)
                 {
 					if(!Player->GetMovementComponent()->CheckCanHangAgain())
-                    	Player->GetMovementComponent()->HangOnWall();
+                    	Player->GetMovementComponent()->HangOnFall();
                 }
             }
             break;

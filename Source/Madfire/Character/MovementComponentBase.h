@@ -173,27 +173,22 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
         UAnimMontage *ClimbWallMontage;
 
-    //check if there is a  climbable wall
-    void IsClimbableWall(FHitResult HitWallH, bool CheckCharacterRotation);
     //allows to get on top of wall while hanging
     void ClimbWall();
     //sets falling movement mode when pressed crouch while climbing
     void GetOffWall();
     //climb down and hang on the wall which character just walked off from
     void ClimbDownWall();
-    // hang on wall while in air
-    void HangOnWall();
+    // телепорт к стене для повисания while in air
+    void HangOnFall();
+    // найти точку для повисания на стене
+    void HangOnWall(TSharedPtr<StartClimbData> hangData);
     // jump from wall while hanging
     void JumpOffWall();
 
 private:
     bool bCanHangAgain{true}; // тру если чарактер может повиснуть на стене
     float CanHangAgainDistance; //todo временное значение пути падения для повтора повиса
-    // возвращает локацию или ротатор для повисания персонажа рассчитанную
-    // с учетом размеров его капсулы
-    FVector FindHangLoc(const FHitResult &HitH, const FHitResult &HitV) const;
-    FRotator FindHangRot(const FHitResult &HitH) const;
-
 
 	//////////////////////////Ledge Climb///////////////////////////
 
@@ -244,11 +239,9 @@ private:
     //поиск оптимальной точки на стене для начала анимации клаймб паркура
     //(отклонения высоты относительно дна капсулы)
     TSharedPtr<StartClimbData> GetClimbStartLoc(const FTraceSpawnParams& startTrace,const float& minHeight = 0,
-                             const float& maxHeight = 0);
+                             const float& maxHeight = 0, bool checkAngle = true);
     FTraceParams params;
     FTraceSpawnParams GetHorizTraceSpawnParams(bool IsLow);
-
-    FTraceSpawnParams GetVertTraceSpawnParams(const FHitResult& Hit, bool IsLow);
 
     ////Ladder Climb
 

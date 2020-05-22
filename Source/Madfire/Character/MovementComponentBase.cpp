@@ -127,46 +127,6 @@ FTraceSpawnParams UBaseMovementComponent::GetHorizTraceSpawnParams(bool IsLow)
     return sParamsH;
 }
 
-FTraceSpawnParams UBaseMovementComponent::GetVertTraceSpawnParams(const FHitResult &Hit,
-                                                                  bool IsLow)
-{
-    check(Hit.GetActor() != nullptr && "GetVertTraceSpawnParams: no hit")
-    const FVector CharLocation = Character->GetActorLocation();
-    auto crouchHeightDiff = Character->GetDefaultHalfHeight() - CrouchedHalfHeight;
-    //vertical trace
-    FTraceSpawnParams sParamsV;
-    auto LedgeTraceRadius = Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
-    sParamsV.Start = sParamsV.End = Hit.ImpactPoint;
-    if(IsLow)
-    {
-        if(IsCrouching())
-        {
-            sParamsV.Start.Z = CharLocation.Z + crouchHeightDiff + LedgeTraceRadius;
-            sParamsV.End.Z = CharLocation.Z + crouchHeightDiff - Character->GetDefaultHalfHeight();
-        }
-        else
-        {
-            sParamsV.Start.Z = CharLocation.Z + LedgeTraceRadius;
-            sParamsV.End.Z = CharLocation.Z - Character->GetDefaultHalfHeight();
-        }
-    }
-    else
-    {
-        if(IsCrouching())
-        {
-            sParamsV.Start.Z = CharLocation.Z + crouchHeightDiff + Character->GetDefaultHalfHeight() +
-                    LedgeTraceRadius;
-            sParamsV.End.Z = CharLocation.Z + crouchHeightDiff;
-        }
-        else
-        {
-            sParamsV.Start.Z = CharLocation.Z + Character->GetDefaultHalfHeight() + LedgeTraceRadius;
-            sParamsV.End.Z = CharLocation.Z;
-        }
-    }
-    return sParamsV;
-}
-
 bool UBaseMovementComponent::CanVaultOrClimb(bool IsLow)
 {
     UE_LOG(LogTemp,Warning, TEXT("CanVault or climb %s"), IsLow ? TEXT("low") : TEXT("high"));
@@ -174,7 +134,7 @@ bool UBaseMovementComponent::CanVaultOrClimb(bool IsLow)
     //setting spawn parameters
     FTraceSpawnParams sParamsH = GetHorizTraceSpawnParams(IsLow);
     //get max distance allowed for parkour from character's feet
-    float maxHeight = Character->GetDefaultHalfHeight() * 2;
+    float maxHeight = Character->GetDefaultHalfHeight() * 2.5;
     float minHeight = Character->GetDefaultHalfHeight();
     if(IsLow)
     {
@@ -225,7 +185,7 @@ bool UBaseMovementComponent::DoVault(const StartClimbData& locationData,
     const FVector VaultAnimationEndLocation = VaultAnimationStartLocation +
                                              FRotator(0, locationData.Rotation.Yaw, 0).Vector() *
                                             (Character->GetCapsuleComponent()->GetScaledCapsuleRadius() * 2 + 
-                                            LocationHorizOffset + MaxVaultLedgeSize);
+                                            LocationHorizOffset + MaxVaultLedgeSize);// todo temp
 
     if(IsEnoughSpace(VaultAnimationStartLocation) == EClimbTraceResult::SuccessStand)
     {
@@ -276,8 +236,7 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData& locationData, bo
             FVector(0,0,Character->GetDefaultHalfHeight()) +
             locationData.Rotation.Vector() *
             ((Character->GetCapsuleComponent()->GetScaledCapsuleRadius() + LocationHorizOffset) + 
-            ClimbAnimHorizDistance);
-
+            ClimbAnimHorizDistance);// todo temp
     // check for available space at the start position before anim
     switch(IsEnoughSpace(ClimbledgeAnimationStartLocation, ClimbledgeAnimationEndLocation))
     {
@@ -368,7 +327,8 @@ bool UBaseMovementComponent::VaultSpaceCheck(const StartClimbData& LedgeData)
 
 TSharedPtr<StartClimbData> UBaseMovementComponent::GetClimbStartLoc(const FTraceSpawnParams& startTrace,
                                                 const float& minHeight,
-                                                const float& maxHeight)
+                                                const float& maxHeight,
+                                                bool checkAngle)
 {
     auto CharRotation = Character->GetActorRotation();
     auto FinalLocation = MakeShared<StartClimbData>();
@@ -389,17 +349,24 @@ TSharedPtr<StartClimbData> UBaseMovementComponent::GetClimbStartLoc(const FTrace
                                                    EWallChannel, false);
         // нашел ли стену
         if(HitWallH.GetActor() == nullptr)
+        {
+            UE_LOG(LogTemp,Warning, TEXT("GetClimbStartLoc: trace miss"))
             return nullptr;
+        }
         // подходящий ли угол между персом и стеной
-        if(!checkRelativeRotation(HitWallH.ImpactNormal.Rotation().Yaw))
+        if(checkAngle && !checkRelativeRotation(HitWallH.ImpactNormal.Rotation().Yaw))
             return nullptr;
         // ограничение по числу итераций
         if(NumOfIterations >= 10)// temp
+        {
+            UE_LOG(LogTemp,Warning, TEXT("GetClimbStartLoc: exceeded iter limit"))
             return nullptr;
+        }
         // проверим есть ли место для капсулы перса для начала анимации
         const FRotator wallNormalDir(0,HitWallH.ImpactNormal.Rotation().Yaw,0);
         FTraceSpawnParams sParamsSPace;
-        sParamsSPace.Start = sParamsSPace.End = HitWallH.ImpactPoint + wallNormalDir.Vector() * LocationHorizOffset;
+        sParamsSPace.Start = sParamsSPace.End = HitWallH.ImpactPoint + wallNormalDir.Vector() * 
+                            LocationHorizOffset;
         sParamsSPace.Start.Z = charBottomHeight + maxHeight;
         sParamsSPace.End.Z = charBottomHeight + minHeight + LocationVertOffset;
         FHitResult HitSpace;
@@ -446,6 +413,7 @@ TSharedPtr<StartClimbData> UBaseMovementComponent::GetClimbStartLoc(const FTrace
     FinalLocation.Get().Rotation = offsetDir;
     return FinalLocation;
 }
+
 bool UBaseMovementComponent::checkRelativeRotation(const float WallNormalYaw)
 {
     FVector charsV = FRotator(0, Character->GetActorRotation().Yaw, 0).Vector();
@@ -458,6 +426,7 @@ bool UBaseMovementComponent::checkRelativeRotation(const float WallNormalYaw)
         UE_LOG(LogTemp,Warning, TEXT("Bad relative angle (%f)"), resAngle)
     return res;
 }
+
 EClimbTraceResult UBaseMovementComponent::IsEnoughSpace(const FVector& StartLocation,
                                                         const FVector& EndLocation,
                                                         const ECollisionChannel& startCC, 
@@ -478,9 +447,10 @@ EClimbTraceResult UBaseMovementComponent::IsEnoughSpace(const FVector& StartLoca
                 !IsCharacterCapsuleOk(EndLocation,IsCrouching(),false,endCC))
         {
             UE_LOG(LogTemp,Warning, TEXT("not enough space for stand anim end"));
-            auto tempEnd = EndLocation + FVector(0,0,-Character->GetDefaultHalfHeight() + CrouchedHalfHeight);
-            if(IsCharacterCapsuleOk(tempEnd,true,true,endCC) ||
-                    IsCharacterCapsuleOk(tempEnd,true,false,endCC))
+            auto tempEnd = EndLocation + FVector(0,0,-Character->GetDefaultHalfHeight() + 
+                            CrouchedHalfHeight);
+            if(!IsCharacterCapsuleOk(tempEnd,true,true,endCC) ||
+                    !IsCharacterCapsuleOk(tempEnd,true,false,endCC))
             {
                 UE_LOG(LogTemp,Warning, TEXT("not enough space for crouch anim end"));
                 return EClimbTraceResult::FailAtEnd;
@@ -541,89 +511,83 @@ bool UBaseMovementComponent::IsCharacterCapsuleOk(const FVector &centerLoc,
     return res;
 }
 
-FVector UBaseMovementComponent::FindHangLoc(const FHitResult &HitH, const FHitResult &HitV) const
+void UBaseMovementComponent::ClimbDownWall()/// TODO doesn't work
 {
-    return FVector(HitH.ImpactPoint.X, HitH.ImpactPoint.Y, HitV.ImpactPoint.Z -
-                                         Character->GetDefaultHalfHeight() + LocationVertOffset) +
-                                         FRotator(0,HitH.Normal.Rotation().Yaw,0).Vector() *
-                                         (Character->GetCapsuleComponent()->GetScaledCapsuleRadius() +
-                                          LocationHorizOffset);
-}
-
-FRotator UBaseMovementComponent::FindHangRot(const FHitResult &HitH) const
-{
-    return FRotator(0,HitH.ImpactNormal.Rotation().Yaw - 180,0);
-}
-
-void UBaseMovementComponent::IsClimbableWall(FHitResult HitWallH, bool CheckCharacterRotation)
-{
-    if(CheckCharacterRotation)
-    {
-        if(!checkRelativeRotation(HitWallH.ImpactNormal.Rotation().Yaw))
-            return;
-    }
-    float ClimbWallTraceHeight = 2 * Character->GetCapsuleComponent()->GetScaledCapsuleRadius();//TODO temp
-    auto Rotation = Character->GetActorRotation().Quaternion();
+    if(IsRootOrTeleport())
+        return;
+    float ClimbDownTracelenght = 20;//TODO temp
     FTraceSpawnParams sParams;
+    FQuat Rotation(0, 0, 0, 1);
+    Rotation = Character->GetActorRotation().Quaternion();
     sParams.Rotation = Rotation;
-    if(!IsRootOrTeleport() && HitWallH.GetActor() != nullptr)
+    auto charBottomHeight = Character->GetActorLocation().Z - Character->GetDefaultHalfHeight();
+    if(IsCrouching())
+        charBottomHeight = Character->GetActorLocation().Z - CrouchedHalfHeight;
+    const auto res = FQuat(FRotator(0, Character->GetActorRotation().Yaw, 0)) * 
+                    FQuat(FRotator(0, 180, 0));
+    const FRotator charBackDir(res.Rotator());
+    sParams.Start = sParams.End = Character->GetActorLocation() + charBackDir.Vector() * 
+                                    ClimbDownTracelenght;
+    sParams.Start.Z = sParams.End.Z = charBottomHeight;
+    sParams.End += FVector(0,0,ClimbDownTracelenght); 
+    const float minHeight = -Character->GetDefaultHalfHeight() / 2;
+    const float maxHeight = Character->GetDefaultHalfHeight() / 2;
+    auto hangData = GetClimbStartLoc(sParams, minHeight, maxHeight, false);
+    HangOnWall(hangData);
+}
+
+void UBaseMovementComponent::HangOnFall()
+{
+    if(IsRootOrTeleport())
+        return;
+    float ClimbWallTracelenght = 70;//TODO temp
+    FTraceSpawnParams sParams;
+    FQuat Rotation(0, 0, 0, 1);
+    Rotation = Character->GetActorRotation().Quaternion();
+    sParams.Rotation = Rotation;
+    sParams.Start = Character->GetActorLocation() + FVector(0,0,Character->GetDefaultHalfHeight() -
+        Character->GetCapsuleComponent()->GetScaledCapsuleRadius());
+    sParams.End = sParams.Start + Character->GetActorRotation().Vector() * ClimbWallTracelenght;
+    const float minHeight = Character->GetDefaultHalfHeight();
+    const float maxHeight = Character->GetDefaultHalfHeight() * 2 + 
+                        Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
+    auto hangData = GetClimbStartLoc(sParams, minHeight, maxHeight);
+    HangOnWall(hangData);
+}
+//todo сделать проверку чтоб нельзя было повиснуть на углу
+void UBaseMovementComponent::HangOnWall(TSharedPtr<StartClimbData> hangData)
+{
+    if(hangData.Get() == nullptr)
+        return;
+    const auto res = FQuat(FRotator(0, hangData.Get()->Rotation.Yaw, 0)) * FQuat(FRotator(0, 180, 0));
+    const FRotator wallNormalDir(res.Rotator());
+    auto hangLocation = hangData.Get()->Location + FVector(0, 0, - Character->GetDefaultHalfHeight() + 
+                        LocationVertOffset) + 
+                        wallNormalDir.Vector() * (Character->GetCapsuleComponent()->GetScaledCapsuleRadius() + 
+                        LocationHorizOffset);
+    //if(GetWalkableFloorAngle() > 90 - HitWallV.ImpactNormal.Rotation().Pitch)
+    if(IsEnoughSpace(hangLocation) == EClimbTraceResult::SuccessStand)
     {
-        UE_LOG(LogTemp,Warning, TEXT("Wall Climb H trace hit"))
-        sParams.Start = sParams.End = HitWallH.ImpactPoint;
-        sParams.Start += FVector(0,0,ClimbWallTraceHeight);
-        FHitResult HitWallV;
-        UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params, sParams, HitWallV, EWallChannel,
-                                                false);
-        if(HitWallV.GetActor() != nullptr)
+        // проверка на наличие места под персом при висении
+        FHitResult HitWallAdd;
+        FTraceSpawnParams sParams;
+        FQuat Rotation(0, 0, 0, 1);
+        Rotation = Character->GetActorRotation().Quaternion();
+        sParams.Rotation = Rotation;
+        sParams.Start = sParams.End = hangLocation + FVector(0,0,-Character->GetDefaultHalfHeight());
+        sParams.End.Z -= Character->GetDefaultHalfHeight() / 2;
+        UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params, sParams, HitWallAdd,
+                                                ECollisionChannel::ECC_WorldStatic, false);
+        if(HitWallAdd.GetActor() != nullptr)
         {
-            UE_LOG(LogTemp,Warning, TEXT("Wall Climb V trace hit"));
-            if(GetWalkableFloorAngle() > 90 - HitWallV.ImpactNormal.Rotation().Pitch)
-            {
-                UE_LOG(LogTemp,Warning, TEXT("Floor angle less than walkable"));
-                if(IsEnoughSpace(FindHangLoc(HitWallH,HitWallV)) == EClimbTraceResult::SuccessStand)
-                {
-                    UE_LOG(LogTemp,Warning, TEXT("Wall Climb Enough space for capsule"));
-                    FHitResult HitWallAdd;
-                    sParams.Start = sParams.End = FindHangLoc(HitWallH,HitWallV) + FVector(0,0,
-                                                                         -Character->GetDefaultHalfHeight());
-                    sParams.End.Z -= Character->GetDefaultHalfHeight() / 2;
-                    UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params, sParams, HitWallAdd,
-                                                            ECollisionChannel::ECC_WorldStatic, false);
-                    if(HitWallAdd.GetActor() != nullptr)
-                    {
-                        UE_LOG(LogTemp,Warning, TEXT("Climb Wall Hit under character"));
-                        return;
-                    }
-                    else                                             ///TODO rework
-                    {
-                        sParams.Start = sParams.End = FindHangLoc(HitWallH,HitWallV)  + FVector(0,0,Character->GetDefaultHalfHeight() -
-                                Character->GetCapsuleComponent()->GetScaledCapsuleRadius()) + UKismetMathLibrary::GetRightVector(FindHangRot(HitWallH)) *
-                                Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
-                        sParams.End += FindHangRot(HitWallH).Vector() * (Character->GetCapsuleComponent()->GetScaledCapsuleRadius() + 2);//delta
-                        UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params, sParams, HitWallAdd, EWallChannel, false);
-                        if(HitWallAdd.GetActor() != nullptr && fabsf(HitWallH.ImpactNormal.Rotation().Yaw - HitWallAdd.ImpactNormal.Rotation().Yaw) < 1)
-                        {
-                            UE_LOG(LogTemp,Warning, TEXT("Climb Wall right"));
-                            HitWallAdd.Reset();
-                            sParams.Start = sParams.End = FindHangLoc(HitWallH,HitWallV)  + FVector(0,0,Character->GetDefaultHalfHeight() -
-                                Character->GetCapsuleComponent()->GetScaledCapsuleRadius()) + UKismetMathLibrary::GetRightVector(FindHangRot(HitWallH)) *
-                                -Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
-                            sParams.End += FindHangRot(HitWallH).Vector() * (Character->GetCapsuleComponent()->GetScaledCapsuleRadius() + 2);//delta
-                            UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params, sParams, HitWallAdd, EWallChannel, false);
-                            if(HitWallAdd.GetActor() != nullptr && fabsf(HitWallH.ImpactNormal.Rotation().Yaw - HitWallAdd.ImpactNormal.Rotation().Yaw) < 1)
-                            {
-                                UE_LOG(LogTemp,Warning, TEXT("Climb Wall left"));
-                                Character->SetActorLocation(FindHangLoc(HitWallH,HitWallV), false, nullptr, ETeleportType::None);
-                                Character->SetActorRotation(FindHangRot(HitWallH), ETeleportType::None);
-                                SetMovementMode(MOVE_Custom,ECustomMovementMode::ClimbingWall);
-                                return;
-                            }
-                        }
-                        else
-                           UE_LOG(LogTemp,Warning, TEXT("Climb Wall Bad angle or location"));
-                    }
-                }
-            }
+            UE_LOG(LogTemp,Warning, TEXT("HangOnWall: error Hit under character"));
+            return;
+        }
+        else
+        {
+            Character->SetActorLocation(hangLocation, false, nullptr, ETeleportType::None);
+            Character->SetActorRotation(hangData.Get()->Rotation, ETeleportType::None);
+            SetMovementMode(MOVE_Custom,ECustomMovementMode::ClimbingWall);
         }
     }
 }
@@ -632,28 +596,40 @@ void UBaseMovementComponent::ClimbWall()///TODO replace teleports and setmovemen
 {
     if(!IsRootOrTeleport())
     {
-        float AnimVertMovement = Character->GetDefaultHalfHeight() * 2 - LocationVertOffset +1;//TODO temp
-        float AnimHorizMovement = Character->GetCapsuleComponent()->GetScaledCapsuleRadius() * 2; //TODO temp
+        const float AnimVertMovement = Character->GetDefaultHalfHeight() * 2;// TODO temp
+        const float AnimHorizMovement = Character->GetCapsuleComponent()->GetScaledCapsuleRadius() * 2 +
+                                    LocationHorizOffset; // TODO temp
         const FVector AnimEndLocation = Character->GetActorLocation() + FVector(0,0,AnimVertMovement) +
-                Character->GetActorRotation().Vector() * AnimHorizMovement;
+                                    Character->GetActorRotation().Vector() * AnimHorizMovement;//todo temp
         switch(IsEnoughSpace(Character->GetActorLocation(),AnimEndLocation))
         {
             case EClimbTraceResult::SuccessStand:
             {
-                Character->SetActorLocation(AnimEndLocation, false, nullptr, ETeleportType::None);
-                SetMovementMode(EMovementMode::MOVE_Walking);
-                break;
+                if(ClimbWallMontage != nullptr)
+                //TODO calculate playRate with agility and when done set movement mode
+                    Character->PlayAnimMontage(ClimbWallMontage,1);
+                else
+                {
+                    Character->SetActorLocation(AnimEndLocation);
+                    SetMovementMode(EMovementMode::MOVE_Walking);
+                }
+                return;
             }
             case EClimbTraceResult::SuccessCrouch:
             {
-                Character->SetActorLocation(AnimEndLocation + FVector(0,0, - Character->GetDefaultHalfHeight() +
-                                            CrouchedHalfHeight), false, nullptr, ETeleportType::None);
                 Character->GetCapsuleComponent()->SetCapsuleHalfHeight(CrouchedHalfHeight);
                 bWantsToCrouch = true;
-                SetMovementMode(EMovementMode::MOVE_Walking);
-                break;
+                if(ClimbWallCrouchedMontage != nullptr)
+                //TODO calculate playRate with agility and when done set movement mode
+                    Character->PlayAnimMontage(ClimbWallCrouchedMontage,1);
+                else
+                {
+                    Character->SetActorLocation(AnimEndLocation);
+                    SetMovementMode(EMovementMode::MOVE_Walking);
+                }
+                return;
             default:
-                    return;
+                return;
             }
 
         }
@@ -677,49 +653,9 @@ bool UBaseMovementComponent::CheckCanHangAgain()
         auto CurrentVelocity = fabsf(Character->GetVelocity().Z);
         bCanHangAgain = CurrentVelocity >= NeededVelocity;
     }//todo тестить единицы измерения
+    if(!bCanHangAgain)
+        UE_LOG(LogTemp,Warning, TEXT("CheckCanHangAgain: cant"))
     return bCanHangAgain;
-}
-
-void UBaseMovementComponent::ClimbDownWall()/// TODO doesn't work
-{
-    float SphereTraceDelta = 30;//TODO temp
-    FQuat Rotation(0, 0, 0, 1);
-    Rotation = Character->GetActorRotation().Quaternion();
-    FHitResult HitWallH;
-    
-    FTraceSpawnParams sParams;
-    params.ActorsToIgnore.Add(Character);
-    sParams.Rotation = Rotation;
-    if(IsCrouching())
-        sParams.Start = sParams.End = Character->GetActorLocation() + 
-            FVector(0,0, -CrouchedHalfHeight + Character->GetCapsuleComponent()->GetScaledCapsuleRadius());
-    else
-        sParams.Start = sParams.End = Character->GetActorLocation() + 
-            FVector(0,0, -Character->GetDefaultHalfHeight() + Character->GetCapsuleComponent()->GetScaledCapsuleRadius());
-    UTraceManager::SphereTraceSingleByChannel(Character->GetWorld(),
-                                            Character->GetCapsuleComponent()->GetScaledCapsuleRadius() + SphereTraceDelta,
-                                            params, 
-                                            sParams, 
-                                            HitWallH, 
-                                            EWallChannel, 
-                                            false);
-    IsClimbableWall(HitWallH,false);
-}
-
-void UBaseMovementComponent::HangOnWall()
-{
-    float ClimbWallTracelenght = 70;//TODO temp
-    FQuat Rotation(0, 0, 0, 1);
-    Rotation = Character->GetActorRotation().Quaternion();
-    FHitResult HitWallH;
-    
-    FTraceSpawnParams sParams;
-    params.ActorsToIgnore.Add(Character);
-    sParams.Start = Character->GetActorLocation() + FVector(0,0,Character->GetDefaultHalfHeight() - Character->GetCapsuleComponent()->GetScaledCapsuleRadius());
-    sParams.End = sParams.Start + Character->GetActorRotation().Vector() * ClimbWallTracelenght;
-    sParams.Rotation = Rotation;
-    UTraceManager::CapsuleTraceSingleByChannel(Character->GetWorld(), Character->GetCapsuleComponent()->GetScaledCapsuleRadius(), Character->GetCapsuleComponent()->GetScaledCapsuleRadius(), params, sParams, HitWallH, EWallChannel, false);
-    IsClimbableWall(HitWallH,true);
 }
 
 void UBaseMovementComponent::JumpOffWall()///TODO define
