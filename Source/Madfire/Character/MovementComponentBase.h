@@ -38,6 +38,12 @@ enum EMoveAbilities     //!< Флаги возможностей передви�
 };
 ENUM_CLASS_FLAGS(EMoveAbilities)
 
+struct StartClimbData
+{
+    FVector Location;
+    FRotator Rotation;
+};
+
 /**
  * 
  */
@@ -129,8 +135,15 @@ public:
     // максимальное отклонение направления чарактера относительно нормали стены в градусах
     UPROPERTY(EditAnywhere, Category = "Climb general")
         float MaxClimbRotationAngle;
-
+    // доп смещение от стены при старте анимации
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb general")
+        float LocationHorizOffset = 0;
+    // same day different axis
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb general")
+        float LocationVertOffset = 0;
 private:
+    // проверка если угол относительно стены и перса не превышает максимум
+    bool checkRelativeRotation(const float WallNormalYaw);
     // check if there is enough space for character capsule before teleport for anim,
     // where location is the center of the capsule
     EClimbTraceResult IsEnoughSpace(const FVector& StartLocation,
@@ -152,12 +165,6 @@ public:
     bool CheckCanHangAgain();
     // min distance between character and ground underneath allowed
     // MinClimbWallHeight = Character->GetDefaultHalfHeight() / 2;
-    // offset value in direction opposite to the wall
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
-        float HangLocationHorizOffset = 1;
-    // same day different axis
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
-        float HangLocationVertOffset = 0;
     ////////// montages
     // монтаж залезания на стену с присядом в конце
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
@@ -191,7 +198,7 @@ private:
 	//////////////////////////Ledge Climb///////////////////////////
 
 public:
-    // макс размер тлт длина препятствия в горизонтальной плоскости
+    // макс размер или длина препятствия в горизонтальной плоскости
     // на которой можно сделать vault
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Ledge")
         float MaxVaultLedgeSize{};
@@ -225,24 +232,20 @@ public:
     bool CanVaultOrClimb(bool IsLow);
 
 private:
-    //наличие места над узким препядствием
-    bool LedgeHeightCheck(const float WallZHeight, const float charAndWallAngle, 
-                            bool IsLow);
     //телепорт к нужной локации и установка ориентации чарактера,
     // активация монтажа vault, включение режима climbLedge
-    bool DoVault(const FHitResult &HorizHit,const FHitResult &VertHit, 
-                bool IsLow);
+    bool DoVault(const StartClimbData& locationData, bool IsLow);
     //телепорт к нужной локации и установка ориентации чарактера,
     // активация монтажа climb, включение режима climbLedge
-    bool DoClimbLedge(const FHitResult &HorizHit,const FHitResult &VertHit, 
+    bool DoClimbLedge(const StartClimbData& locationData, 
                         bool IsLow);
     //проверка на попадание стены в нужный диапазон высот
-    bool VaultSpaceCheck(const FHitResult& HorizHit,const FHitResult& VertHit);
-    //поиск оптимальной точки на стене для начала клаймб паркура
+    bool VaultSpaceCheck(const StartClimbData& LedgeData);
+    //поиск оптимальной точки на стене для начала анимации клаймб паркура
     //(отклонения высоты относительно дна капсулы)
-    FVector* GetClimbStartLoc(const FTraceSpawnParams& startTrace,const float& minHeight = 0,
+    TSharedPtr<StartClimbData> GetClimbStartLoc(const FTraceSpawnParams& startTrace,const float& minHeight = 0,
                              const float& maxHeight = 0);
-
+    FTraceParams params;
     FTraceSpawnParams GetHorizTraceSpawnParams(bool IsLow);
 
     FTraceSpawnParams GetVertTraceSpawnParams(const FHitResult& Hit, bool IsLow);
@@ -283,7 +286,6 @@ protected:
     void PhysWalking(float deltaTime, int32 Iterations) override;
 	void PhysFalling(float deltaTime, int32 Iterations) override;
     void PhysCustom(float deltaTime, int32 Iterations) override;
-    //todo добавить функции проверки возможности паркура тут и использовать их в контроллере
 	virtual void NotifyJumpApex() override;
     virtual void Crouch(bool bClientSimulation = false) override;
     virtual bool DoJump(bool bReplayingMoves) override;
