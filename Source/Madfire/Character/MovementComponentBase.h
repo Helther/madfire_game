@@ -142,6 +142,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb general")
         float LocationVertOffset = 0;
 private:
+    bool bWasCrouching{false};
     // проверка если угол относительно стены и перса не превышает максимум
     bool checkRelativeRotation(const float WallNormalYaw);
     // check if there is enough space for character capsule before teleport for anim,
@@ -188,7 +189,6 @@ public:
 
 private:
     bool bCanHangAgain{true}; // тру если чарактер может повиснуть на стене
-    float CanHangAgainDistance; //todo временное значение пути падения для повтора повиса
 
 	//////////////////////////Ledge Climb///////////////////////////
 
@@ -243,14 +243,14 @@ private:
     FTraceParams params;
     FTraceSpawnParams GetHorizTraceSpawnParams(bool IsLow);
 
-    ////Ladder Climb
-
 
 	////Slide
+
 
     ////Dodge
 
 
+    ////Ladder Climb
 
 	////////////////////===========Parkour shit END============/////////////////////////
 

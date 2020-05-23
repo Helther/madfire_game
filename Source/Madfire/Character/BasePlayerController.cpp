@@ -82,7 +82,8 @@ void ABasePlayerController::MoveForward(float AxisValue)
 			{
 				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Swimming)
 				{
-					const FVector Direction = UKismetMathLibrary::GetForwardVector(FRotator(GetControlRotation().Pitch, GetControlRotation().Yaw, 0.f));
+					const FVector Direction = UKismetMathLibrary::GetForwardVector(
+											FRotator(GetControlRotation().Pitch, GetControlRotation().Yaw, 0.f));
 					Player->AddMovementInput(Direction, AxisValue, false);
 				}
 				else if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
@@ -202,9 +203,11 @@ void ABasePlayerController::SprintAction()///add equipment weight check
 	{
 	case(EPawnGameplayState::InWorld)://todo учесть другие состояния
 	{
-		if (Player->GetMovementComponent()->IsMovingOnGround() && Player->CurrentCCState == ECCState::NONE)
+		if (Player->GetMovementComponent()->IsMovingOnGround() && 
+			Player->CurrentCCState == ECCState::NONE)
 		{
-            if(Player->GetCombatComponent()->IsWeaponDrawn && InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.0f)
+            if(Player->GetCombatComponent()->IsWeaponDrawn && 
+				InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.0f)
                 return;
 			Player->GetMovementComponent()->bWantToSprint = true;
 			if (Player->bIsCrouched)
@@ -249,7 +252,7 @@ void ABasePlayerController::CrouchAction()
 					if (Player->GetMovementComponent()->IsCrouching())
 						Player->UnCrouch();
 					else 
-						Player->Crouch();///todo вызывать из компонента движения
+						Player->Crouch();
 				}
 				else if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
 				{
@@ -287,7 +290,8 @@ void ABasePlayerController::JumpAction()//todo
 			{
 				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
 				{
-                    if(InputComponent->GetAxisValue(FInputKeyNames::MoveForward) != 0.0f || InputComponent->GetAxisValue(FInputKeyNames::MoveRight) != 0.f)
+                    if(InputComponent->GetAxisValue(FInputKeyNames::MoveForward) != 0.f || 
+						InputComponent->GetAxisValue(FInputKeyNames::MoveRight) != 0.f)
                     {
                         if(Player->GetMovementComponent()->CanVaultOrClimb(true))
                             return;
@@ -306,7 +310,11 @@ void ABasePlayerController::JumpAction()//todo
                             //Player->GetMovementComponent()->SetMovementMode(MOVE_Walking);///debug
                             break;
                         case ECustomMovementMode::ClimbingWall:
-                            Player->GetMovementComponent()->ClimbWall();
+							if(InputComponent->GetAxisValue(FInputKeyNames::MoveForward) > 0.f)
+                            	Player->GetMovementComponent()->ClimbWall();
+							else if(InputComponent->GetAxisValue(FInputKeyNames::MoveForward) < 0.f ||
+									InputComponent->GetAxisValue(FInputKeyNames::MoveRight) != 0.f)
+								Player->GetMovementComponent()->JumpOffWall();
                             break;
                         case ECustomMovementMode::ClimbingLadder:
                         case ECustomMovementMode::Dodge:
@@ -339,7 +347,7 @@ void ABasePlayerController::JumpRepAction()
             {
                 if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling)
                 {
-					if(!Player->GetMovementComponent()->CheckCanHangAgain())
+					if(Player->GetMovementComponent()->CheckCanHangAgain())
                     	Player->GetMovementComponent()->HangOnFall();
                 }
             }
