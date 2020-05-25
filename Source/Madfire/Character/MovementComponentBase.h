@@ -122,7 +122,7 @@ public:
 
 private:
      //высота персонажа в момент потери контакта с поверхностью
-	float fallLocationHeight{false};
+	float fallLocationHeight{};
     //проверка на получение урона от падения
 	bool FallDamageCheck();
     //нанесение урона от падения
@@ -142,21 +142,21 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb general")
         float LocationVertOffset = 0;
 private:
-    bool bWasCrouching{false};
+    FTraceParams params;
     // проверка если угол относительно стены и перса не превышает максимум
     bool checkRelativeRotation(const float WallNormalYaw);
     // check if there is enough space for character capsule before teleport for anim,
     // where location is the center of the capsule
     EClimbTraceResult IsEnoughSpace(const FVector& StartLocation,
                                     const FVector& EndLocation = FVector(0,0,0),
-                                    const ECollisionChannel &startCC =
+                                    const ECollisionChannel &StartCC =
                                         ECollisionChannel::ECC_WorldStatic,
-                                    const ECollisionChannel &endCC = EWallChannel);
+                                    const ECollisionChannel &EndCC = EWallChannel);
     // check if character playing root motion or teleporting
     bool IsRootOrTeleport();
 
     // does trace in character's capsule shape для проверки на лаличие достаточного места
-    bool IsCharacterCapsuleOk(const FVector& centerLoc, const bool& crouching,
+    bool IsCharacterCapsuleOk(const FVector& CenterLoc, const bool& Crouching,
                               const bool &H2L = true, const ECollisionChannel &CC =
                                 ECollisionChannel::ECC_WorldStatic) const;
   
@@ -183,9 +183,9 @@ public:
     // телепорт к стене для повисания while in air
     void HangOnFall();
     // найти точку для повисания на стене
-    void HangOnWall(TSharedPtr<StartClimbData> hangData);
+    void HangOnWall(TSharedPtr<StartClimbData> HangData);
     // jump from wall while hanging
-    void JumpOffWall();
+    void JumpOffWall(float ForwardAxis, float RightAxis);
 
 private:
     bool bCanHangAgain{true}; // тру если чарактер может повиснуть на стене
@@ -229,18 +229,17 @@ public:
 private:
     //телепорт к нужной локации и установка ориентации чарактера,
     // активация монтажа vault, включение режима climbLedge
-    bool DoVault(const StartClimbData& locationData, bool IsLow);
+    bool DoVault(const StartClimbData& LocationData, bool IsLow);
     //телепорт к нужной локации и установка ориентации чарактера,
     // активация монтажа climb, включение режима climbLedge
-    bool DoClimbLedge(const StartClimbData& locationData, 
+    bool DoClimbLedge(const StartClimbData& LocationData, 
                         bool IsLow);
     //проверка на попадание стены в нужный диапазон высот
     bool VaultSpaceCheck(const StartClimbData& LedgeData);
     //поиск оптимальной точки на стене для начала анимации клаймб паркура
     //(отклонения высоты относительно дна капсулы)
-    TSharedPtr<StartClimbData> GetClimbStartLoc(const FTraceSpawnParams& startTrace,const float& minHeight = 0,
-                             const float& maxHeight = 0, bool checkAngle = true);
-    FTraceParams params;
+    TSharedPtr<StartClimbData> GetClimbStartLoc(const FTraceSpawnParams& StartTrace,const float& MinHeight = 0,
+                             const float& MaxHeight = 0, bool CheckAngle = true);
     FTraceSpawnParams GetHorizTraceSpawnParams(bool IsLow);
 
 
@@ -256,12 +255,13 @@ private:
 
     //////////////////=========== Общие вспомогательные =======/////////////////////////
 public:
-    void Update(); ///todo
-
+    bool bWasCrouching{false}; // тру если персонваж был в присяде перед тем как начать падать
+    bool bWasJumpingOff{false}; // тру если персонаж прыгал от стены до полета
 	bool bWantToSprint{false}; //тру если пытается перейти на спринт
 	bool bIsRunning{false}; // тру если персонаж в режима бега
 	bool bIsSprinting{false}; // тру если персонаж в режиме спринта
 	bool bIsTeleporting{false}; // тру если сейчас телепортируется
+    void Update(); ///todo
     // false если перс перегружен или замедлен до остановки 
     bool CanMove(); 
     //todo для использования таких масок в блупринтах приходится создавать местную переменную там

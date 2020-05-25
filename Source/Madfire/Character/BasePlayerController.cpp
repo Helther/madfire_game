@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "BasePlayerController.h"
-#include "CharacterPlayer.h"///заменить на игрового перса
+#include "CharacterPlayer.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/PlayerInput.h"
 
@@ -30,10 +30,12 @@ void ABasePlayerController::BeginPlay()
 void ABasePlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if(IsActionKeyPressed(FInputKeyNames::Jump))
+		JumpRepAction();
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Input
+//////////////======================Input========//////////////////////
+
 void ABasePlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -48,7 +50,7 @@ void ABasePlayerController::SetupInputComponent()
         InputComponent->BindAxis(FInputKeyNames::MoveRight, this, &ABasePlayerController::MoveRight);
         InputComponent->BindAxis(FInputKeyNames::CameraPitch, this, &ABasePlayerController::CameraPitch);
         InputComponent->BindAxis(FInputKeyNames::CameraYaw, this, &ABasePlayerController::CameraYaw);
-        InputComponent->BindAction(FInputKeyNames::Jump, IE_Repeat, this ,&ABasePlayerController::JumpRepAction);
+        //InputComponent->BindAction(FInputKeyNames::Jump, IE_Repeat, this ,&ABasePlayerController::JumpRepAction);
 	}
 }
 
@@ -64,7 +66,7 @@ bool ABasePlayerController::IsActionKeyPressed(const FName &ActionKey)
     {
         if(IsInputKeyDown(i.Key))
         {
-            UE_LOG(LogTemp, Warning, TEXT("Pressing %s"), *ActionKey.ToString());
+            //UE_LOG(LogTemp, Warning, TEXT("Pressing %s"), *ActionKey.ToString());
             return true;
         }
     }
@@ -99,7 +101,7 @@ void ABasePlayerController::MoveForward(float AxisValue)
 							return;
 					}
 				}
-				else
+				else if (!Player->GetMovementComponent()->bWasJumpingOff)
 				{
 					FRotator Rotation = FRotator(0.f, GetControlRotation().Yaw, 0.f);
 					const FVector Direction = UKismetMathLibrary::GetForwardVector(Rotation);
@@ -136,7 +138,7 @@ void ABasePlayerController::MoveRight(float AxisValue)
                             return;
                     }
 				}
-				else
+				else if (!Player->GetMovementComponent()->bWasJumpingOff)
 				{
 					const FRotator Rotation = FRotator(0.f, Player->GetControlRotation().Yaw, 0.f);
 					const FVector Direction = UKismetMathLibrary::GetRightVector(Rotation);
@@ -207,7 +209,7 @@ void ABasePlayerController::SprintAction()///add equipment weight check
 			Player->CurrentCCState == ECCState::NONE)
 		{
             if(Player->GetCombatComponent()->IsWeaponDrawn && 
-				InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.0f)
+				InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.f)
                 return;
 			Player->GetMovementComponent()->bWantToSprint = true;
 			if (Player->bIsCrouched)
@@ -312,9 +314,10 @@ void ABasePlayerController::JumpAction()//todo
                         case ECustomMovementMode::ClimbingWall:
 							if(InputComponent->GetAxisValue(FInputKeyNames::MoveForward) > 0.f)
                             	Player->GetMovementComponent()->ClimbWall();
-							else if(InputComponent->GetAxisValue(FInputKeyNames::MoveForward) < 0.f ||
-									InputComponent->GetAxisValue(FInputKeyNames::MoveRight) != 0.f)
-								Player->GetMovementComponent()->JumpOffWall();
+							else
+								Player->GetMovementComponent()->JumpOffWall(
+									InputComponent->GetAxisValue(FInputKeyNames::MoveForward), 
+									InputComponent->GetAxisValue(FInputKeyNames::MoveRight));
                             break;
                         case ECustomMovementMode::ClimbingLadder:
                         case ECustomMovementMode::Dodge:
@@ -322,7 +325,6 @@ void ABasePlayerController::JumpAction()//todo
                         default:
                             break;
                     }
-
 				}
                 else if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling)
                 {
