@@ -624,10 +624,20 @@ void UBaseMovementComponent::ClimbWall()///TODO replace teleports and setmovemen
                     SetMovementMode(EMovementMode::MOVE_Walking);
                 }
                 return;
+            case EClimbTraceResult::FailAtEnd:
+            {
+                if (!bConstrainToPlane || FMath::Abs(PlaneConstraintNormal.Z) != 1.f)
+		        {
+			        Velocity.Z = FMath::Max(Velocity.Z, JumpZVelocity);
+                    bWasJumpingOff = true;
+                    bCanHangAgain = false;
+			        SetMovementMode(MOVE_Falling);
+                }
+                return;
+            }
             default:
                 return;
             }
-
         }
     }
 }

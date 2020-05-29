@@ -93,7 +93,7 @@ float ACharacterBase::TakeDamage(float DamageAmount,
 void ACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();	
-	//update();
+	update();
 }
 
 void ACharacterBase::OnUpdate()

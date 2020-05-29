@@ -258,7 +258,7 @@ public:
     bool bWasCrouching{false}; // тру если персонваж был в присяде перед тем как начать падать
     bool bWasJumpingOff{false}; // тру если персонаж прыгал от стены до полета
 	bool bWantToSprint{false}; //тру если пытается перейти на спринт
-	bool bIsRunning{false}; // тру если персонаж в режима бега
+	bool bIsRunning{true}; // тру если персонаж в режима бега
 	bool bIsSprinting{false}; // тру если персонаж в режиме спринта
 	bool bIsTeleporting{false}; // тру если сейчас телепортируется
     void Update(); ///todo

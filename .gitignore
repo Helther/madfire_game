@@ -4,6 +4,7 @@ Intermediate
 Saved
 Config
 Content
+build
 .kdev4
 .vscode
 .vs
@@ -16,7 +17,6 @@ Content
 *.xcodeproj
 *.xcworkspace
 *.user
-build
 *.txt
 *.pri
 *.pro
