@@ -8,6 +8,7 @@
 UENUM(BlueprintType, meta = (Bitflags))
 enum class EInteractType : uint8
 {
+	NONE 	= 0,
 	Use		= 1,
 	Pickup	= 2,
 	Talk	= 4,

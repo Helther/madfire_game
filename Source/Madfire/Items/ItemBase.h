@@ -10,6 +10,7 @@
 UENUM(BlueprintType, meta = (Bitflags))
 enum class EItemFlags : uint8     //!< Флаги предметов.
 {
+	NONE = 0										,	
 	Usable = 1			UMETA(DisplayName = "Usable"),
 	Consumable = 2		UMETA(DisplayName = "Consumable"),
 	Magical = 4			UMETA(DisplayName = "Magical"),

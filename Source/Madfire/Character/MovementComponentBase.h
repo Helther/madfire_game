@@ -26,15 +26,16 @@ enum EClimbTraceResult
 };
 
 UENUM(BlueprintType, meta = (Bitflags))
-enum EMoveAbilities     //!< Флаги возможностей передвижения.
+enum EMoveAbilities     //!< Флаги возможностей передвижения
 {
-	CanJump = 1			    UMETA(DisplayName = "CanJump"),
-	CanClimb = 2		    UMETA(DisplayName = "CanClimb"),
-	CanLadder = 4			UMETA(DisplayName = "CanLadder"),
-	CanSlide = 8			UMETA(DisplayName = "CanSlide"),
-	CanDodge = 16			UMETA(DisplayName = "CanDodge"),
-	CanSprint = 32	        UMETA(DisplayName = "CanSprint"),
-    CanCrouch = 64          UMETA(DisplayName = "CanCrouch")
+    NONE        = 0                                            ,
+	CanJump     = 1			UMETA(DisplayName = "CanJump"),
+	CanClimb    = 2		    UMETA(DisplayName = "CanClimb"),
+	CanLadder   = 4			UMETA(DisplayName = "CanLadder"),
+	CanSlide    = 8			UMETA(DisplayName = "CanSlide"),
+	CanDodge    = 16		UMETA(DisplayName = "CanDodge"),
+	CanSprint   = 32	    UMETA(DisplayName = "CanSprint"),
+    CanCrouch   = 64        UMETA(DisplayName = "CanCrouch")
 };
 ENUM_CLASS_FLAGS(EMoveAbilities)
 

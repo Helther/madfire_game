@@ -16,13 +16,13 @@ UENUM(BluePrintType)
 // состояния контроля персонажа
 enum class ECCState : uint8
 {
-	NONE = 1,
-	Stun = 2,
-	KnockDown = 4,
-	LossOfBalance = 8,
-	Stasis = 16,
-	Sleep = 32,
-	MAX = 64
+	NONE = 0,
+	Stun = 1,
+	KnockDown = 2,
+	LossOfBalance = 4,
+	Stasis = 8,
+	Sleep = 16,
+	MAX = 32
 };
 
 /**

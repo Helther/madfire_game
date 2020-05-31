@@ -21,3 +21,6 @@ build
 *.pri
 *.pro
 *.code-workspace
+*.kdev4
+*.workspace
+Makefile

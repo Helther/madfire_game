@@ -32,6 +32,7 @@ public:
 		void OnDestroy(AActor * hzActor);
 	
 	int32 ActionEmpowerment = 0;
+	
 };
 
 UCLASS(Abstract, Blueprintable, BlueprintType)
