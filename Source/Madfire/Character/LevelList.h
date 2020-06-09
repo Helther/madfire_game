@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "Object.h"
@@ -44,7 +42,7 @@ public:
 		FORCEINLINE int32 GetLevelNum() const { return LevelList.Num(); }
 
 	UFUNCTION(BlueprintCallable, Category = "Character Attributes")
-		void update();
+		void Update();
 	UFUNCTION(BlueprintPure, Category = "Character Attributes")
 		FORCEINLINE bool CanLevelUp() const { return (CurrentExpirience >= RequiredExpirience) && (LevelList.Num() <= MaxLevel); }
 

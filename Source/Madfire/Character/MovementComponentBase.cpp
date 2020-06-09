@@ -92,7 +92,7 @@ void UBaseMovementComponent::CalculateMaxCastingSpeed(float SpeedModifier)
         MaxCastingSpeed * SpeedModifier;
 }
 
-FTraceSpawnParams UBaseMovementComponent::GetHorizTraceSpawnParams(bool IsLow)
+FTraceSpawnParams UBaseMovementComponent::GetTraceSpawnParams(bool IsLow)
 {
     const FVector CharLocation = Character->GetActorLocation();
     const FRotator CharRotation = Character->GetActorRotation();
@@ -133,7 +133,7 @@ bool UBaseMovementComponent::CanVaultOrClimb(bool IsLow)
     UE_LOG(LogTemp,Warning, TEXT("CanVault or climb %s"), IsLow ? TEXT("low") : TEXT("high"));
     const FRotator CharRotation = Character->GetActorRotation();
     //setting spawn parameters
-    FTraceSpawnParams sParamsH = GetHorizTraceSpawnParams(IsLow);
+    FTraceSpawnParams sParamsH = GetTraceSpawnParams(IsLow);
     //get max distance allowed for parkour from character's feet
     float maxHeight = Character->GetDefaultHalfHeight() * 2.5;
     float minHeight = Character->GetDefaultHalfHeight();
@@ -206,7 +206,6 @@ bool UBaseMovementComponent::DoVault(const StartClimbData& LocationData,
             SetMovementMode(EMovementMode::MOVE_Walking);
         }
         return true;
-
     }
     return false;
 }
@@ -334,6 +333,7 @@ TSharedPtr<StartClimbData> UBaseMovementComponent::GetClimbStartLoc(const FTrace
     FTraceSpawnParams sParamsH = StartTrace;
     auto traceCapsuleHalfHeight = (MaxHeight - MinHeight) / 2;
     int NumOfIterations = 1;
+    int MaxNumOfIter = 10;
     auto currentTraceHeight = sParamsH.Start.Z;
     // проверка трейсами на подходящий край для зацепа за стену
     for(;MinHeight <= currentTraceHeight <= MaxHeight; ++NumOfIterations)
@@ -352,7 +352,7 @@ TSharedPtr<StartClimbData> UBaseMovementComponent::GetClimbStartLoc(const FTrace
         if(CheckAngle && !checkRelativeRotation(HitWallH.ImpactNormal.Rotation().Yaw))
             return nullptr;
         // ограничение по числу итераций
-        if(NumOfIterations >= 10)// temp
+        if(NumOfIterations >= MaxNumOfIter)// temp
         {
             UE_LOG(LogTemp,Warning, TEXT("GetClimbStartLoc: exceeded iter limit"))
             return nullptr;
@@ -490,12 +490,9 @@ bool UBaseMovementComponent::IsCharacterCapsuleOk(const FVector &CenterLoc,
         sParams.Start = sParams.End;
         sParams.End = buffer;
     }
-
     //do trace check
     FQuat Rotation = Character->GetActorRotation().Quaternion();
     FHitResult HitWall;
-    
-    
     UTraceManager::SphereTraceSingleByChannel(Character->GetWorld(),
                                                Character->GetCapsuleComponent()->GetScaledCapsuleRadius(),
                                                params, sParams, HitWall,
@@ -536,8 +533,6 @@ void UBaseMovementComponent::HangOnFall()
     if(IsRootOrTeleport())
         return;
     auto charPelvisLoc = Character->GetActorLocation();
-    if(IsCrouching())
-        charPelvisLoc = Character->GetActorLocation() + FVector(0, 0, - CrouchedHalfHeight);
     FTraceSpawnParams sParams;
     FQuat Rotation(0, 0, 0, 1);
     Rotation = Character->GetActorRotation().Quaternion();
@@ -551,7 +546,7 @@ void UBaseMovementComponent::HangOnFall()
     auto hangData = GetClimbStartLoc(sParams, minHeight, maxHeight);
     HangOnWall(hangData);
 }
-//todo сделать проверку чтоб нельзя было повиснуть на углу
+
 void UBaseMovementComponent::HangOnWall(TSharedPtr<StartClimbData> HangData)
 {
     if(HangData.Get() == nullptr)
@@ -568,9 +563,6 @@ void UBaseMovementComponent::HangOnWall(TSharedPtr<StartClimbData> HangData)
         // проверка на наличие места под персом при висении
         FHitResult HitWallAdd;
         FTraceSpawnParams sParams;
-        FQuat Rotation(0, 0, 0, 1);
-        Rotation = Character->GetActorRotation().Quaternion();
-        sParams.Rotation = Rotation;
         sParams.Start = sParams.End = hangLocation + FVector(0,0,-Character->GetDefaultHalfHeight());
         sParams.End.Z -= Character->GetDefaultHalfHeight() / 2;
         UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params, sParams, HitWallAdd,
@@ -580,13 +572,48 @@ void UBaseMovementComponent::HangOnWall(TSharedPtr<StartClimbData> HangData)
             UE_LOG(LogTemp,Warning, TEXT("HangOnWall: error Hit under character"));
             return;
         }
-        else
+        // проверка на повисание на углу
+        if(CheckWallGeometry(*HangData.Get()))
         {
+            //TODO replace teleports
             Character->SetActorLocation(hangLocation, false, nullptr, ETeleportType::None);
             Character->SetActorRotation(HangData.Get()->Rotation, ETeleportType::None);
             SetMovementMode(MOVE_Custom,ECustomMovementMode::ClimbingWall);
         }
     }
+}
+
+bool UBaseMovementComponent::CheckWallGeometry(const StartClimbData& Data)
+{
+    FHitResult HitWallLeft;
+    FHitResult HitWallRight;
+    FTraceSpawnParams sParams;
+    // правый трейс
+    const auto RightV = (FQuat(FRotator(0, Data.Rotation.Yaw, 0)) * 
+                        FQuat(FRotator(0, 90, 0))).Vector();
+    sParams.Start = sParams.End = Data.Location + RightV * 
+                                    Character->GetCapsuleComponent()->GetScaledCapsuleRadius() +
+                                    Data.Rotation.Vector() *
+                                    Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
+    sParams.Start +=  (FQuat(FRotator(0, Data.Rotation.Yaw, 0)) * 
+                    FQuat(FRotator(0, 180, 0))).Vector() * 
+                    Character->GetCapsuleComponent()->GetScaledCapsuleRadius() * 2;
+    UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params, sParams, HitWallRight,
+                                            EWallChannel, false);
+    // левый трейс
+    const auto LeftV = (FQuat(FRotator(0, Data.Rotation.Yaw, 0)) * 
+                        FQuat(FRotator(0, -90, 0))).Vector();
+    auto spawnCorrection = LeftV * Character->GetCapsuleComponent()->GetScaledCapsuleRadius() * 2;
+    sParams.End += spawnCorrection;
+    sParams.Start += spawnCorrection;
+    UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params, sParams, HitWallLeft,
+                                            EWallChannel, false);
+    if(HitWallLeft.GetActor() == nullptr && HitWallRight.GetActor() == nullptr)
+    {
+        UE_LOG(LogTemp,Warning, TEXT("CheckWallGeometry: error invalid wall geometry"))
+        return false;
+    }
+    return true;
 }
 
 void UBaseMovementComponent::ClimbWall()///TODO replace teleports and setmovementmode with montages
@@ -657,6 +684,11 @@ bool UBaseMovementComponent::CheckCanHangAgain()
     {
         if(bWasJumpingOff)
             bCanHangAgain = Character->GetVelocity().Z < 0;
+        else if(bWasJustJumping)
+        {
+            const auto CurrentVelocity = FMath::Abs(Velocity.Z);
+            bCanHangAgain = CurrentVelocity < JumpZVelocity / 2;
+        }
         else
         {
             const auto NeededVelocity = sqrtf((Character->GetCapsuleComponent()->GetScaledCapsuleRadius() + 
@@ -721,6 +753,7 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode, uint8
     {
         bCanHangAgain = true;
         bWasJumpingOff = false;
+        bWasJustJumping = false;
     }
     if (MovementMode == MOVE_Walking)
     {
@@ -731,6 +764,7 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode, uint8
         }
         bCanHangAgain = true;
         bWasJumpingOff = false;
+        bWasJustJumping = false;
     }
     if (prevMode == MOVE_Falling && MovementMode == MOVE_Walking)
     {

@@ -1,8 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "CharacterBase.h"
-#include "BasePlayerController.h"// перенести в игрока
-
 
 
 
@@ -26,7 +24,6 @@ UCombatComponent* ACharacterBase::GetCombatComponent() const
 {
 	check(CombatComponent != nullptr && "No CombatComponent")
 	return CombatComponent;
-
 }
 
 UAttributesComponent* ACharacterBase::GetAttributesComponent() const
@@ -88,22 +85,26 @@ float ACharacterBase::TakeDamage(float DamageAmount,
 
 	return 0;
 }
+void ACharacterBase::OnJumped_Implementation()
+{
+	GetMovementComponent()->bCanHangAgain = false;
+	GetMovementComponent()->bWasJustJumping = true;
+}
 
 // Called when the game starts or when spawned
 void ACharacterBase::BeginPlay()
 {
 	Super::BeginPlay();	
-	update();
 }
 
 void ACharacterBase::OnUpdate()
 {
-	this->update();
+	this->Update();
 }
 
-void ACharacterBase::update()
+void ACharacterBase::Update()
 {
-	GetLevelComponent()->update();
+	GetLevelComponent()->Update();
 	float hk = GetAttributesComponent()->CurrentHealth / GetAttributesComponent()->MaxHealth; 
 	float sk = GetAttributesComponent()->CurrentStamina / GetAttributesComponent()->MaxStamina; 
 
@@ -122,7 +123,7 @@ void ACharacterBase::update()
 	GetAttributesComponent()->MaxHealth = GetLevelComponent()->LevelHealthBonus + (ConMod * GetLevelComponent()->GetLevelNum());
 	GetAttributesComponent()->CurrentHealth = GetAttributesComponent()->MaxHealth * hk;
 
-	auto StrMod = UAttributesHelper::GetModifier(GetAttributesComponent()->CurrentAttributes, EAttributes::Con);
+	auto StrMod = UAttributesHelper::GetModifier(GetAttributesComponent()->CurrentAttributes, EAttributes::Str);
 	if (StrMod < 0)
 		StrMod = 0;
 	GetAttributesComponent()->MaxStamina = 100 + (GetLevelComponent()->GetLevelNum() * ConMod) + (GetLevelComponent()->GetLevelNum() * StrMod);
@@ -138,4 +139,3 @@ void ACharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
-

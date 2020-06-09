@@ -42,8 +42,8 @@ public:
 					class AController *EventInstigator,
 					AActor *DamageCauser) override;
 
-	virtual void update();
-
+	virtual void Update();
+	void OnJumped_Implementation() override;
 	UFUNCTION(BlueprintCallable, Category = "Character Base")
 		void OnUpdate(); //!< Blueprint interface  for Blueprints
 

@@ -28,7 +28,7 @@ void ULevelComponent::LevelUp(const FLevelInfo &levelInfo)
 	EXPERIENCE_FUCKING_EQUATION(RequiredExpirience); //TODO: Exp Equation
 }
 
-void ULevelComponent::update()
+void ULevelComponent::Update()
 {
 	LevelAttributes = FAttributes();
 	LevelSkills = FSkillList();

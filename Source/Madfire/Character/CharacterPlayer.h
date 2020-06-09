@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "Character/CharacterBase.h"
 #include "CharacterPlayer.generated.h"
 

@@ -160,9 +160,11 @@ private:
     bool IsCharacterCapsuleOk(const FVector& CenterLoc, const bool& Crouching,
                               const bool &H2L = true, const ECollisionChannel &CC =
                                 ECollisionChannel::ECC_WorldStatic) const;
-  
+
     //////////////////////////////Wall Climb//////////////////////////////
 public:
+    // тру если чарактер может повиснуть на стене
+    bool bCanHangAgain{true};
     // проверяет что персонаж упал ниже нужной величины прежде чем повторно зацепиться
     bool CheckCanHangAgain();
     // min distance between character and ground underneath allowed
@@ -189,7 +191,6 @@ public:
     void JumpOffWall(float ForwardAxis, float RightAxis);
 
 private:
-    bool bCanHangAgain{true}; // тру если чарактер может повиснуть на стене
 
 	//////////////////////////Ledge Climb///////////////////////////
 
@@ -241,9 +242,9 @@ private:
     //(отклонения высоты относительно дна капсулы)
     TSharedPtr<StartClimbData> GetClimbStartLoc(const FTraceSpawnParams& StartTrace,const float& MinHeight = 0,
                              const float& MaxHeight = 0, bool CheckAngle = true);
-    FTraceSpawnParams GetHorizTraceSpawnParams(bool IsLow);
-
-
+    FTraceSpawnParams GetTraceSpawnParams(bool IsLow);
+    // не тру если перс пытается висеть на узком выступе
+    bool CheckWallGeometry(const StartClimbData& Data);
 	////Slide
 
 
@@ -258,11 +259,12 @@ private:
 public:
     bool bWasCrouching{false}; // тру если персонваж был в присяде перед тем как начать падать
     bool bWasJumpingOff{false}; // тру если персонаж прыгал от стены до полета
+    bool bWasJustJumping{false};
 	bool bWantToSprint{false}; //тру если пытается перейти на спринт
 	bool bIsRunning{true}; // тру если персонаж в режима бега
 	bool bIsSprinting{false}; // тру если персонаж в режиме спринта
 	bool bIsTeleporting{false}; // тру если сейчас телепортируется
-    void Update(); ///todo
+    void Update();
     // false если перс перегружен или замедлен до остановки 
     bool CanMove(); 
     //todo для использования таких масок в блупринтах приходится создавать местную переменную там
