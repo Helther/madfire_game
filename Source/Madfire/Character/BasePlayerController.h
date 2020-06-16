@@ -71,6 +71,8 @@ private:
 	void CrouchAction();
 	//when jump button pressed
 	void JumpAction();
+	//when jump button released
+	void UnJumpAction();
     //jump button held
     void JumpRepAction();
 	// нажатие кнопки атака

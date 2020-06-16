@@ -136,12 +136,20 @@ public:
     // максимальное отклонение направления чарактера относительно нормали стены в градусах
     UPROPERTY(EditAnywhere, Category = "Climb general")
         float MaxClimbRotationAngle;
+    // вертикальная скорость прыжка от стены
+    UPROPERTY(EditAnywhere, Category = "Climb general")
+        float JumpWallZVelocity;
+    // горизонтальная скорость прыжка от стены
+    UPROPERTY(EditAnywhere, Category = "Climb general")
+        float JumpWallHorizVelocity;
     // доп смещение от стены при старте анимации
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb general")
         float LocationHorizOffset = 0;
     // same day different axis
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb general")
         float LocationVertOffset = 0;
+    // check if character playing root motion or teleporting
+    bool IsRootOrTeleport();
 private:
     FTraceParams params;
     // проверка если угол относительно стены и перса не превышает максимум
@@ -153,8 +161,7 @@ private:
                                     const ECollisionChannel &StartCC =
                                         ECollisionChannel::ECC_WorldStatic,
                                     const ECollisionChannel &EndCC = EWallChannel);
-    // check if character playing root motion or teleporting
-    bool IsRootOrTeleport();
+
 
     // does trace in character's capsule shape для проверки на лаличие достаточного места
     bool IsCharacterCapsuleOk(const FVector& CenterLoc, const bool& Crouching,
@@ -163,6 +170,8 @@ private:
 
     //////////////////////////////Wall Climb//////////////////////////////
 public:
+    // тру если если чарактер может прыгать от стен
+    bool bWallJumpAbility{true};
     // тру если чарактер может повиснуть на стене
     bool bCanHangAgain{true};
     // проверяет что персонаж упал ниже нужной величины прежде чем повторно зацепиться
@@ -263,7 +272,6 @@ public:
 	bool bWantToSprint{false}; //тру если пытается перейти на спринт
 	bool bIsRunning{true}; // тру если персонаж в режима бега
 	bool bIsSprinting{false}; // тру если персонаж в режиме спринта
-	bool bIsTeleporting{false}; // тру если сейчас телепортируется
     void Update();
     // false если перс перегружен или замедлен до остановки 
     bool CanMove(); 
@@ -271,8 +279,27 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EMoveAbilities"),
             Category = "Character Movement")
 		uint8 MoveAbilitiesDefault;
+    
     uint8 MoveAbilitiesCurrent;
+	UFUNCTION(BlueprintCallable, Category = "transition")// todo temp
+        void On_TransitionInterrupt();
 protected:
+
+    ////////// smoooth transition //////////////////
+    TUniquePtr<FVector> TransitionLocEnd = nullptr;
+    TUniquePtr<FRotator> TransitionRotEnd = nullptr;
+    UAnimMontage *CurrentTransitionAnim = nullptr;
+    EMovementMode TransitionFinishMode = EMovementMode::MOVE_Walking;
+    // тру если сейчас телепортируется
+    bool bIsTransitioning{false};
+    void TransitionProcess();
+    void TransitionStart(const FVector& EndLoc,
+                        const FRotator& EndRot,
+                        UAnimMontage* AnimToPlay, 
+                        ECustomMovementMode InMode,
+                        EMovementMode OutMode = EMovementMode::MOVE_Walking);
+    void On_TransitionFinished();
+    void TransitionDestroy();
     /// наследованный мусор
     ///
     ///

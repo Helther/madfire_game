@@ -22,7 +22,7 @@ enum class ECCState : uint8
 	LossOfBalance = 4,
 	Stasis = 8,
 	Sleep = 16,
-	MAX = 32
+	MAX = 64
 };
 
 /**

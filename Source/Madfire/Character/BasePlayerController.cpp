@@ -46,11 +46,11 @@ void ABasePlayerController::SetupInputComponent()
         InputComponent->BindAction(FInputKeyNames::Sprint, IE_Released, this, &ABasePlayerController::UnSprintAction);
         InputComponent->BindAction(FInputKeyNames::Crouch, IE_Pressed, this, &ABasePlayerController::CrouchAction);
         InputComponent->BindAction(FInputKeyNames::Jump, IE_Pressed, this, &ABasePlayerController::JumpAction);
+		InputComponent->BindAction(FInputKeyNames::Jump, IE_Released, this, &ABasePlayerController::UnJumpAction);
         InputComponent->BindAxis(FInputKeyNames::MoveForward, this, &ABasePlayerController::MoveForward);
         InputComponent->BindAxis(FInputKeyNames::MoveRight, this, &ABasePlayerController::MoveRight);
         InputComponent->BindAxis(FInputKeyNames::CameraPitch, this, &ABasePlayerController::CameraPitch);
         InputComponent->BindAxis(FInputKeyNames::CameraYaw, this, &ABasePlayerController::CameraYaw);
-        //InputComponent->BindAction(FInputKeyNames::Jump, IE_Repeat, this ,&ABasePlayerController::JumpRepAction);
 	}
 }
 
@@ -80,7 +80,8 @@ void ABasePlayerController::MoveForward(float AxisValue)
 	{
 		case(EPawnGameplayState::InWorld):
 		{
-			if (AxisValue != 0.0f && Player->CurrentCCState == ECCState::NONE)
+			if (AxisValue != 0.0f && Player->CurrentCCState == ECCState::NONE && 
+				!Player->GetMovementComponent()->IsRootOrTeleport())
 			{
 				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Swimming)
 				{
@@ -101,7 +102,7 @@ void ABasePlayerController::MoveForward(float AxisValue)
 							return;
 					}
 				}
-				else if (!Player->GetMovementComponent()->bWasJumpingOff)
+				else
 				{
 					FRotator Rotation = FRotator(0.f, GetControlRotation().Yaw, 0.f);
 					const FVector Direction = UKismetMathLibrary::GetForwardVector(Rotation);
@@ -123,7 +124,8 @@ void ABasePlayerController::MoveRight(float AxisValue)
 	{
 		case(EPawnGameplayState::InWorld):
 		{
-			if (AxisValue != 0.0f && Player->CurrentCCState == ECCState::NONE)
+			if (AxisValue != 0.0f && Player->CurrentCCState == ECCState::NONE && 
+				!Player->GetMovementComponent()->IsRootOrTeleport())
 			{
 				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
 				{
@@ -138,7 +140,7 @@ void ABasePlayerController::MoveRight(float AxisValue)
                             return;
                     }
 				}
-				else if (!Player->GetMovementComponent()->bWasJumpingOff)
+				else
 				{
 					const FRotator Rotation = FRotator(0.f, Player->GetControlRotation().Yaw, 0.f);
 					const FVector Direction = UKismetMathLibrary::GetRightVector(Rotation);
@@ -242,12 +244,12 @@ void ABasePlayerController::UnSprintAction()
 void ABasePlayerController::CrouchAction()
 {
 	check(Player != nullptr && "ABasePlayerController: No pawn");
-
 	switch (CurrentGameplayState)
 	{
 		case(EPawnGameplayState::InWorld)://todo учесть другие состояния
 		{
-			if (Player->CurrentCCState == ECCState::NONE)
+			if (Player->CurrentCCState == ECCState::NONE && 
+				!Player->GetMovementComponent()->IsRootOrTeleport())
 			{
 				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
 				{
@@ -288,7 +290,8 @@ void ABasePlayerController::JumpAction()//todo
 	{
 		case(EPawnGameplayState::InWorld):
 		{
-			if (Player->CurrentCCState == ECCState::NONE)
+			if (Player->CurrentCCState == ECCState::NONE && 
+				!Player->GetMovementComponent()->IsRootOrTeleport())
 			{
 				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
 				{
@@ -338,6 +341,10 @@ void ABasePlayerController::JumpAction()//todo
 			return;
     }
 }
+void ABasePlayerController::UnJumpAction()
+{
+	Player->StopJumping();
+}
 
 void ABasePlayerController::JumpRepAction()
 {
@@ -345,7 +352,8 @@ void ABasePlayerController::JumpRepAction()
     {
         case(EPawnGameplayState::InWorld):
         {
-            if (Player->CurrentCCState == ECCState::NONE)
+            if (Player->CurrentCCState == ECCState::NONE && 
+				!Player->GetMovementComponent()->IsRootOrTeleport())
             {
                 if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling)
                 {

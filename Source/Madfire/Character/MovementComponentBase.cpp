@@ -20,12 +20,16 @@ UBaseMovementComponent::UBaseMovementComponent(const class FObjectInitializer &O
     MaxSprintSpeedDefault = 700;
 
     MaxClimbRotationAngle = 70;
+    JumpWallZVelocity = 400;
+    JumpWallHorizVelocity = 200;
     MaxVaultLedgeSize = 85;
     MaxStepHeight = 40;
     LedgeTraceLength = 70;
     LocationHorizOffset = 5;
     LocationVertOffset = 5;
     MoveAbilitiesCurrent = MoveAbilitiesDefault = 0xff;
+    //todo calculate Character->JumpMaxHoldTime from acrobatics
+
     //MoveAbilitiesCurent &= ~ (EMoveAbilities::CanCrouch | EMoveAbilities::CanJump);
 
     //////////////////////////////////////End Degbug//////////////////////
@@ -190,21 +194,13 @@ bool UBaseMovementComponent::DoVault(const StartClimbData& LocationData,
 
     if(IsEnoughSpace(VaultAnimationStartLocation) == EClimbTraceResult::SuccessStand)
     {
-        SetMovementMode(EMovementMode::MOVE_Custom,ECustomMovementMode::ClimbingLedge);
-         ///TODO replace with smoothness
-        Character->SetActorLocation(VaultAnimationStartLocation, false, nullptr, ETeleportType::None);
-        Character->SetActorRotation(LocationData.Rotation, ETeleportType::None);
-        if(IsLow && VaultMontageLow != nullptr)
-         ///TODO calculate playRate with agility and when done set movement mode
+        if(IsLow/* && VaultMontageLow != nullptr*/)
          //todo сделать на время выполнения анимации капсуле размер капсулы в присяде
-            Character->PlayAnimMontage(VaultMontageLow,1);
-        else if(!IsLow && VaultMontageHigh != nullptr)
-            Character->PlayAnimMontage(VaultMontageHigh,1);
-        else
-        {
-            Character->SetActorLocation(VaultAnimationEndLocation);
-            SetMovementMode(EMovementMode::MOVE_Walking);
-        }
+            TransitionStart(VaultAnimationStartLocation, LocationData.Rotation,
+                                 VaultMontageLow, ECustomMovementMode::ClimbingLedge);
+        else if(!IsLow/* && VaultMontageHigh != nullptr*/)
+            TransitionStart(VaultAnimationStartLocation, LocationData.Rotation,
+                                 VaultMontageHigh, ECustomMovementMode::ClimbingLedge);
         return true;
     }
     return false;
@@ -246,40 +242,24 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData& LocationData, bo
     {
         case EClimbTraceResult::SuccessStand:
         {
-            SetMovementMode(EMovementMode::MOVE_Custom,ECustomMovementMode::ClimbingLedge);
-             //TODO replace with smooth motion
-            Character->SetActorLocation(ClimbledgeAnimationStartLocation, false, nullptr, ETeleportType::None);
-            Character->SetActorRotation(LocationData.Rotation, ETeleportType::None);
-            if(IsLow && ClimbLedgeMontageLow != nullptr)
-             //TODO calculate playRate with agility and when done set movement mode
-                Character->PlayAnimMontage(ClimbLedgeMontageLow,1);
-            else if(!IsLow && ClimbLedgeMontageHigh != nullptr)
-                Character->PlayAnimMontage(ClimbLedgeMontageHigh,1);
-            else
-            {
-                Character->SetActorLocation(ClimbledgeAnimationEndLocation);
-                SetMovementMode(EMovementMode::MOVE_Walking);
-            }
+            if(IsLow/* && ClimbLedgeMontageLow != nullptr*/)
+                TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
+                                 ClimbLedgeMontageLow, ECustomMovementMode::ClimbingLedge);
+            else if(!IsLow/* && ClimbLedgeMontageHigh != nullptr*/)
+                TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
+                                 ClimbLedgeMontageHigh, ECustomMovementMode::ClimbingLedge);
             return true;
         }
         case EClimbTraceResult::SuccessCrouch:
         {
-            SetMovementMode(EMovementMode::MOVE_Custom,ECustomMovementMode::ClimbingLedge);
-             //TODO replace with smooth motion
-            Character->SetActorLocation(ClimbledgeAnimationStartLocation, false, nullptr, ETeleportType::None);
-            Character->SetActorRotation(LocationData.Rotation, ETeleportType::None);
-            if(!IsCrouching())
-                bWantsToCrouch = true;
-            //TODO calculate playRate with agility and when done set movement mode
-            if(IsLow && ClimbLedgeCrouchedMontageLow != nullptr)
-                Character->PlayAnimMontage(ClimbLedgeCrouchedMontageLow,1); 
-            else if(!IsLow && ClimbLedgeCrouchedMontageHigh != nullptr)
-                Character->PlayAnimMontage(ClimbLedgeCrouchedMontageHigh,1);
-            else
-            {
-                Character->SetActorLocation(ClimbledgeAnimationEndLocation);
-                SetMovementMode(EMovementMode::MOVE_Walking);
-            }
+            //if(!IsCrouching())
+                //bWantsToCrouch = true; // todo temp
+            if(IsLow/* && ClimbLedgeCrouchedMontageLow != nullptr*/)
+                TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
+                                 ClimbLedgeCrouchedMontageLow, ECustomMovementMode::ClimbingLedge);
+            else if(!IsLow/* && ClimbLedgeCrouchedMontageHigh != nullptr*/)
+                TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
+                                 ClimbLedgeCrouchedMontageHigh, ECustomMovementMode::ClimbingLedge);
             return true;
         }
         default:
@@ -307,8 +287,9 @@ bool UBaseMovementComponent::VaultSpaceCheck(const StartClimbData& LedgeData)
     if(vaultHit.GetActor() == nullptr)// проверка достаточного места за преграждением для волта
     {
         float traceCapsuleRadius = 10;
+        const float traceMod = 0.5f;
         sParams.Start = sParams.End += WallNormalDir.Vector() * traceCapsuleRadius;
-        sParams.End.Z -= Character->GetDefaultHalfHeight() / 2;
+        sParams.End.Z -= Character->GetDefaultHalfHeight() * traceMod;
         UTraceManager::CapsuleTraceSingleByChannel(Character->GetWorld(), traceCapsuleRadius,
                                         traceCapsuleRadius, params, sParams, vaultHit,
                                         EWallChannel);
@@ -459,7 +440,7 @@ EClimbTraceResult UBaseMovementComponent::IsEnoughSpace(const FVector& StartLoca
 
 bool UBaseMovementComponent::IsRootOrTeleport()
 {
-    if(bIsTeleporting || Character->IsPlayingRootMotion())
+    if(bIsTransitioning || Character->IsPlayingRootMotion())
         return true;
     return false;
 }
@@ -522,8 +503,9 @@ void UBaseMovementComponent::ClimbDownWall()
                                     ClimbDownTracelenght;
     sParams.Start.Z = sParams.End.Z = charBottomHeight;
     sParams.End += FVector(0,0,ClimbDownTracelenght); 
-    const float minHeight = -Character->GetDefaultHalfHeight() / 2;
-    const float maxHeight = Character->GetDefaultHalfHeight() / 2;
+    const float traceMod = 0.5f;
+    const float minHeight = -Character->GetDefaultHalfHeight() * traceMod;
+    const float maxHeight = Character->GetDefaultHalfHeight() * traceMod;
     auto hangData = GetClimbStartLoc(sParams, minHeight, maxHeight, false);
     HangOnWall(hangData);
 }
@@ -563,8 +545,9 @@ void UBaseMovementComponent::HangOnWall(TSharedPtr<StartClimbData> HangData)
         // проверка на наличие места под персом при висении
         FHitResult HitWallAdd;
         FTraceSpawnParams sParams;
+        const float traceMod = 0.5f;
         sParams.Start = sParams.End = hangLocation + FVector(0,0,-Character->GetDefaultHalfHeight());
-        sParams.End.Z -= Character->GetDefaultHalfHeight() / 2;
+        sParams.End.Z -= Character->GetDefaultHalfHeight() * traceMod;
         UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params, sParams, HitWallAdd,
                                                 ECollisionChannel::ECC_WorldStatic, false);
         if(HitWallAdd.GetActor() != nullptr)
@@ -575,10 +558,9 @@ void UBaseMovementComponent::HangOnWall(TSharedPtr<StartClimbData> HangData)
         // проверка на повисание на углу
         if(CheckWallGeometry(*HangData.Get()))
         {
-            //TODO replace teleports
-            Character->SetActorLocation(hangLocation, false, nullptr, ETeleportType::None);
-            Character->SetActorRotation(HangData.Get()->Rotation, ETeleportType::None);
-            SetMovementMode(MOVE_Custom,ECustomMovementMode::ClimbingWall);
+             TransitionStart(hangLocation, HangData.Get()->Rotation,
+                                 nullptr, ECustomMovementMode::ClimbingWall, 
+                                 EMovementMode::MOVE_Custom);
         }
     }
 }
@@ -629,38 +611,29 @@ void UBaseMovementComponent::ClimbWall()///TODO replace teleports and setmovemen
         {
             case EClimbTraceResult::SuccessStand:
             {
-                if(ClimbWallMontage != nullptr)
-                //TODO calculate playRate with agility and when done set movement mode
-                    Character->PlayAnimMontage(ClimbWallMontage,1);
-                else
-                {
-                    Character->SetActorLocation(AnimEndLocation);
-                    SetMovementMode(EMovementMode::MOVE_Walking);
-                }
+                //if(ClimbWallMontage != nullptr)
+                    TransitionStart(AnimEndLocation, Character->GetActorRotation(),
+                                 ClimbWallMontage, ECustomMovementMode::ClimbingWall);
                 return;
             }
             case EClimbTraceResult::SuccessCrouch:
             {
-                bWantsToCrouch = true;
-                if(ClimbWallCrouchedMontage != nullptr)
-                //TODO calculate playRate with agility and when done set movement mode
-                    Character->PlayAnimMontage(ClimbWallCrouchedMontage,1);
-                else
-                {
-                    Character->SetActorLocation(AnimEndLocation);
-                    SetMovementMode(EMovementMode::MOVE_Walking);
-                }
+                //bWantsToCrouch = true; // todo temp
+                //if(ClimbWallCrouchedMontage != nullptr)
+                    TransitionStart(AnimEndLocation, Character->GetActorRotation(),
+                                 ClimbWallCrouchedMontage, ECustomMovementMode::ClimbingWall);
                 return;
             case EClimbTraceResult::FailAtEnd:
             {
-                if (!bConstrainToPlane || FMath::Abs(PlaneConstraintNormal.Z) != 1.f)
-		        {
-			        Velocity.Z = FMath::Max(Velocity.Z, JumpZVelocity);
+                if(bWallJumpAbility)
+                {
                     bWasJumpingOff = true;
                     bCanHangAgain = false;
-			        SetMovementMode(MOVE_Falling);
+                    Character->JumpMaxCount = 2;//для возможности усиления прыжка
+                    SetMovementMode(MOVE_Falling);
+                    Character->Jump();
+                    return;
                 }
-                return;
             }
             default:
                 return;
@@ -687,7 +660,8 @@ bool UBaseMovementComponent::CheckCanHangAgain()
         else if(bWasJustJumping)
         {
             const auto CurrentVelocity = FMath::Abs(Velocity.Z);
-            bCanHangAgain = CurrentVelocity < JumpZVelocity / 2;
+            const float JumpVDistanceMod = 0.5f;
+            bCanHangAgain = CurrentVelocity < (JumpZVelocity * JumpVDistanceMod);
         }
         else
         {
@@ -704,31 +678,25 @@ bool UBaseMovementComponent::CheckCanHangAgain()
 void UBaseMovementComponent::JumpOffWall(float ForwardAxis, float RightAxis)
 {
     // todo сделать чтобы направления были с учетом поворота камеры
-    float jumpHorizVelocity = 300;// TODO temp
-    float jumpVertVelocity = 500;// TODO temp
-    if ( (MoveAbilitiesCurrent & EMoveAbilities::CanJump) && 
-       (ForwardAxis < 0.f || RightAxis != 0.f))
+    if(bWallJumpAbility && (ForwardAxis < 0.f || RightAxis != 0.f))
 	{
         UE_LOG(LogTemp,Warning, TEXT("JumpOffWall: doing jmp off"))
-		// Don't jump if we can't move up/down.
-		if (!bConstrainToPlane || FMath::Abs(PlaneConstraintNormal.Z) != 1.f)
-		{
-            if(FMath::Abs(ForwardAxis) > FMath::Abs(RightAxis))
-            {
-                const auto characterBackDir = (FQuat(FRotator(0, Character->GetActorRotation().Yaw, 0)) * 
-                                                FQuat(FRotator(0, 180, 0))).Rotator();
-                Character->SetActorRotation(characterBackDir);
-                Velocity = characterBackDir.Vector() * jumpHorizVelocity;
-            }
-            else
-            {
-                Velocity = Character->GetActorRightVector() * jumpHorizVelocity * RightAxis / FMath::Abs(RightAxis);
-            }
-            Velocity += FVector(0, 0, jumpVertVelocity);
-            bCanHangAgain = false;
-            bWasJumpingOff = true;
-			SetMovementMode(MOVE_Falling);
-		}
+        bCanHangAgain = false;
+        bWasJumpingOff = true;
+        Character->JumpMaxCount = 2;//для возможности усиления прыжка
+        SetMovementMode(MOVE_Falling);
+        Character->Jump();
+        if(FMath::Abs(ForwardAxis) > FMath::Abs(RightAxis))
+        {
+            const auto characterBackDir = (FQuat(FRotator(0, Character->GetActorRotation().Yaw, 0)) * 
+                                            FQuat(FRotator(0, 180, 0))).Rotator();
+            Character->SetActorRotation(characterBackDir);
+            Velocity += characterBackDir.Vector() * JumpWallHorizVelocity;
+        }
+        else
+        {
+            Velocity += Character->GetActorRightVector() * JumpWallHorizVelocity * RightAxis / FMath::Abs(RightAxis);
+        }
 	}
 }
 
@@ -752,7 +720,13 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode, uint8
     if(MovementMode == MOVE_Custom)
     {
         bCanHangAgain = true;
-        bWasJumpingOff = false;
+        if(bWasJumpingOff)
+        {
+            bWasJumpingOff = false;
+            Character->JumpMaxCount = 1;
+            if(!bOrientRotationToMovement)
+                bOrientRotationToMovement = true;
+        }
         bWasJustJumping = false;
     }
     if (MovementMode == MOVE_Walking)
@@ -763,7 +737,13 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode, uint8
             bWasCrouching = false;
         }
         bCanHangAgain = true;
-        bWasJumpingOff = false;
+        if(bWasJumpingOff)
+        {
+            bWasJumpingOff = false;
+            Character->JumpMaxCount = 1;
+            if(!bOrientRotationToMovement)
+                bOrientRotationToMovement = true;
+        }
         bWasJustJumping = false;
     }
     if (prevMode == MOVE_Falling && MovementMode == MOVE_Walking)
@@ -950,6 +930,69 @@ void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
         damage *= (FallDistance - fallHeightThreshold) / fallHeightThreshold;
 }
 
+void UBaseMovementComponent::TransitionStart(const FVector& EndLoc,
+                    const FRotator& EndRot,
+                    UAnimMontage* AnimToPlay, 
+                    ECustomMovementMode InMode,
+                    EMovementMode OutMode)
+{
+    if(bIsTransitioning){
+        UE_LOG(LogTemp, Warning, TEXT("TransitionStart error: is already transitions"))
+        return;
+    }
+    if(AnimToPlay == nullptr){
+        UE_LOG(LogTemp, Warning, TEXT("TransitionStart error: no animation to play"))
+    }
+    bIsTransitioning = true;
+    SetMovementMode(EMovementMode::MOVE_Custom, InMode);
+    TransitionLocEnd = MakeUnique<FVector>(EndLoc);
+    TransitionRotEnd = MakeUnique<FRotator>(EndRot);
+    CurrentTransitionAnim = AnimToPlay;
+    TransitionFinishMode = OutMode;
+}
+
+void UBaseMovementComponent::On_TransitionFinished()
+{
+    if(CurrentTransitionAnim != nullptr)
+        Character->PlayAnimMontage(CurrentTransitionAnim,1); // todo playrate
+    TransitionDestroy();
+    UE_LOG(LogTemp, Warning, TEXT("TransitionFinished!"))
+}
+
+void UBaseMovementComponent::TransitionProcess()
+{
+    if(TransitionLocEnd.Get()->Equals(Character->GetActorLocation(),1) && 
+        TransitionRotEnd.Get()->Equals(Character->GetActorRotation(),1))
+        On_TransitionFinished();
+    else
+    {
+        const bool locSweep = Character->SetActorLocation(FMath::InterpEaseInOut(Character->GetActorLocation(), 
+                *TransitionLocEnd.Get(), 0.1f,1));
+        const bool rotSweep = Character->SetActorRotation(FMath::InterpEaseInOut(Character->GetActorRotation(),
+                *TransitionRotEnd.Get(), 0.3f,1));
+        if(!locSweep || !rotSweep)
+        {
+            TransitionDestroy();
+            UE_LOG(LogTemp, Warning, TEXT("TransitionProcess : collision hit!!")) 
+        }
+    }
+}
+
+void UBaseMovementComponent::On_TransitionInterrupt()
+{
+    TransitionDestroy();
+    UE_LOG(LogTemp, Warning, TEXT("TransitionInterrupt : interrupted!!"))
+}
+
+void UBaseMovementComponent::TransitionDestroy()
+{
+    bIsTransitioning = false;
+    if(MovementMode != TransitionFinishMode)
+        SetMovementMode(TransitionFinishMode, ECustomMovementMode::ClimbingWall);
+    CurrentTransitionAnim = nullptr;
+    TransitionLocEnd = nullptr;
+    TransitionRotEnd = nullptr;
+}
 void UBaseMovementComponent::BeginPlay()
 {
     Super::BeginPlay();
@@ -974,6 +1017,9 @@ void UBaseMovementComponent::TickComponent(float DeltaTime,
                                 FActorComponentTickFunction *ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+    VisualizeMovement();// debug
+    if(bIsTransitioning)
+        TransitionProcess();
     //UE_LOG(LogTemp, Warning, TEXT("iswalkablefloor %s"), CurrentFloor.IsWalkableFloor() ? TEXT("true") : TEXT("false"));
     //UE_LOG(LogTemp, Warning, TEXT("floor distance %f"), CurrentFloor.GetDistanceToFloor());
 }
@@ -1002,10 +1048,22 @@ void UBaseMovementComponent::Crouch(bool bClientSimulation)
 
 bool UBaseMovementComponent::DoJump(bool bReplayingMoves)
 {
-    if((MoveAbilitiesCurrent & EMoveAbilities::CanJump) && CanMove())
+    if(!(MoveAbilitiesCurrent & EMoveAbilities::CanJump) || !CanMove() ||
+        bConstrainToPlane || FMath::Abs(PlaneConstraintNormal.Z) == 1.f)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("blocked jump"));
+        return false;
+    }
+    else if(bWasJumpingOff)
+    {
+        if(bOrientRotationToMovement)
+            bOrientRotationToMovement = false;
+        Velocity.Z = FMath::Max(Velocity.Z, JumpWallZVelocity);
+        return true;
+    }
+    else
         return Super::DoJump(bReplayingMoves);
-    UE_LOG(LogTemp, Warning, TEXT("blocked jump"));
-    return false;
+
 }
 
 bool UBaseMovementComponent::CanMove()
