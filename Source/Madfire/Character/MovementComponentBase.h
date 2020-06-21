@@ -5,8 +5,26 @@
 #include "./TraceFunctional/TraceFunctional.h"
 #include "MovementComponentBase.generated.h"
 
-UENUM(BlueprintType)
 
+enum EControlDirections
+{
+    ForwardD = 0,
+    BackD,
+    RightD,
+    LeftD,
+    FLeftD,
+    FRightD,
+    BLeftD,
+    BRightD
+};
+
+struct FTransitionSectionNames
+{
+    static const FName Start;
+    static const FName End;
+};
+
+UENUM(BlueprintType)
 enum ECustomMovementMode
 {
 	ClimbingWall = 0, //Повисание на стене
@@ -185,7 +203,10 @@ public:
     // монтаж залезания на стену стоя
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
         UAnimMontage *ClimbWallMontage;
-
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
+        UAnimMontage *ClimbDownMontage;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb Wall")
+        UAnimMontage *HangMontage;
     //allows to get on top of wall while hanging
     void ClimbWall();
     //sets falling movement mode when pressed crouch while climbing
@@ -195,9 +216,9 @@ public:
     // телепорт к стене для повисания while in air
     void HangOnFall();
     // найти точку для повисания на стене
-    void HangOnWall(TSharedPtr<StartClimbData> HangData);
+    void HangOnWall(TSharedPtr<StartClimbData> HangData, bool ClimbDown);
     // jump from wall while hanging
-    void JumpOffWall(float ForwardAxis, float RightAxis);
+    void JumpOffWall(const EControlDirections& Directions);
 
 private:
 
@@ -280,7 +301,7 @@ public:
             Category = "Character Movement")
 		uint8 MoveAbilitiesDefault;
     
-    uint8 MoveAbilitiesCurrent;
+    uint8 MoveAbilitiesCurrent; 
 	UFUNCTION(BlueprintCallable, Category = "transition")// todo temp
         void On_TransitionInterrupt();
 protected:
@@ -289,17 +310,17 @@ protected:
     TUniquePtr<FVector> TransitionLocEnd = nullptr;
     TUniquePtr<FRotator> TransitionRotEnd = nullptr;
     UAnimMontage *CurrentTransitionAnim = nullptr;
-    EMovementMode TransitionFinishMode = EMovementMode::MOVE_Walking;
+    EMovementMode TransitionFinishMode;
     // тру если сейчас телепортируется
     bool bIsTransitioning{false};
     void TransitionProcess();
     void TransitionStart(const FVector& EndLoc,
                         const FRotator& EndRot,
                         UAnimMontage* AnimToPlay, 
-                        ECustomMovementMode InMode,
-                        EMovementMode OutMode = EMovementMode::MOVE_Walking);
+                        ECustomMovementMode InMode);
     void On_TransitionFinished();
     void TransitionDestroy();
+
     /// наследованный мусор
     ///
     ///

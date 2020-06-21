@@ -244,6 +244,7 @@ void ABasePlayerController::UnSprintAction()
 void ABasePlayerController::CrouchAction()
 {
 	check(Player != nullptr && "ABasePlayerController: No pawn");
+	Player->GetMovementComponent()->SetMovementMode(EMovementMode::MOVE_Walking);// todo temp
 	switch (CurrentGameplayState)
 	{
 		case(EPawnGameplayState::InWorld)://todo учесть другие состояния
@@ -312,15 +313,24 @@ void ABasePlayerController::JumpAction()//todo
                     switch (Player->GetMovementComponent()->CustomMovementMode)
                     {
                         case ECustomMovementMode::ClimbingLedge:
-                            //Player->GetMovementComponent()->SetMovementMode(MOVE_Walking);///debug
                             break;
                         case ECustomMovementMode::ClimbingWall:
 							if(InputComponent->GetAxisValue(FInputKeyNames::MoveForward) > 0.f)
                             	Player->GetMovementComponent()->ClimbWall();
-							else
-								Player->GetMovementComponent()->JumpOffWall(
-									InputComponent->GetAxisValue(FInputKeyNames::MoveForward), 
-									InputComponent->GetAxisValue(FInputKeyNames::MoveRight));
+							else 
+							{
+								const auto fwd = InputComponent->GetAxisValue(FInputKeyNames::MoveForward);
+								const auto rght =InputComponent->GetAxisValue(FInputKeyNames::MoveRight);
+								if(fwd != 0 || rght != 0)
+								{
+									if(FMath::Abs(fwd) > FMath::Abs(rght))
+										Player->GetMovementComponent()->JumpOffWall(EControlDirections::BackD);
+									else if(rght > 0)
+										Player->GetMovementComponent()->JumpOffWall(EControlDirections::RightD);
+									else
+										Player->GetMovementComponent()->JumpOffWall(EControlDirections::LeftD);
+								}
+							}
                             break;
                         case ECustomMovementMode::ClimbingLadder:
                         case ECustomMovementMode::Dodge:

@@ -4,6 +4,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "../TraceFunctional/TraceDefines.h"
 
+
 // Sets default values for this component's properties
 UPlayerInteractComponent::UPlayerInteractComponent()
 {
