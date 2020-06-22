@@ -315,10 +315,10 @@ TSharedPtr<StartClimbData> UBaseMovementComponent::GetClimbStartLoc(const FTrace
     FTraceSpawnParams sParamsH = StartTrace;
     auto traceCapsuleHalfHeight = (MaxHeight - MinHeight) / 2;
     int NumOfIterations = 1;
-    int MaxNumOfIter = 10;
+    int MaxNumOfIter = 10; // todo temp
     auto currentTraceHeight = sParamsH.Start.Z;
     // проверка трейсами на подходящий край для зацепа за стену
-    for(;MinHeight <= currentTraceHeight <= MaxHeight; ++NumOfIterations)
+    for(; NumOfIterations <= MaxNumOfIter; ++NumOfIterations)
     {
         UTraceManager::CapsuleTraceSingleByChannel(Character->GetWorld(), 
                                                    Character->GetCapsuleComponent()->GetScaledCapsuleRadius(),
@@ -334,9 +334,9 @@ TSharedPtr<StartClimbData> UBaseMovementComponent::GetClimbStartLoc(const FTrace
         if(CheckAngle && !checkRelativeRotation(HitWallH.ImpactNormal.Rotation().Yaw))
             return nullptr;
         // ограничение по числу итераций
-        if(NumOfIterations >= MaxNumOfIter)// temp
+        if((MinHeight > currentTraceHeight) && (currentTraceHeight > MaxHeight))
         {
-            UE_LOG(LogTemp,Warning, TEXT("GetClimbStartLoc error: exceeded iter limit"))
+            UE_LOG(LogTemp,Warning, TEXT("GetClimbStartLoc error: exceeded height limits"))
             return nullptr;
         }
         // проверим есть ли место для капсулы перса для начала анимации
@@ -354,6 +354,11 @@ TSharedPtr<StartClimbData> UBaseMovementComponent::GetClimbStartLoc(const FTrace
             break;
         else
             UE_LOG(LogTemp,Warning, TEXT("GetClimbStartLoc error: not enough space"))
+        if (NumOfIterations == MaxNumOfIter)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("GetClimbStartLoc error: reached max num of iterations"))
+            break;
+        }
         // обновление параметров трейса для новой точки
         currentTraceHeight = HitWallH.ImpactPoint.Z - charBottomHeight;
         if(FMath::Abs(currentTraceHeight - MaxHeight) >= FMath::Abs(currentTraceHeight - MinHeight))
@@ -936,6 +941,7 @@ void UBaseMovementComponent::TransitionStart(const FVector& EndLoc,
     }
     if(AnimToPlay == nullptr || !AnimToPlay->IsValidSectionName(FTransitionSectionNames::Start)){
         UE_LOG(LogTemp, Warning, TEXT("TransitionStart error: bad animation to play"))// todo add return after anims addition
+            return;
     }
     bIsTransitioning = true;
     if(AnimToPlay->IsValidSectionName(FTransitionSectionNames::End))// todo пока нет анимации
