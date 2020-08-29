@@ -55,15 +55,15 @@ public:
 
 	ULevelComponent* GetLevelComponent() const;
 
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
-		ECCState CurrentCCState;											   
+		ECCState CurrentCCState;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
 	UPROPERTY(BlueprintReadWrite, Category = "Character Components", 
 		VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
 		UCombatComponent *CombatComponent;
@@ -72,6 +72,5 @@ protected:
 		UAttributesComponent *AttributesComponent;
 	UPROPERTY(BlueprintReadWrite, Category = "Character Components", 
 		VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
-		ULevelComponent *LevelComponent;		
-
+		ULevelComponent *LevelComponent;
 };

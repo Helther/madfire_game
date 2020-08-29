@@ -30,7 +30,8 @@ void ABasePlayerController::BeginPlay()
 void ABasePlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if(IsActionKeyPressed(FInputKeyNames::Jump))
+	if(CurrentGameplayState == EPawnGameplayState::InWorld &&
+		IsActionKeyPressed(FInputKeyNames::Jump))
 		JumpRepAction();
 }
 
@@ -62,7 +63,7 @@ bool ABasePlayerController::IsActionKeyPressed(const FName &ActionKey)
         UE_LOG(LogTemp, Warning, TEXT("No keys set for action %s"), *ActionKey.ToString());
         return false;
     }
-    for(const auto i : KeyListTest)
+    for(const auto& i : KeyListTest)
     {
         if(IsInputKeyDown(i.Key))
         {
@@ -283,7 +284,7 @@ void ABasePlayerController::CrouchAction()
 	}
 }
 
-void ABasePlayerController::JumpAction()//todo
+void ABasePlayerController::JumpAction()
 {
 	check(Player != nullptr && "ABasePlayerController: No pawn");
 

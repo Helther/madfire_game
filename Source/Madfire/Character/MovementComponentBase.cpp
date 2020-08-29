@@ -7,6 +7,7 @@
 #include "GameFramework/PhysicsVolume.h"
 #include "Runtime/Engine/Classes/Components/CapsuleComponent.h"
 
+
 const FName FTransitionSectionNames::Start = "transition_start";
 const FName FTransitionSectionNames::End = "transition_finish";
 
@@ -21,7 +22,6 @@ UBaseMovementComponent::UBaseMovementComponent(const class FObjectInitializer &O
     MaxRunSpeedDefault = 500;
     MaxRunSpeedCrouchedDefault = 300;
     MaxSprintSpeedDefault = 700;
-
     MaxClimbRotationAngle = 70;
     JumpWallZVelocity = 400;
     JumpWallHorizVelocity = 200;
@@ -905,7 +905,7 @@ void UBaseMovementComponent::PhysCustom(float deltaTime, int32 Iterations)///TOD
 //TODO добавить реализацию получения урона
 bool UBaseMovementComponent::FallDamageCheck()
 {
-    const float difference = fallLocationHeight - GetOwner()->GetActorLocation().Z;
+    const float difference = fallLocationHeight - Character->GetActorLocation().Z;
     fallLocationHeight = 0;
     if (fallHeightThreshold < difference)
     {
@@ -920,7 +920,7 @@ void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
 {
     float damage = 0;
      //TODO добавить в персонажа геттер максимального конечного хп
-    damage = Cast<ACharacterBase>(GetOwner())->GetAttributesComponent()->MaxHealth;
+    damage = Cast<ACharacterBase>(GetOwner())->GetAttributesComponent()->Health->GetCurrentMaxValue();
      //TODO учесть модификатор ловкости
     //max fall height calculation
     const int32 DexMod = UAttributesHelper::GetModifier(

@@ -5,7 +5,6 @@
 #include "./TraceFunctional/TraceFunctional.h"
 #include "MovementComponentBase.generated.h"
 
-
 enum EControlDirections
 {
     ForwardD = 0,
@@ -34,7 +33,7 @@ enum ECustomMovementMode
 	Dodge // уклонение
 };
 
-//possible results of wall climbing check for available space
+// possible results of wall climbing check for available space
 enum EClimbTraceResult
 {
     SuccessStand = 0,
@@ -46,7 +45,7 @@ enum EClimbTraceResult
 UENUM(BlueprintType, meta = (Bitflags))
 enum EMoveAbilities     //!< Флаги возможностей передвижения
 {
-    NONE        = 0                                            ,
+    NONE        = 0                                       ,
 	CanJump     = 1			UMETA(DisplayName = "CanJump"),
 	CanClimb    = 2		    UMETA(DisplayName = "CanClimb"),
 	CanLadder   = 4			UMETA(DisplayName = "CanLadder"),
@@ -57,6 +56,7 @@ enum EMoveAbilities     //!< Флаги возможностей передви�
 };
 ENUM_CLASS_FLAGS(EMoveAbilities)
 
+// climb starting transform
 struct StartClimbData
 {
     FVector Location;
@@ -104,16 +104,13 @@ public:
     //базовая скорость полета
 	UPROPERTY(EditAnywhere, Category = "Character Default Speeds")
         float MaxFlySpeedDefault{};
-    
+    // для обновления максимальных скоростей
     void CalculateMaxCombatSpeeds(float SpeedModifier);
     void CalculateMaxSpeeds(float SpeedModifier);
     void CalculateMaxBlockingSpeed(float SpeedModifier);
     void CalculateMaxCastingSpeed(float SpeedModifier);
 
 protected:
-    // для обновления максимальныз скоростей
-
-
 	/////////////////////// max ue4 current speeds //////
 	//MaxWalkSpeed
 	//MaxWalkSpeedCrouched
@@ -125,7 +122,6 @@ protected:
 	float MaxRunSpeed{};
 	float MaxSprintSpeed{};
 	float MaxRunSpeedCrouched{};
-
 
 	////////////////=========== Speeds end =========/////////////////
 
@@ -153,13 +149,13 @@ private:
 public:
     // максимальное отклонение направления чарактера относительно нормали стены в градусах
     UPROPERTY(EditAnywhere, Category = "Climb general")
-        float MaxClimbRotationAngle;
+        float MaxClimbRotationAngle{};
     // вертикальная скорость прыжка от стены
     UPROPERTY(EditAnywhere, Category = "Climb general")
-        float JumpWallZVelocity;
+        float JumpWallZVelocity{};
     // горизонтальная скорость прыжка от стены
     UPROPERTY(EditAnywhere, Category = "Climb general")
-        float JumpWallHorizVelocity;
+        float JumpWallHorizVelocity{};
     // доп смещение от стены при старте анимации
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb general")
         float LocationHorizOffset = 0;
@@ -306,21 +302,6 @@ public:
         void On_TransitionInterrupt();
 protected:
 
-    ////////// smoooth transition //////////////////
-    TUniquePtr<FVector> TransitionLocEnd = nullptr;
-    TUniquePtr<FRotator> TransitionRotEnd = nullptr;
-    UAnimMontage *CurrentTransitionAnim = nullptr;
-    EMovementMode TransitionFinishMode;
-    // тру если сейчас телепортируется
-    bool bIsTransitioning{false};
-    void TransitionProcess();
-    void TransitionStart(const FVector& EndLoc,
-                        const FRotator& EndRot,
-                        UAnimMontage* AnimToPlay, 
-                        ECustomMovementMode InMode);
-    void On_TransitionFinished();
-    void TransitionDestroy();
-
     /// наследованный мусор
     ///
     ///
@@ -340,5 +321,21 @@ protected:
                         FActorComponentTickFunction *ThisTickFunction) override;
 
 private:
+
+    ////////// smoooth transition //////////////////
+    TUniquePtr<FVector> TransitionLocEnd = nullptr;
+    TUniquePtr<FRotator> TransitionRotEnd = nullptr;
+    UAnimMontage *CurrentTransitionAnim = nullptr;
+    EMovementMode TransitionFinishMode;
+    // тру если сейчас телепортируется
+    bool bIsTransitioning{false};
+    void TransitionProcess();
+    void TransitionStart(const FVector& EndLoc,
+                        const FRotator& EndRot,
+                        UAnimMontage* AnimToPlay, 
+                        ECustomMovementMode InMode);
+    void On_TransitionFinished();
+    void TransitionDestroy();
+    
     class ACharacterBase* Character;
 };

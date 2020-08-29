@@ -22,7 +22,7 @@ struct FLevelInfo
 		FSkillList SkillList;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
 		FAttributes Attributes;
-	//Talents
+	//todo add feats
 };
 
 

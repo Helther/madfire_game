@@ -53,33 +53,39 @@ float ACharacterBase::TakeDamage(float DamageAmount,
 		auto Type = PhysD->Type;
 		auto Force = PhysD->Force;
 		DamageAmount -= GetAttributesComponent()->CurrentDamageAbsorb.DamageMap[(int32)Type];
-		DamageAmount = DamageAmount * (GetAttributesComponent()->CurrentDamageResistance.DamageMap[(int32)Type] - 100) / 100;
-		
-		GetAttributesComponent()->CurrentHealth += DamageAmount;
-
-		if (GetAttributesComponent()->CurrentHealth > GetAttributesComponent()->MaxHealth)
-			GetAttributesComponent()->CurrentHealth = GetAttributesComponent()->MaxHealth;
+		DamageAmount = DamageAmount * 
+			(GetAttributesComponent()->CurrentDamageResistance.DamageMap[(int32)Type] - 100) / 100;
+		GetAttributesComponent()->Health->Consume(DamageAmount);
 		//TODO: Death, Force, DamageItem
 		return DamageAmount;
 	}
 	else if (MagicD != nullptr)
-	{
+	{// тоже что и физический + проверка на пробитие магического щита если такой имеется
 		auto Type = MagicD->Type;
 		auto MagicSchool = MagicD->MagicSchool;
 		DamageAmount -= GetAttributesComponent()->CurrentDamageAbsorb.DamageMap[(int32)Type];
-		DamageAmount = DamageAmount * (GetAttributesComponent()->CurrentDamageResistance.DamageMap[(int32)Type] - 100) / 100;
-
-		//TODO: Magic Armor
-		GetAttributesComponent()->CurrentHealth += DamageAmount;
-
-		if (GetAttributesComponent()->CurrentHealth > GetAttributesComponent()->MaxHealth)
-			GetAttributesComponent()->CurrentHealth = GetAttributesComponent()->MaxHealth;
-
+		DamageAmount = DamageAmount * 
+			(GetAttributesComponent()->CurrentDamageResistance.DamageMap[(int32)Type] - 100) / 100;
+		if(DamageAmount < 0)
+		{
+			if(GetAttributesComponent()->MagicShield->GetValue() + DamageAmount >= 0)
+			{
+				GetAttributesComponent()->MagicShield->Consume(DamageAmount);
+				DamageAmount = 0;
+				return DamageAmount;
+			}
+			else
+			{
+				DamageAmount = DamageAmount - GetAttributesComponent()->MagicShield->GetValue();
+				GetAttributesComponent()->MagicShield->SetValue(0);
+			}
+		}
+		GetAttributesComponent()->Health->Consume(DamageAmount);
 		return DamageAmount;
 	}
 	else if (DamageType) //if damage nor Physical or Magical, then itВґs raw Damage
 	{
-		GetAttributesComponent()->CurrentHealth -= DamageAmount;
+		GetAttributesComponent()->Health->Consume(-DamageAmount);
 		return DamageAmount;
 	}
 
@@ -105,8 +111,8 @@ void ACharacterBase::OnUpdate()
 void ACharacterBase::Update()
 {
 	GetLevelComponent()->Update();
-	float hk = GetAttributesComponent()->CurrentHealth / GetAttributesComponent()->MaxHealth; 
-	float sk = GetAttributesComponent()->CurrentStamina / GetAttributesComponent()->MaxStamina; 
+	float hk = GetAttributesComponent()->Health->GetValue() / GetAttributesComponent()->Health->GetCurrentMaxValue(); 
+	float sk = GetAttributesComponent()->Stamina->GetValue() / GetAttributesComponent()->Stamina->GetCurrentMaxValue(); 
 
 	GetAttributesComponent()->CurrentAttributes = GetAttributesComponent()->BaseAttributes + 
 	GetLevelComponent()->LevelAttributes;
@@ -120,17 +126,21 @@ void ACharacterBase::Update()
 	if (ConMod < 0) 
 		ConMod = 0;
 
-	GetAttributesComponent()->MaxHealth = GetLevelComponent()->LevelHealthBonus + (ConMod * GetLevelComponent()->GetLevelNum());
-	GetAttributesComponent()->CurrentHealth = GetAttributesComponent()->MaxHealth * hk;
+	GetAttributesComponent()->Health->SetCurrentMaxVal(GetAttributesComponent()->Health->GetBaseMaxValue() + 
+													GetLevelComponent()->LevelHealthBonus + (ConMod * 
+													GetLevelComponent()->GetLevelNum()));
+	GetAttributesComponent()->Health->SetValue(GetAttributesComponent()->Health->GetCurrentMaxValue() * hk);
 
 	auto StrMod = UAttributesHelper::GetModifier(GetAttributesComponent()->CurrentAttributes, EAttributes::Str);
 	if (StrMod < 0)
 		StrMod = 0;
-	GetAttributesComponent()->MaxStamina = 100 + (GetLevelComponent()->GetLevelNum() * ConMod) + (GetLevelComponent()->GetLevelNum() * StrMod);
-	GetAttributesComponent()->CurrentStamina = GetAttributesComponent()->MaxStamina * sk;
+	GetAttributesComponent()->Stamina->SetCurrentMaxVal(GetAttributesComponent()->Stamina->GetBaseMaxValue() + 
+													(GetLevelComponent()->GetLevelNum() * ConMod) + 
+													(GetLevelComponent()->GetLevelNum() * StrMod));
+	GetAttributesComponent()->Stamina->SetValue(GetAttributesComponent()->Stamina->GetCurrentMaxValue() * sk);
 
 	GetMovementComponent()->Update();
-	
+	// todo add stamina and health regens calc
 	//other calculation
 }
 

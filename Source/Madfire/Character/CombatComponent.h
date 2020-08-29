@@ -32,6 +32,7 @@ public:
 	uint32 IsParrying : 1;
 	uint32 IsBlocking : 1;
 	uint32 IsCasting : 1;
+	float CastStaminaCost;
 
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
