@@ -26,12 +26,12 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
-	uint32 IsInCombat : 1;
-	uint32 IsWeaponDrawn : 1;
-	uint32 IsAttacking : 1;
-	uint32 IsParrying : 1;
-	uint32 IsBlocking : 1;
-	uint32 IsCasting : 1;
+	bool IsInCombat = false;
+	bool IsWeaponDrawn = false;
+	bool IsAttacking = false;
+	bool IsParrying = false;
+	bool IsBlocking = false;
+	bool IsCasting = false;
 	float CastStaminaCost;
 
 	// Called every frame

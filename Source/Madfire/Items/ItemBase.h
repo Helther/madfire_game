@@ -18,7 +18,7 @@ enum class EItemFlags : uint8     //!< Флаги предметов.
 	Stolen = 16			UMETA(DisplayName = "Stolen"),
 	Unbreakable = 32	UMETA(DisplayName = "Unbreakable"),
 	Unsellable = 64		UMETA(DisplayName = "Unsellable"),
-	Unstolable = 128	UMETA(DisplayName = "Unstolable")
+	Unstealable = 128	UMETA(DisplayName = "Unstealable")
 };
 ENUM_CLASS_FLAGS(EItemFlags)
 

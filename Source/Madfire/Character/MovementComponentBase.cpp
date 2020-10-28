@@ -784,25 +784,13 @@ float UBaseMovementComponent::GetMaxSpeed() const
             return MaxSprintSpeed;
     }
     case MOVE_Falling:
-    {
         return MaxWalkSpeed;
-        break;
-    }
     case MOVE_Swimming:
-    {
         return MaxSwimSpeed;
-        break;
-    }
     case MOVE_Flying:
-    {
         return MaxFlySpeed;
-        break;
-    }
     case MOVE_Custom:
-    {
         return MaxCustomMovementSpeed;
-        break;
-    }
     case MOVE_None:
     default:
         return 0.f;
@@ -918,9 +906,7 @@ bool UBaseMovementComponent::FallDamageCheck()
 
 void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
 {
-    float damage = 0;
-     //TODO добавить в персонажа геттер максимального конечного хп
-    damage = Cast<ACharacterBase>(GetOwner())->GetAttributesComponent()->Health->GetCurrentMaxValue();
+    float damage = Cast<ACharacterBase>(GetOwner())->GetAttributesComponent()->Health->GetCurrentMaxValue();
      //TODO учесть модификатор ловкости
     //max fall height calculation
     const int32 DexMod = UAttributesHelper::GetModifier(
@@ -1011,6 +997,7 @@ void UBaseMovementComponent::BeginPlay()
 void UBaseMovementComponent::NotifyJumpApex()
 {
     /*
+    // todo действие при достижении вершины прыжка
     UE_LOG(LogTemp, Warning, TEXT("Movement component Test"));
     FVector start = GetOwner()->GetActorLocation();
     FVector end = start + FVector(0, 1000, -5000);

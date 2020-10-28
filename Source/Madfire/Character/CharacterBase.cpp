@@ -12,7 +12,7 @@ ACharacterBase::ACharacterBase(const FObjectInitializer& ObjectInitializer) :
 	AttributesComponent = CreateDefaultSubobject<UAttributesComponent>("AttributesComponent");
 	LevelComponent = CreateDefaultSubobject<ULevelComponent>("LevelComponent");
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
-    CurrentCCState = ECCState::NONE;
+  CurrentCCState = ECCState::NONE;
 }
 
 UBaseMovementComponent* ACharacterBase::GetMovementComponent() const
@@ -43,10 +43,10 @@ float ACharacterBase::TakeDamage(float DamageAmount,
 								class AController *EventInstigator,
 								AActor *DamageCauser)
 {
-	auto DamageType = DamageEvent.DamageTypeClass.GetDefaultObject();
+	const auto DamageType = DamageEvent.DamageTypeClass.GetDefaultObject();
 
-	auto PhysD = Cast<UPhysicDamage>(DamageType);
-	auto MagicD = Cast<UMagicDamage>(DamageType);
+	const auto PhysD = Cast<UPhysicDamage>(DamageType);
+	const auto MagicD = Cast<UMagicDamage>(DamageType);
 
 	if (PhysD != nullptr)
 	{
@@ -111,36 +111,9 @@ void ACharacterBase::OnUpdate()
 void ACharacterBase::Update()
 {
 	GetLevelComponent()->Update();
-	float hk = GetAttributesComponent()->Health->GetValue() / GetAttributesComponent()->Health->GetCurrentMaxValue(); 
-	float sk = GetAttributesComponent()->Stamina->GetValue() / GetAttributesComponent()->Stamina->GetCurrentMaxValue(); 
-
-	GetAttributesComponent()->CurrentAttributes = GetAttributesComponent()->BaseAttributes + 
-	GetLevelComponent()->LevelAttributes;
-	GetAttributesComponent()->CurrentSkills = GetAttributesComponent()->BaseSkills + 
-	GetLevelComponent()->LevelSkills;
-	GetAttributesComponent()->CurrentDamageResistance = GetAttributesComponent()->BaseDamageResistance; // + Other Damage Resistance
-	GetAttributesComponent()->CurrentDamageAbsorb = GetAttributesComponent()->BaseDamageAbsorb; // + Other Damage Absorb
-	GetAttributesComponent()->CurrentDamageBonus = GetAttributesComponent()->BaseDamageBonus; // + Other Damage Bonus
-
-	auto ConMod = UAttributesHelper::GetModifier(GetAttributesComponent()->CurrentAttributes, EAttributes::Con);
-	if (ConMod < 0) 
-		ConMod = 0;
-
-	GetAttributesComponent()->Health->SetCurrentMaxVal(GetAttributesComponent()->Health->GetBaseMaxValue() + 
-													GetLevelComponent()->LevelHealthBonus + (ConMod * 
-													GetLevelComponent()->GetLevelNum()));
-	GetAttributesComponent()->Health->SetValue(GetAttributesComponent()->Health->GetCurrentMaxValue() * hk);
-
-	auto StrMod = UAttributesHelper::GetModifier(GetAttributesComponent()->CurrentAttributes, EAttributes::Str);
-	if (StrMod < 0)
-		StrMod = 0;
-	GetAttributesComponent()->Stamina->SetCurrentMaxVal(GetAttributesComponent()->Stamina->GetBaseMaxValue() + 
-													(GetLevelComponent()->GetLevelNum() * ConMod) + 
-													(GetLevelComponent()->GetLevelNum() * StrMod));
-	GetAttributesComponent()->Stamina->SetValue(GetAttributesComponent()->Stamina->GetCurrentMaxValue() * sk);
-
+	GetAttributesComponent()->Update();
 	GetMovementComponent()->Update();
-	// todo add stamina and health regens calc
+
 	//other calculation
 }
 

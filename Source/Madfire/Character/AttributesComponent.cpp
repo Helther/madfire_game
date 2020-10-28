@@ -1,34 +1,73 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "AttributesComponent.h"
-
+#include "CharacterBase.h"
 
 // Sets default values for this component's properties
 UAttributesComponent::UAttributesComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-	
-	Health = NewObject<UHealthContainer>();
-	Stamina = NewObject<UStaminaContainer>();
-	MagicShield = NewObject<UMagicShieldContainer>();
+	/* Some shitty ways to init uObjects
+	//Health = CreateDefaultSubobject<UHealthContainer>("Health");
+	//Stamina = CreateDefaultSubobject<UStaminaContainer>("Stamina");
+	//MagicShield = CreateDefaultSubobject<UMagicShieldContainer>("MShield");
+		HealthClass = UHealthContainer::StaticClass();
+	StaminaClass = UStaminaContainer::StaticClass();
+	MagicShieldClass = UMagicShieldContainer::StaticClass();
+	check(HealthClass->IsValidLowLevelFast());
+	check(StaminaClass->IsValidLowLevelFast());
+	check(MagicShieldClass->IsValidLowLevelFast());
+	Health = NewObject<UHealthContainer>(this, HealthClass->GetFName(), RF_NoFlags, HealthClass->GetDefaultObject());
+	Stamina = NewObject<UStaminaContainer>(this, StaminaClass->GetFName(), RF_NoFlags, StaminaClass->GetDefaultObject());
+	MagicShield = NewObject<UMagicShieldContainer>(this, MagicShieldClass->GetFName(), RF_NoFlags, MagicShieldClass->GetDefaultObject());
+	*/
 
-	Health->SetBaseMaxValue(100);
-	Health->SetCurrentMaxVal(100);
-	Health->SetValue(100);
-	Stamina->SetBaseMaxValue(100);
-	Stamina->SetCurrentMaxVal(100);
-	Stamina->SetValue(100);
 	// ...
+}
+
+void UAttributesComponent::Update()
+{
+	float hk = Health->GetValue() / Health->GetCurrentMaxValue(); 
+	float sk = Stamina->GetValue() / Stamina->GetCurrentMaxValue(); 
+
+	CurrentAttributes = BaseAttributes + Character->GetLevelComponent()->LevelAttributes;
+	CurrentSkills = BaseSkills + Character->GetLevelComponent()->LevelSkills;
+	CurrentDamageResistance = BaseDamageResistance; // + Other Damage Resistance
+	CurrentDamageAbsorb = BaseDamageAbsorb; // + Other Damage Absorb
+	CurrentDamageBonus = BaseDamageBonus; // + Other Damage Bonus
+
+	auto ConMod = UAttributesHelper::GetModifier(CurrentAttributes, EAttributes::Con);
+	if (ConMod < 0) 
+		ConMod = 0;
+
+	Health->SetCurrentMaxVal(Health->GetBaseMaxValue() + 
+													Character->GetLevelComponent()->LevelHealthBonus + (ConMod * 
+													Character->GetLevelComponent()->GetLevelNum()));
+	Health->SetValue(Health->GetCurrentMaxValue() * hk);
+
+	auto StrMod = UAttributesHelper::GetModifier(CurrentAttributes, EAttributes::Str);
+	if (StrMod < 0)
+		StrMod = 0;
+	Stamina->SetCurrentMaxVal(Stamina->GetBaseMaxValue() + 
+													(Character->GetLevelComponent()->GetLevelNum() * ConMod) + 
+													(Character->GetLevelComponent()->GetLevelNum() * StrMod));
+	Stamina->SetValue(Stamina->GetCurrentMaxValue() * sk);
+
+	Health->SetCurrentRegenRate(Health->GetBaseRegenRate() + ConMod);
+	Stamina->SetCurrentRegenRate(Stamina->GetBaseRegenRate() + ConMod);
 }
 
 // Called when the game starts
 void UAttributesComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	Character = Cast<ACharacterBase>(GetOwner());
+  check(Character != nullptr && "UBaseMovementComponent error: No pawn")
 
+	if(!Health->IsRegenBlocked())
+		Health->EnableRegen();
+	if(!Stamina->IsRegenBlocked())
+		Stamina->EnableRegen();
 	// ...
 	
 }
@@ -39,45 +78,4 @@ void UAttributesComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
-}
-
-
-void UConsumableAttributr::Consume(float amount)
-{
-	const auto result = CurrentVal + amount;
-	if(result <= 0)
-	{
-		CurrentVal = 0;
-		NoConsumeLeft();
-	}
-	else if(result >= CurrentMaxVal)
-		CurrentVal = CurrentMaxVal;
-	else
-		CurrentVal = result;
-}
-
-
-void UHealthContainer::NoConsumeLeft()
-{
-	// todo что то при смерти
-}
-
-void UStaminaContainer::NoConsumeLeft()
-{
-	RegenBlockSemaphore = -1;
-	GetWorld()->GetTimerManager().SetTimer(NoConsumTimer, this, &UStaminaContainer::OnNoConsumeTimeFinish, 
-											NoConsumTime, true);
-}
-
-void UMagicShieldContainer::Consume(float amount)
-{
-	if(amount < 0)
-	{
-		CurrentVal += amount;
-		if(CurrentVal < 0)
-		{
-			CurrentVal = 0;
-			NoConsumeLeft();
-		}
-	}
 }

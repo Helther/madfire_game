@@ -19,7 +19,7 @@ public:
 	////////////////////////// combat mode speeds//////////////////////////
 
 	UPROPERTY(EditAnywhere, Category = "Character Combat Speeds")
-        float MaxCastingSpeed{}; //Max move speed during cast
+    float MaxCastingSpeed{}; //Max move speed during cast
 	UPROPERTY(EditAnywhere, Category = "Character Combat Speeds")
 		float MaxCombatRunSpeed{};
 
@@ -30,7 +30,7 @@ public:
 		float MaxCombatSprintSpeed{};
 	
     UPROPERTY(EditAnywhere, Category = "Character Combat Speeds")
-        float MaxBlockSpeed{}; //Max move speed during blocking
+    float MaxBlockSpeed{}; //Max move speed during blocking
 
 
 };

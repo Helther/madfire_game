@@ -48,11 +48,8 @@ public:
 		void OnUpdate(); //!< Blueprint interface  for Blueprints
 
 	UBaseMovementComponent* GetMovementComponent() const override;
-
     UCombatComponent* GetCombatComponent() const;
-
 	UAttributesComponent* GetAttributesComponent() const;
-
 	ULevelComponent* GetLevelComponent() const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")

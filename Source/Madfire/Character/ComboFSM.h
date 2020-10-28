@@ -37,7 +37,7 @@ public:
     ComboFSM(){}
     ~ComboFSM(){}
 
-    bool contain(FName StateName)
+    bool contains(FName StateName)
     {
         if(_States.Contains(StateName))
                 return true;
@@ -62,7 +62,7 @@ public:
 
     ComboFSM &addState(FName StateName)
     {
-        if(!contain(StateName))
+        if(!contains(StateName))
             _States.Push(state(StateName));
         return *this;
     }
