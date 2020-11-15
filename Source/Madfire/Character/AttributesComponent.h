@@ -69,6 +69,12 @@ public:
 	*/
 // clang-format on
 	virtual void Update();
+	UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
+		void SetUpdate() { IsDirty = true; }
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
+		void UnSetUpdate() { IsDirty = false; }
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
+		bool IsUpdateNeeded() { return IsDirty; }
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -77,4 +83,5 @@ protected:
 
 	private:
 	    class ACharacterBase* Character;
+			bool IsDirty = false;
 };

@@ -25,7 +25,7 @@ void ULevelComponent::LevelUp(const FLevelInfo &levelInfo)
 
 	LevelList.Add(levelInfo);
 
-	EXPERIENCE_FUCKING_EQUATION(RequiredExpirience); //TODO: Exp Equation
+	EXPERIENCE_FUCKING_EQUATION(RequiredExperience); //TODO: Exp Equation
 }
 
 void ULevelComponent::Update()
@@ -40,4 +40,5 @@ void ULevelComponent::Update()
 		LevelSkills += levelInfo.SkillList;
 		//Talents
 	}
+	UnSetUpdate();
 }

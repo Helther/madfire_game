@@ -30,6 +30,7 @@ UBaseMovementComponent::UBaseMovementComponent(const class FObjectInitializer &O
     LedgeTraceLength = 70;
     LocationHorizOffset = 3;
     LocationVertOffset = 3;
+    AnimPlayRate = 1;
     MoveAbilitiesCurrent = MoveAbilitiesDefault = 0xff;
     //todo calculate Character->JumpMaxHoldTime from acrobatics
 
@@ -326,10 +327,7 @@ TSharedPtr<StartClimbData> UBaseMovementComponent::GetClimbStartLoc(const FTrace
                                                    EWallChannel, false);
         // нашел ли стену
         if(HitWallH.GetActor() == nullptr)
-        {
-            UE_LOG(LogTemp,Warning, TEXT("GetClimbStartLoc error: trace miss"))
             return nullptr;
-        }
         // подходящий ли угол между персом и стеной
         if(CheckAngle && !checkRelativeRotation(HitWallH.ImpactNormal.Rotation().Yaw))
             return nullptr;
@@ -383,12 +381,10 @@ TSharedPtr<StartClimbData> UBaseMovementComponent::GetClimbStartLoc(const FTrace
     UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params,
                                             sParamsV, HitWallV,
                                             EWallChannel, false);
+    // попал ли вертикальный трейс
     if(HitWallV.GetActor() == nullptr || MinHeight > (HitWallV.ImpactPoint.Z - charBottomHeight)
     || (HitWallV.ImpactPoint.Z - charBottomHeight) > MaxHeight)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("GetClimbStartLoc error: vert trace miss"))
         return nullptr;
-    }
     // установка финальных значений
     FinalLocation.Get().Location = HitWallH.ImpactPoint;
     FinalLocation.Get().Location.Z = HitWallV.ImpactPoint.Z;
@@ -938,15 +934,15 @@ void UBaseMovementComponent::TransitionStart(const FVector& EndLoc,
     TransitionLocEnd = MakeUnique<FVector>(EndLoc);
     TransitionRotEnd = MakeUnique<FRotator>(EndRot);
     CurrentTransitionAnim = AnimToPlay;
-    Character->PlayAnimMontage(CurrentTransitionAnim, 1,
-        FTransitionSectionNames::Start); // todo playrate
+    Character->PlayAnimMontage(CurrentTransitionAnim, AnimPlayRate,
+        FTransitionSectionNames::Start);
 }
 
 void UBaseMovementComponent::On_TransitionFinished()
 {
     if(CurrentTransitionAnim != nullptr)
-        Character->PlayAnimMontage(CurrentTransitionAnim, 1,
-            FTransitionSectionNames::End); // todo playrate
+        Character->PlayAnimMontage(CurrentTransitionAnim, AnimPlayRate,
+            FTransitionSectionNames::End);
     TransitionDestroy();
     UE_LOG(LogTemp, Warning, TEXT("TransitionFinished!"))
 }
@@ -992,6 +988,7 @@ void UBaseMovementComponent::BeginPlay()
     Character = Cast<ACharacterBase>(PawnOwner);
     check(Character != nullptr && "UBaseMovementComponent error: No pawn")
     params.ActorsToIgnore.Add(CharacterOwner);
+    MoveAbilitiesCurrent = MoveAbilitiesDefault;
 }
 
 void UBaseMovementComponent::NotifyJumpApex()
@@ -1020,17 +1017,18 @@ void UBaseMovementComponent::TickComponent(float DeltaTime,
 void UBaseMovementComponent::Update()
 {
     //todo jump velocity calculation with agility(dex)
-    //todo animation play rate (dex)
+    //todo animation play rate (dex) AnimPlayRate
     //todo изменения в возможностях передвижения например перегрузка
-	//TODO: рассчитать реальный мод с учетом текущих бафов и 
+	//TODO: рассчитать реальный мод скорости с учетом текущих бафов и 
     // веса снаряжения относительно максимума
     //Max Speed update
     CalculateMaxSpeeds(1);
+    UnSetUpdate();
 }
 
 void UBaseMovementComponent::Crouch(bool bClientSimulation)
 {
-    if(MoveAbilitiesCurrent & EMoveAbilities::CanCrouch)
+    if((MoveAbilitiesCurrent & EMoveAbilities::CanCrouch) == EMoveAbilities::CanCrouch)
     {
         Super::Crouch(bClientSimulation);
         return;
@@ -1041,8 +1039,8 @@ void UBaseMovementComponent::Crouch(bool bClientSimulation)
 
 bool UBaseMovementComponent::DoJump(bool bReplayingMoves)
 {
-    if(!(MoveAbilitiesCurrent & EMoveAbilities::CanJump) || !CanMove() ||
-        bConstrainToPlane || FMath::Abs(PlaneConstraintNormal.Z) == 1.f)
+    if((MoveAbilitiesCurrent & EMoveAbilities::CanJump) != EMoveAbilities::CanJump || 
+        !CanMove() || bConstrainToPlane || FMath::Abs(PlaneConstraintNormal.Z) == 1.f)
     {
         UE_LOG(LogTemp, Warning, TEXT("blocked jump"));
         return false;

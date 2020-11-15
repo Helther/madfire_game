@@ -30,15 +30,15 @@ void UAttributesComponent::Update()
 	float hk = Health->GetValue() / Health->GetCurrentMaxValue(); 
 	float sk = Stamina->GetValue() / Stamina->GetCurrentMaxValue(); 
 
-	CurrentAttributes = BaseAttributes + Character->GetLevelComponent()->LevelAttributes;
-	CurrentSkills = BaseSkills + Character->GetLevelComponent()->LevelSkills;
-	CurrentDamageResistance = BaseDamageResistance; // + Other Damage Resistance
-	CurrentDamageAbsorb = BaseDamageAbsorb; // + Other Damage Absorb
-	CurrentDamageBonus = BaseDamageBonus; // + Other Damage Bonus
+	CurrentAttributes = BaseAttributes + Character->GetLevelComponent()->LevelAttributes; // + equipment
+	CurrentSkills = BaseSkills + Character->GetLevelComponent()->LevelSkills; // + equipment
+	CurrentDamageResistance = BaseDamageResistance; // + Other Damage Resistance(equipment)
+	CurrentDamageAbsorb = BaseDamageAbsorb; // + Other Damage Absorb(equipment)
+	CurrentDamageBonus = BaseDamageBonus; // + Other Damage Bonus(equipment)
 
 	auto ConMod = UAttributesHelper::GetModifier(CurrentAttributes, EAttributes::Con);
-	if (ConMod < 0) 
-		ConMod = 0;
+	if(ConMod < 0) 
+		ConMod = 0;	// todo нужно ли?
 
 	Health->SetCurrentMaxVal(Health->GetBaseMaxValue() + 
 													Character->GetLevelComponent()->LevelHealthBonus + (ConMod * 
@@ -46,8 +46,8 @@ void UAttributesComponent::Update()
 	Health->SetValue(Health->GetCurrentMaxValue() * hk);
 
 	auto StrMod = UAttributesHelper::GetModifier(CurrentAttributes, EAttributes::Str);
-	if (StrMod < 0)
-		StrMod = 0;
+	if(StrMod < 0)
+		StrMod = 0; // todo нужно ли?
 	Stamina->SetCurrentMaxVal(Stamina->GetBaseMaxValue() + 
 													(Character->GetLevelComponent()->GetLevelNum() * ConMod) + 
 													(Character->GetLevelComponent()->GetLevelNum() * StrMod));
@@ -55,6 +55,8 @@ void UAttributesComponent::Update()
 
 	Health->SetCurrentRegenRate(Health->GetBaseRegenRate() + ConMod);
 	Stamina->SetCurrentRegenRate(Stamina->GetBaseRegenRate() + ConMod);
+
+	UnSetUpdate();
 }
 
 // Called when the game starts
@@ -69,7 +71,6 @@ void UAttributesComponent::BeginPlay()
 	if(!Stamina->IsRegenBlocked())
 		Stamina->EnableRegen();
 	// ...
-	
 }
 
 // Called every frame

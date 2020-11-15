@@ -12,7 +12,7 @@ ACharacterBase::ACharacterBase(const FObjectInitializer& ObjectInitializer) :
 	AttributesComponent = CreateDefaultSubobject<UAttributesComponent>("AttributesComponent");
 	LevelComponent = CreateDefaultSubobject<ULevelComponent>("LevelComponent");
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
-  CurrentCCState = ECCState::NONE;
+	CurrentCCState = ECCState::NoCC;
 }
 
 UBaseMovementComponent* ACharacterBase::GetMovementComponent() const
@@ -55,7 +55,7 @@ float ACharacterBase::TakeDamage(float DamageAmount,
 		DamageAmount -= GetAttributesComponent()->CurrentDamageAbsorb.DamageMap[(int32)Type];
 		DamageAmount = DamageAmount * 
 			(GetAttributesComponent()->CurrentDamageResistance.DamageMap[(int32)Type] - 100) / 100;
-		GetAttributesComponent()->Health->Consume(DamageAmount);
+		GetAttributesComponent()->Health->Consume(DamageAmount);// -> bool
 		//TODO: Death, Force, DamageItem
 		return DamageAmount;
 	}
@@ -68,24 +68,16 @@ float ACharacterBase::TakeDamage(float DamageAmount,
 			(GetAttributesComponent()->CurrentDamageResistance.DamageMap[(int32)Type] - 100) / 100;
 		if(DamageAmount < 0)
 		{
-			if(GetAttributesComponent()->MagicShield->GetValue() + DamageAmount >= 0)
-			{
-				GetAttributesComponent()->MagicShield->Consume(DamageAmount);
-				DamageAmount = 0;
-				return DamageAmount;
-			}
+			if(GetAttributesComponent()->Health->Consume(DamageAmount))
+				return DamageAmount = 0;
 			else
-			{
-				DamageAmount = DamageAmount - GetAttributesComponent()->MagicShield->GetValue();
-				GetAttributesComponent()->MagicShield->SetValue(0);
-			}
+				return DamageAmount = DamageAmount - GetAttributesComponent()->MagicShield->GetValue();
 		}
-		GetAttributesComponent()->Health->Consume(DamageAmount);
-		return DamageAmount;
+		return DamageAmount = 0;
 	}
 	else if (DamageType) //if damage nor Physical or Magical, then itВґs raw Damage
 	{
-		GetAttributesComponent()->Health->Consume(-DamageAmount);
+		GetAttributesComponent()->Health->Consume(-DamageAmount); // -> bool
 		return DamageAmount;
 	}
 
@@ -110,11 +102,27 @@ void ACharacterBase::OnUpdate()
 
 void ACharacterBase::Update()
 {
-	GetLevelComponent()->Update();
-	GetAttributesComponent()->Update();
-	GetMovementComponent()->Update();
+	if(GetLevelComponent()->IsUpdateNeeded())
+		GetLevelComponent()->Update();
+	if(GetAttributesComponent()->IsUpdateNeeded())
+		GetAttributesComponent()->Update();
+	if(GetMovementComponent()->IsUpdateNeeded())		
+		GetMovementComponent()->Update();
 
 	//other calculation
+}
+
+void ACharacterBase::DoLevelUp(const FLevelInfo& levelInfo) // todo replace in BP
+{
+	GetLevelComponent()->LevelUp(levelInfo);
+	GetLevelComponent()->SetUpdate();
+	GetAttributesComponent()->SetUpdate();
+	bool dexChanged = UAttributesHelper::GetAttribute(levelInfo.Attributes, EAttributes::Dex) != 0;
+	bool acrobaticsChanged = USkillHelper::GetValue(levelInfo.SkillList, ESkill::Tumble) != 0;
+	if(dexChanged || acrobaticsChanged)
+		GetMovementComponent()->SetUpdate();
+	// может что то еще
+	Update();
 }
 
 // Called every frame

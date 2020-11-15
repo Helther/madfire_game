@@ -32,6 +32,8 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 
 void UCombatComponent::Update()
 {
+	//
+	UnSetUpdate();
 }
 
 void UCombatComponent::DoAttack()
@@ -82,7 +84,7 @@ UCombatStance* UCombatComponent::GetCurrentCombatStance()
 void UCombatComponent::On_StanceChanged()
 {
 	//todo получить актуальный модификатор скоростей
-	if(IsWeaponDrawn)
+	if(IsWeaponDrawn) // заменить на апдейт и поставить флаг
 		Character->GetMovementComponent()->CalculateMaxCombatSpeeds(1);
 }
 

@@ -386,3 +386,9 @@ void UInventoryComponent::CalculateWeight()
 	
 }
 
+void UInventoryComponent::Update()
+{
+	// todo define
+	// weight update
+	UnSetUpdate();
+}

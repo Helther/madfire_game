@@ -81,7 +81,7 @@ void ABasePlayerController::MoveForward(float AxisValue)
 	{
 		case(EPawnGameplayState::InWorld):
 		{
-			if (AxisValue != 0.0f && Player->CurrentCCState == ECCState::NONE && 
+			if (AxisValue != 0.0f && Player->CurrentCCState == ECCState::NoCC && 
 				!Player->GetMovementComponent()->IsRootOrTeleport())
 			{
 				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Swimming)
@@ -125,7 +125,7 @@ void ABasePlayerController::MoveRight(float AxisValue)
 	{
 		case(EPawnGameplayState::InWorld):
 		{
-			if (AxisValue != 0.0f && Player->CurrentCCState == ECCState::NONE && 
+			if (AxisValue != 0.0f && Player->CurrentCCState == ECCState::NoCC && 
 				!Player->GetMovementComponent()->IsRootOrTeleport())
 			{
 				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
@@ -209,7 +209,7 @@ void ABasePlayerController::SprintAction()///add equipment weight check
 	case(EPawnGameplayState::InWorld)://todo учесть другие состояния
 	{
 		if (Player->GetMovementComponent()->IsMovingOnGround() && 
-			Player->CurrentCCState == ECCState::NONE)
+			Player->CurrentCCState == ECCState::NoCC)
 		{
             if(Player->GetCombatComponent()->IsWeaponDrawn && 
 				InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.f)
@@ -250,7 +250,7 @@ void ABasePlayerController::CrouchAction()
 	{
 		case(EPawnGameplayState::InWorld)://todo учесть другие состояния
 		{
-			if (Player->CurrentCCState == ECCState::NONE && 
+			if (Player->CurrentCCState == ECCState::NoCC && 
 				!Player->GetMovementComponent()->IsRootOrTeleport())
 			{
 				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
@@ -292,7 +292,7 @@ void ABasePlayerController::JumpAction()
 	{
 		case(EPawnGameplayState::InWorld):
 		{
-			if (Player->CurrentCCState == ECCState::NONE && 
+			if (Player->CurrentCCState == ECCState::NoCC && 
 				!Player->GetMovementComponent()->IsRootOrTeleport())
 			{
 				if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
@@ -363,7 +363,7 @@ void ABasePlayerController::JumpRepAction()
     {
         case(EPawnGameplayState::InWorld):
         {
-            if (Player->CurrentCCState == ECCState::NONE && 
+            if (Player->CurrentCCState == ECCState::NoCC && 
 				!Player->GetMovementComponent()->IsRootOrTeleport())
             {
                 if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling)

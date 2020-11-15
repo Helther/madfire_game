@@ -90,11 +90,21 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Invenrory Component")
 		float CurrentWeight;
 
+	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
+		void Update();
+
+	UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
+		void SetUpdate() { IsDirty = true; }
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
+		void UnSetUpdate() { IsDirty = false; }
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
+		bool IsUpdateNeeded() { return IsDirty; }
+
 private:
 	TArray<FInventorySlot> Inventory;
 	
 	static float WeightOfSlot(FInventorySlot &Slot);
 
 	void CalculateWeight();
-
+	bool IsDirty = false;
 };

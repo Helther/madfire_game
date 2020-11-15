@@ -12,19 +12,18 @@
 #include "CharacterBase.generated.h"
 
 
-UENUM(BluePrintType)
+UENUM(BlueprintType, meta = (Bitflags))
 // состояния контроля персонажа
-enum class ECCState : uint8
+enum ECCState
 {
-	NONE = 0,
-	Stun = 1,
-	KnockDown = 2,
-	LossOfBalance = 4,
-	Stasis = 8,
-	Sleep = 16,
-	MAX = 64
+	NoCC = 0					UMETA(DisplayName = "Stunned"),
+	Stun = 1					UMETA(DisplayName = "KnockedDown"),
+	KnockDown = 2			UMETA(DisplayName = "LostAllBalance"),
+	LossOfBalance = 4	UMETA(DisplayName = "UnderStasis"),
+	Stasis = 8				UMETA(DisplayName = "Sleeping"),
+	Sleep	= 16				
 };
-
+ENUM_CLASS_FLAGS(ECCState)
 /**
  * 
  */
@@ -48,12 +47,16 @@ public:
 		void OnUpdate(); //!< Blueprint interface  for Blueprints
 
 	UBaseMovementComponent* GetMovementComponent() const override;
-    UCombatComponent* GetCombatComponent() const;
+  UCombatComponent* GetCombatComponent() const;
 	UAttributesComponent* GetAttributesComponent() const;
 	ULevelComponent* GetLevelComponent() const;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
-		ECCState CurrentCCState;
+	UFUNCTION(BlueprintCallable, Category = "Character Base")
+		virtual void DoLevelUp(const FLevelInfo &levelInfo);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "ECCState"),
+    Category = "Character Stats")
+		int CurrentCCState;
 
 protected:
 	// Called when the game starts or when spawned

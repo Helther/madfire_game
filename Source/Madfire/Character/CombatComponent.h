@@ -36,9 +36,14 @@ public:
 
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-	void Update();
-
+	UFUNCTION(BlueprintCallable, Category = "Combat Component")
+		void Update();
+	UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
+		void SetUpdate() { IsDirty = true; }
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
+		void UnSetUpdate() { IsDirty = false; }
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
+		bool IsUpdateNeeded() { return IsDirty; }
 	void DoAttack();
 	void DoBlock();
 	void DrawWeapon();
@@ -46,8 +51,8 @@ public:
 	void EnterCombatMode();
 	void ExitCombatMode();
 
-    float CalculateDamage(AActor *Target, UItemWeapon *Weapon);
-    float CalculatePower(AActor *Target, UItemWeapon *Weapon);
+  float CalculateDamage(AActor *Target, UItemWeapon *Weapon);
+  float CalculatePower(AActor *Target, UItemWeapon *Weapon);
 	void On_StanceChanged();
 	void On_Weapon_OnOff();
 	void On_Blocking();
@@ -58,8 +63,10 @@ protected:
 
 	UItemWeapon *DefaultWeapon;
 	UCombatStance *CurrentCombatStance;
-    TSet<AActor> CharactersHit;
+  TSet<AActor*> CharactersHit;
 	class ACharacterBase *Character;
-    bool HasAlreadyHitTarget(AActor *Target);
-	
+  bool HasAlreadyHitTarget(AActor *Target);
+
+private:
+	bool IsDirty = false;
 };

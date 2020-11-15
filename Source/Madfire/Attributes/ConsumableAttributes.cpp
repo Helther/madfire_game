@@ -7,23 +7,26 @@ UConsumableAttribute::UConsumableAttribute()
 	//SetComponentTickEnabled(false);
 }
 
-void UConsumableAttribute::Consume(float amount)
+bool UConsumableAttribute::Consume(float amount)
 {
 	const float result = CurrentVal + amount;
 	if(result <= 0)
 	{
 		CurrentVal = 0;
 		NoConsumeLeft();
+		return false;
 	}
-	else if(result >= CurrentMaxVal)
+	if(result >= CurrentMaxVal)
 		CurrentVal = CurrentMaxVal;
 	else
 		CurrentVal = result;
+	return true;
 }
 
 
 URegenConsumable::URegenConsumable() : Super()
 {
+	CurrentRegenRate = BaseRegenRate;
 	RegenInterval = 1; // temp value, seconds between ticks
 }
 
@@ -68,11 +71,12 @@ void URegenConsumable::NoConsumeLeft()
 											NoConsumeTime, true);
 }
 
-void URegenConsumable::Consume(float amount)
+bool URegenConsumable::Consume(float amount)
 {
-	Super::Consume(amount);
+	bool ret = Super::Consume(amount);
 	if(!IsRegenBlocked())
 		EnableRegen();
+	return ret;
 }
 
 void URegenConsumable::OnNoConsumeTimeFinish()
@@ -92,8 +96,6 @@ UWorld* URegenConsumable::GetWorld() const
 void URegenConsumable::OnRegenTick()
 {
 	EnableRegen();
-	UE_LOG(LogTemp,Warning, TEXT("Health %f"), GetValue())
-	UE_LOG(LogTemp,Warning, TEXT("RegenRate %f"), GetCurrentRegenRate())
 }
 
 

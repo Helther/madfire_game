@@ -24,8 +24,9 @@ public:
 	virtual float GetBaseMaxValue() const { return BaseMaxVal; }
 	virtual float GetCurrentMaxValue() const { return CurrentMaxVal; }
 	//UFUNCTION(BlueprintCallable, Category = "Character Stats") 
-	virtual void Consume(float amount);
-	virtual void Update(){}; // todo 
+	// возвращает фолс если не хватило ресурса
+	virtual bool Consume(float amount);
+	//virtual void Update(){}; // todo 
 
 protected:
 	virtual void NoConsumeLeft(){};
@@ -37,7 +38,6 @@ protected:
 		float CurrentMaxVal = 0;				
 };
 
-// todo контейнеры в редакторе != контейнеры в коде
 // Зарефакторить реген блок с исопльзованием счетчика ссылок
 // "интерфейс для регенируемых поглощаемых аттрибутов"
 UCLASS(BlueprintType, DefaultToInstanced, EditInlineNew)
@@ -52,10 +52,10 @@ public:
 	void BlockRegen();
 	void UnblockRegen();
 	void ResetRegenBlock() { if(RegenBlocker != 0) RegenBlocker = 0; }
-	void SetCurrentRegenRate(float NewVal){ CurrentRegenRate = NewVal; }
+	void SetCurrentRegenRate(float NewVal){ if(NewVal < 0) NewVal = 0; CurrentRegenRate = NewVal; }
 	float GetCurrentRegenRate() const { return CurrentRegenRate; }
 	float GetBaseRegenRate() const { return BaseRegenRate; }
-	void Consume(float amount) override;
+	bool Consume(float amount) override;
 	void EnableRegen();
 
 protected:

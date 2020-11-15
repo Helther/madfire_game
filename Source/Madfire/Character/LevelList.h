@@ -37,20 +37,27 @@ public:
 		void ResetLevel();
 
 	UFUNCTION(BlueprintCallable, Category = "Character Attributes")
-		void LevelUp(const FLevelInfo &levelInfo);
+		void LevelUp(const FLevelInfo &levelInfo); // используется через персонажа для вызова обновы
 	UFUNCTION(BlueprintPure, Category = "Character Attributes")
 		FORCEINLINE int32 GetLevelNum() const { return LevelList.Num(); }
 
 	UFUNCTION(BlueprintCallable, Category = "Character Attributes")
 		void Update();
 	UFUNCTION(BlueprintPure, Category = "Character Attributes")
-		FORCEINLINE bool CanLevelUp() const { return (CurrentExpirience >= RequiredExpirience) && (LevelList.Num() <= MaxLevel); }
+		FORCEINLINE bool CanLevelUp() const { return (CurrentExperience >= RequiredExperience) && (LevelList.Num() < MaxLevel); }
 
 	UFUNCTION(BlueprintPure, Category = "Character Attributes")
 		static FORCEINLINE uint8 GetMaxPossibleLevel() { return MaxLevel; }
 
+	UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
+		void SetUpdate() { IsDirty = true; }
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
+		void UnSetUpdate() { IsDirty = false; }
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
+		bool IsUpdateNeeded() { return IsDirty; }
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
-		float CurrentExpirience;
+		float CurrentExperience;
 	UPROPERTY(BlueprintReadOnly, Category = "Character Attributes")
 		float LevelHealthBonus;
 	UPROPERTY(BlueprintReadOnly, Category = "Character Attributes")
@@ -59,7 +66,10 @@ public:
 		FSkillList LevelSkills;
 	
 	UPROPERTY(BlueprintReadOnly , Category = "Character Attributes")
-		float RequiredExpirience = 100;
+		float RequiredExperience = 100;
 	UPROPERTY(BlueprintReadOnly, Category = "Character Attributes")
 		TArray<FLevelInfo> LevelList;
+
+private:
+	bool IsDirty = false;
 };

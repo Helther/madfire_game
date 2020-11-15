@@ -5,6 +5,7 @@
 #include "./TraceFunctional/TraceFunctional.h"
 #include "MovementComponentBase.generated.h"
 
+
 enum EControlDirections
 {
     ForwardD = 0,
@@ -45,14 +46,14 @@ enum EClimbTraceResult
 UENUM(BlueprintType, meta = (Bitflags))
 enum EMoveAbilities     //!< Флаги возможностей передвижения
 {
-    NONE        = 0                                       ,
-	CanJump     = 1			UMETA(DisplayName = "CanJump"),
-	CanClimb    = 2		    UMETA(DisplayName = "CanClimb"),
-	CanLadder   = 4			UMETA(DisplayName = "CanLadder"),
-	CanSlide    = 8			UMETA(DisplayName = "CanSlide"),
-	CanDodge    = 16		UMETA(DisplayName = "CanDodge"),
-	CanSprint   = 32	    UMETA(DisplayName = "CanSprint"),
-    CanCrouch   = 64        UMETA(DisplayName = "CanCrouch")
+    NoMove = 0              UMETA(DisplayName = "CanJump"),
+	CanJump = 1    			UMETA(DisplayName = "CanClimb"),
+	CanClimb = 2  		    UMETA(DisplayName = "CanDodge"),
+	//CanLadder = 			UMETA(DisplayName = "CanLadder"),
+	//CanSlide =     		UMETA(DisplayName = "CanSlide"),
+	CanDodge = 4  	    	UMETA(DisplayName = "CanSprint"),
+	CanSprint = 8 	        UMETA(DisplayName = "CanCrouch"),
+    CanCrouch = 16          
 };
 ENUM_CLASS_FLAGS(EMoveAbilities)
 
@@ -289,17 +290,24 @@ public:
 	bool bWantToSprint{false}; //тру если пытается перейти на спринт
 	bool bIsRunning{true}; // тру если персонаж в режима бега
 	bool bIsSprinting{false}; // тру если персонаж в режиме спринта
-    void Update();
+    virtual void Update();
     // false если перс перегружен или замедлен до остановки 
     bool CanMove(); 
     //todo для использования таких масок в блупринтах приходится создавать местную переменную там
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EMoveAbilities"),
             Category = "Character Movement")
-		uint8 MoveAbilitiesDefault;
+		int MoveAbilitiesDefault;
     
-    uint8 MoveAbilitiesCurrent; 
+    int MoveAbilitiesCurrent; 
 	UFUNCTION(BlueprintCallable, Category = "transition")// todo temp
         void On_TransitionInterrupt();
+
+    UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
+		void SetUpdate() { IsDirty = true; }
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
+		void UnSetUpdate() { IsDirty = false; }
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
+		bool IsUpdateNeeded() { return IsDirty; }
 protected:
 
     /// наследованный мусор
@@ -336,6 +344,8 @@ private:
                         ECustomMovementMode InMode);
     void On_TransitionFinished();
     void TransitionDestroy();
+    float AnimPlayRate; 
+    bool IsDirty = false;
     
     class ACharacterBase* Character;
 };

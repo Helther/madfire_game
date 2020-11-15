@@ -78,7 +78,7 @@ public:
 
 private:
 	ACharacter *Owner = nullptr;
-    FEquipmentSlot Slot[(int32)EItemSlot::Max];
+  FEquipmentSlot Slot[(int32)EItemSlot::Max];
 	
 
 private: //Methods
