@@ -33,15 +33,13 @@ struct FEquipmentSlot
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UEquipmentComponent : public UActorComponent
+class MADFIRE_API UEquipmentComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:	
 	void OnComponentCreated() override;
 
-	void update();
-	
 	/*
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
 		class UItemWeapon *MainWeapon;
@@ -75,13 +73,29 @@ public:
 		FDamageAbsorb DamageBonus;
 	//UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
 		//Effects
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment Component")
+		float CurrentWeight;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment Component")
+		float MaxWeight;
+
+	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
+		void Update();
+
+	UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
+		void SetUpdate() { IsDirty = true; }
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
+		void UnSetUpdate() { IsDirty = false; }
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
+		bool IsUpdateNeeded() { return IsDirty; }
 
 private:
-	ACharacter *Owner = nullptr;
+	class ACharacterBase *Owner = nullptr;
   FEquipmentSlot Slot[(int32)EItemSlot::Max];
-	
+	bool IsDirty = false;
 
 private: //Methods
 	bool EquipHeadItem(UItemArmor *item);
-
+	void CalculateWeight();	
+	void CalculateMaxWeight();
 };

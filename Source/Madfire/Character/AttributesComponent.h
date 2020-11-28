@@ -54,11 +54,11 @@ public:
 		float CastSpeed;	/*!< в процентах*/
 	// объект для упраления значениями хп (текущее, макс, реген)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Character Stats")
-		UHealthContainer *Health;
+		URegenConsumable *Health;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Character Stats")
-		UStaminaContainer *Stamina;
+		URegenConsumable *Stamina;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Character Stats")
-		UMagicShieldContainer *MagicShield;
+		UConsumableAttribute *MagicShield;
 		/*
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TSubclassOf<UHealthContainer> HealthClass;

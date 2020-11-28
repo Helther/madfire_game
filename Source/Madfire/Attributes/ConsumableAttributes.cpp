@@ -33,13 +33,18 @@ URegenConsumable::URegenConsumable() : Super()
 void URegenConsumable::BlockRegen()
 {
 	++RegenBlocker;
+	UE_LOG(LogTemp, Warning, TEXT("block %d"), RegenBlocker);
 	if(!IsRegenBlocked())
 		GetWorld()->GetTimerManager().ClearTimer(RegenTickTimer);
 }
 
 void URegenConsumable::UnblockRegen()
 {
-	if(RegenBlocker > 0) --RegenBlocker;
+	if(RegenBlocker > 0)
+	{
+		--RegenBlocker;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("unblock %d"), RegenBlocker);
 	if(!IsRegenBlocked())
 		EnableRegen();
 }
@@ -47,7 +52,8 @@ void URegenConsumable::UnblockRegen()
 void URegenConsumable::EnableRegen()
 { 
 	// UGameplayStatics::IsGamePaused()
-	if(GetValue() < GetCurrentMaxValue())
+		UE_LOG(LogTemp, Warning, TEXT("enable regen"));
+	if(	!IsRegenBlocked() && GetValue() < GetCurrentMaxValue())
 	{
 		SetValue(GetValue() + GetCurrentRegenRate());
 		if(GetValue() < GetCurrentMaxValue())
@@ -95,18 +101,6 @@ UWorld* URegenConsumable::GetWorld() const
 
 void URegenConsumable::OnRegenTick()
 {
-	EnableRegen();
-}
-
-
-void UHealthContainer::NoConsumeLeft()
-{
-	Super::NoConsumeLeft();
-	// todo что то при смерти
-}
-
-
-void UStaminaContainer::NoConsumeLeft()
-{
-	Super::NoConsumeLeft();
+	if(!IsRegenBlocked())
+			EnableRegen();
 }

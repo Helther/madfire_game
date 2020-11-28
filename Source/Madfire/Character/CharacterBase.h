@@ -8,6 +8,7 @@
 #include "LevelList.h"
 #include "MovementComponentBase.h"
 #include "CombatComponent.h"
+#include "EquipmentComponent.h"
 #include "AttributesComponent.h"
 #include "CharacterBase.generated.h"
 
@@ -50,6 +51,7 @@ public:
   UCombatComponent* GetCombatComponent() const;
 	UAttributesComponent* GetAttributesComponent() const;
 	ULevelComponent* GetLevelComponent() const;
+	UEquipmentComponent* GetEquipmentComponent() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Character Base")
 		virtual void DoLevelUp(const FLevelInfo &levelInfo);
@@ -73,4 +75,7 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Character Components", 
 		VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
 		ULevelComponent *LevelComponent;
+	UPROPERTY(BlueprintReadWrite, Category = "Character Components", 
+		VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
+		UEquipmentComponent *EquipmentComponent;
 };

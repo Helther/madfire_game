@@ -12,6 +12,7 @@ ACharacterBase::ACharacterBase(const FObjectInitializer& ObjectInitializer) :
 	AttributesComponent = CreateDefaultSubobject<UAttributesComponent>("AttributesComponent");
 	LevelComponent = CreateDefaultSubobject<ULevelComponent>("LevelComponent");
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
+	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
 	CurrentCCState = ECCState::NoCC;
 }
 
@@ -36,6 +37,12 @@ ULevelComponent* ACharacterBase::GetLevelComponent() const
 {	
 	check(LevelComponent != nullptr && "No LevelComponent")
 	return LevelComponent;
+}
+
+UEquipmentComponent* ACharacterBase::GetEquipmentComponent() const
+{
+	check(EquipmentComponent != nullptr && "No EquipmentComponent")
+	return EquipmentComponent;
 }
 
 float ACharacterBase::TakeDamage(float DamageAmount,
@@ -106,6 +113,8 @@ void ACharacterBase::Update()
 		GetLevelComponent()->Update();
 	if(GetAttributesComponent()->IsUpdateNeeded())
 		GetAttributesComponent()->Update();
+	if(GetEquipmentComponent()->IsUpdateNeeded())
+		GetEquipmentComponent()->Update();
 	if(GetMovementComponent()->IsUpdateNeeded())		
 		GetMovementComponent()->Update();
 
@@ -118,8 +127,11 @@ void ACharacterBase::DoLevelUp(const FLevelInfo& levelInfo) // todo replace in B
 	GetLevelComponent()->SetUpdate();
 	GetAttributesComponent()->SetUpdate();
 	bool dexChanged = UAttributesHelper::GetAttribute(levelInfo.Attributes, EAttributes::Dex) != 0;
+	bool strChanged = UAttributesHelper::GetAttribute(levelInfo.Attributes, EAttributes::Str) != 0;
 	bool acrobaticsChanged = USkillHelper::GetValue(levelInfo.SkillList, ESkill::Tumble) != 0;
-	if(dexChanged || acrobaticsChanged)
+	if(strChanged)
+		GetEquipmentComponent()->SetUpdate();
+	if(dexChanged || strChanged || acrobaticsChanged)
 		GetMovementComponent()->SetUpdate();
 	// может что то еще
 	Update();

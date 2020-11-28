@@ -35,7 +35,7 @@ public:
 		static bool SlotIsEmpty(UPARAM(ref) FInventorySlot &slot) { return slot.Item == nullptr; }
 
 	UFUNCTION(BlueprintPure, Category = "Inventory Slot")
-		static bool RemoveFromSlot(UPARAM(ref) FInventorySlot &slot, int32 amount, bool remvoeWholeStack);
+		static bool RemoveFromSlot(UPARAM(ref) FInventorySlot &slot, int32 amount, bool removeWholeStack);
 
 	UFUNCTION(BlueprintPure, Category = "Inventory Slot")
 		static bool MergeSlots(UPARAM(ref) FInventorySlot &SlotA, UPARAM(ref) FInventorySlot &SlotB);
@@ -87,7 +87,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
 		bool RemoveFromStack(int32 index, int32 amount, bool removeWholeStack);
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Invenrory Component")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory Component")
 		float CurrentWeight;
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")

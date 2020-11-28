@@ -83,31 +83,3 @@ protected:
 		float BaseRegenRate = 5;
 	float CurrentRegenRate = 0;
 };
-
-UCLASS(BlueprintType, DefaultToInstanced, EditInlineNew)
-class MADFIRE_API UHealthContainer : public URegenConsumable
-{
-	GENERATED_BODY()
-
-private:
-	void NoConsumeLeft() override;
-};
-
-UCLASS(BlueprintType, DefaultToInstanced, EditInlineNew)
-class MADFIRE_API UStaminaContainer : public URegenConsumable
-{
-	GENERATED_BODY()
-
-private:
-	void NoConsumeLeft() override;
-};
-
-UCLASS(BlueprintType, DefaultToInstanced, EditInlineNew)
-class MADFIRE_API UMagicShieldContainer : public UConsumableAttribute
-{
-	GENERATED_BODY()
-
-public:
-	
-private:
-};

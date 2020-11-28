@@ -47,7 +47,7 @@ void ABasePlayerController::SetupInputComponent()
         InputComponent->BindAction(FInputKeyNames::Sprint, IE_Released, this, &ABasePlayerController::UnSprintAction);
         InputComponent->BindAction(FInputKeyNames::Crouch, IE_Pressed, this, &ABasePlayerController::CrouchAction);
         InputComponent->BindAction(FInputKeyNames::Jump, IE_Pressed, this, &ABasePlayerController::JumpAction);
-		InputComponent->BindAction(FInputKeyNames::Jump, IE_Released, this, &ABasePlayerController::UnJumpAction);
+				InputComponent->BindAction(FInputKeyNames::Jump, IE_Released, this, &ABasePlayerController::UnJumpAction);
         InputComponent->BindAxis(FInputKeyNames::MoveForward, this, &ABasePlayerController::MoveForward);
         InputComponent->BindAxis(FInputKeyNames::MoveRight, this, &ABasePlayerController::MoveRight);
         InputComponent->BindAxis(FInputKeyNames::CameraPitch, this, &ABasePlayerController::CameraPitch);

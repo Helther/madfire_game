@@ -9,21 +9,16 @@ UInventoryComponent::UInventoryComponent()
 {}
 
 
-bool UInventoryComponent::RemoveFromSlot(UPARAM(ref) FInventorySlot &slot, int32 amount, bool remvoeWholeStack)
+bool UInventoryComponent::RemoveFromSlot(UPARAM(ref) FInventorySlot &slot, int32 amount, bool removeWholeStack)
 {
 	if (amount > slot.Count)
 		return false;
 
-	if (remvoeWholeStack || slot.Count == amount)
-	{
+	if (removeWholeStack || slot.Count == amount)
 		slot = FInventorySlot();
-		return true;
-	}
 	else
-	{
 		slot.Count -= amount;
-		return true;
-	}
+	return true;
 }
 
 bool UInventoryComponent::MergeSlots(UPARAM(ref) FInventorySlot &SlotA, UPARAM(ref) FInventorySlot &SlotB)
@@ -389,6 +384,6 @@ void UInventoryComponent::CalculateWeight()
 void UInventoryComponent::Update()
 {
 	// todo define
-	// weight update
+	// weight update maybe?
 	UnSetUpdate();
 }

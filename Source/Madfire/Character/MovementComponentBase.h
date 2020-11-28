@@ -8,20 +8,35 @@
 
 enum EControlDirections
 {
-    ForwardD = 0,
-    BackD,
-    RightD,
-    LeftD,
-    FLeftD,
-    FRightD,
-    BLeftD,
-    BRightD
+	ForwardD = 0,
+	BackD,
+	RightD,
+	LeftD,
+	FLeftD,
+	FRightD,
+	BLeftD,
+	BRightD
 };
 
 struct FTransitionSectionNames
 {
-    static const FName Start;
-    static const FName End;
+  static const FName Start;
+  static const FName End;
+};
+
+USTRUCT(BlueprintType)
+struct FMoveStaminaCosts
+{
+    GENERATED_BODY()
+	// отрицательные т.к. прибавляем при потреблении
+	UPROPERTY(EditAnywhere)
+    float Jump = -20;
+	UPROPERTY(EditAnywhere)
+    float Sprint = -5;
+	UPROPERTY(EditAnywhere)
+    float Climb = -20;	
+	UPROPERTY(EditAnywhere)
+    float Vault = -15;	
 };
 
 UENUM(BlueprintType)
@@ -37,31 +52,31 @@ enum ECustomMovementMode
 // possible results of wall climbing check for available space
 enum EClimbTraceResult
 {
-    SuccessStand = 0,
-    SuccessCrouch,
-    FailAtStart,
-    FailAtEnd
+	SuccessStand = 0,
+	SuccessCrouch,
+	FailAtStart,
+	FailAtEnd
 };
 
 UENUM(BlueprintType, meta = (Bitflags))
 enum EMoveAbilities     //!< Флаги возможностей передвижения
 {
-    NoMove = 0              UMETA(DisplayName = "CanJump"),
+	NoMove = 0          UMETA(DisplayName = "CanJump"),
 	CanJump = 1    			UMETA(DisplayName = "CanClimb"),
-	CanClimb = 2  		    UMETA(DisplayName = "CanDodge"),
+	CanClimb = 2  		  UMETA(DisplayName = "CanDodge"),
 	//CanLadder = 			UMETA(DisplayName = "CanLadder"),
 	//CanSlide =     		UMETA(DisplayName = "CanSlide"),
-	CanDodge = 4  	    	UMETA(DisplayName = "CanSprint"),
-	CanSprint = 8 	        UMETA(DisplayName = "CanCrouch"),
-    CanCrouch = 16          
+	CanDodge = 4  	    UMETA(DisplayName = "CanSprint"),
+	CanSprint = 8 	    UMETA(DisplayName = "CanCrouch"),
+	CanCrouch = 16          
 };
 ENUM_CLASS_FLAGS(EMoveAbilities)
 
 // climb starting transform
 struct StartClimbData
 {
-    FVector Location;
-    FRotator Rotation;
+	FVector Location;
+	FRotator Rotation;
 };
 
 /**
@@ -83,33 +98,33 @@ public:
 	///////////////////////Non combat////////////////////////
     //базовая скорость бега
 	UPROPERTY(EditAnywhere, Category = "Character Default Speeds")
-        float MaxRunSpeedDefault{};
+			float MaxRunSpeedDefault{};
     //базовая скорость ходьбы
 	UPROPERTY(EditAnywhere, Category = "Character Default Speeds")
-        float MaxWalkSpeedDefault{};
+			float MaxWalkSpeedDefault{};
     //базовая скорость спринта
 	UPROPERTY(EditAnywhere, Category = "Character Default Speeds")
-        float MaxSprintSpeedDefault{};
+			float MaxSprintSpeedDefault{};
     //базовая скорость движения вдоль стены
 	UPROPERTY(EditAnywhere, Category = "Character Default Speeds")
-        float MaxWallClimbSpeedDefault{};
+			float MaxWallClimbSpeedDefault{};
     //базовая скорость ходьбы в присяде
 	UPROPERTY(EditAnywhere, Category = "Character Default Speeds")
-        float MaxWalkSpeedCrouchedDefault{};
+			float MaxWalkSpeedCrouchedDefault{};
     //базовая скорость бега в присяде
 	UPROPERTY(EditAnywhere, Category = "Character Default Speeds")
-        float MaxRunSpeedCrouchedDefault{};
+			float MaxRunSpeedCrouchedDefault{};
     //базовая скорость плавания
 	UPROPERTY(EditAnywhere, Category = "Character Default Speeds")
-        float MaxSwimSpeedDefault{};
+			float MaxSwimSpeedDefault{};
     //базовая скорость полета
 	UPROPERTY(EditAnywhere, Category = "Character Default Speeds")
-        float MaxFlySpeedDefault{};
+			float MaxFlySpeedDefault{};
     // для обновления максимальных скоростей
-    void CalculateMaxCombatSpeeds(float SpeedModifier);
-    void CalculateMaxSpeeds(float SpeedModifier);
-    void CalculateMaxBlockingSpeed(float SpeedModifier);
-    void CalculateMaxCastingSpeed(float SpeedModifier);
+	void CalculateMaxCombatSpeeds(float SpeedModifier);
+	void CalculateMaxSpeeds(float SpeedModifier);
+	void CalculateMaxBlockingSpeed(float SpeedModifier);
+	void CalculateMaxCastingSpeed(float SpeedModifier);
 
 protected:
 	/////////////////////// max ue4 current speeds //////
@@ -131,10 +146,10 @@ public:
     bool bFallDamageInvul{false}; // блокировка урона от падения
     //высота падения при которой начинает наносится дамаг
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fall Damage")
-        float fallHeightThreshold{};
+		float fallHeightThreshold{};
     //высота падения при которой урон максимален
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fall Damage")
-        float MaxfallHeightThresholdBase{};
+		float MaxfallHeightThresholdBase{};
 
 private:
      //высота персонажа в момент потери контакта с поверхностью
@@ -150,19 +165,19 @@ private:
 public:
     // максимальное отклонение направления чарактера относительно нормали стены в градусах
     UPROPERTY(EditAnywhere, Category = "Climb general")
-        float MaxClimbRotationAngle{};
+			float MaxClimbRotationAngle{};
     // вертикальная скорость прыжка от стены
     UPROPERTY(EditAnywhere, Category = "Climb general")
-        float JumpWallZVelocity{};
+			float JumpWallZVelocity{};
     // горизонтальная скорость прыжка от стены
     UPROPERTY(EditAnywhere, Category = "Climb general")
-        float JumpWallHorizVelocity{};
+			float JumpWallHorizVelocity{};
     // доп смещение от стены при старте анимации
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb general")
-        float LocationHorizOffset = 0;
+			float LocationHorizOffset = 0;
     // same day different axis
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb general")
-        float LocationVertOffset = 0;
+			float LocationVertOffset = 0;
     // check if character playing root motion or teleporting
     bool IsRootOrTeleport();
 private:
@@ -284,25 +299,33 @@ private:
 
     //////////////////=========== Общие вспомогательные =======/////////////////////////
 public:
-    bool bWasCrouching{false}; // тру если персонваж был в присяде перед тем как начать падать
-    bool bWasJumpingOff{false}; // тру если персонаж прыгал от стены до полета
-    bool bWasJustJumping{false};
+	bool bWasCrouching{false}; // тру если персонваж был в присяде перед тем как начать падать
+	bool bWasJumpingOff{false}; // тру если персонаж прыгал от стены до полета
+	bool bWasJustJumping{false};
 	bool bWantToSprint{false}; //тру если пытается перейти на спринт
 	bool bIsRunning{true}; // тру если персонаж в режима бега
 	bool bIsSprinting{false}; // тру если персонаж в режиме спринта
-    virtual void Update();
+	// таймер по которому тратится стамина при спринте 
+	FTimerHandle SprintConsumeTimer;
+    float SprintConsumeTime;
+    void OnSprintConsume();
+	virtual void Update();
     // false если перс перегружен или замедлен до остановки 
-    bool CanMove(); 
+	bool CanMove(); 
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+		FMoveStaminaCosts StaminaCostValues; //!< Базовые аттрибуты (сила, ловкость и т.д.)
+
     //todo для использования таких масок в блупринтах приходится создавать местную переменную там
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EMoveAbilities"),
             Category = "Character Movement")
 		int MoveAbilitiesDefault;
     
-    int MoveAbilitiesCurrent; 
+	int MoveAbilitiesCurrent; 
 	UFUNCTION(BlueprintCallable, Category = "transition")// todo temp
-        void On_TransitionInterrupt();
+			void On_TransitionInterrupt();
 
-    UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
+	UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
 		void SetUpdate() { IsDirty = true; }
 	UFUNCTION(BlueprintCallable, Category = "Component Update")
 		void UnSetUpdate() { IsDirty = false; }
@@ -316,12 +339,12 @@ protected:
 	void OnMovementModeChanged(EMovementMode, uint8) override;
 	float GetMaxSpeed() const override;
     //tick functions exlusively for different movement modes
-    void PhysWalking(float deltaTime, int32 Iterations) override;
+	void PhysWalking(float deltaTime, int32 Iterations) override;
 	void PhysFalling(float deltaTime, int32 Iterations) override;
-    void PhysCustom(float deltaTime, int32 Iterations) override;
+	void PhysCustom(float deltaTime, int32 Iterations) override;
 	virtual void NotifyJumpApex() override;
-    virtual void Crouch(bool bClientSimulation = false) override;
-    virtual bool DoJump(bool bReplayingMoves) override;
+	virtual void Crouch(bool bClientSimulation = false) override;
+	virtual bool DoJump(bool bReplayingMoves) override;
 	//From unreal engine's Uobject
 	void BeginPlay() override;
 	void TickComponent(float DeltaTime,
