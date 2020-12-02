@@ -2,12 +2,19 @@
 
 #include "InventoryComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "CharacterBase.h"
 #include "../TraceFunctional/TraceDefines.h"
 
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
 {}
 
+void UInventoryComponent::OnComponentCreated() 
+{
+	Super::OnComponentCreated();
+	Owner = Cast<ACharacterBase>(GetOwner());
+	check(Owner != nullptr && "No Owner!")
+}
 
 bool UInventoryComponent::RemoveFromSlot(UPARAM(ref) FInventorySlot &slot, int32 amount, bool removeWholeStack)
 {
@@ -373,6 +380,14 @@ bool UInventoryComponent::RemoveFromStack(int32 index, int32 amount, bool remove
 	}
 }
 
+void UInventoryComponent::Update()
+{
+	// todo define
+	CalculateWeight();
+	CalculateMaxWeight();
+	UnSetUpdate();
+}
+
 void UInventoryComponent::CalculateWeight()
 {
 	CurrentWeight = 0;
@@ -381,9 +396,9 @@ void UInventoryComponent::CalculateWeight()
 	
 }
 
-void UInventoryComponent::Update()
+void UInventoryComponent::CalculateMaxWeight()
 {
-	// todo define
-	// weight update maybe?
-	UnSetUpdate();
+	float k = 20.f;
+	int32 str =	UAttributesHelper::GetAttribute(Owner->GetAttributesComponent()->CurrentAttributes, EAttributes::Str);
+	MaxWeight = k * str;	// clever formula!
 }

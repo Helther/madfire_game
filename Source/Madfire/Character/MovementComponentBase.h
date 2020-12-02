@@ -62,12 +62,12 @@ UENUM(BlueprintType, meta = (Bitflags))
 enum EMoveAbilities     //!< Флаги возможностей передвижения
 {
 	NoMove = 0          UMETA(DisplayName = "CanJump"),
-	CanJump = 1    			UMETA(DisplayName = "CanClimb"),
-	CanClimb = 2  		  UMETA(DisplayName = "CanDodge"),
-	//CanLadder = 			UMETA(DisplayName = "CanLadder"),
+	CanJump = 1         UMETA(DisplayName = "CanClimb"),
+	CanClimb = 2        UMETA(DisplayName = "CanDodge"),
+	//CanLadder = 			UMETA(DisplayName = "CanLadder"),// cut content
 	//CanSlide =     		UMETA(DisplayName = "CanSlide"),
-	CanDodge = 4  	    UMETA(DisplayName = "CanSprint"),
-	CanSprint = 8 	    UMETA(DisplayName = "CanCrouch"),
+	CanDodge = 4        UMETA(DisplayName = "CanSprint"),
+	CanSprint = 8       UMETA(DisplayName = "CanCrouch"),
 	CanCrouch = 16          
 };
 ENUM_CLASS_FLAGS(EMoveAbilities)
@@ -143,15 +143,18 @@ protected:
 
 	/////////////////======= Fall damage ========//////////////////
 public:
-    bool bFallDamageInvul{false}; // блокировка урона от падения
+    // блокировка урона от падения
+    bool bFallDamageInvul{false};
     //высота падения при которой начинает наносится дамаг
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fall Damage")
-		float fallHeightThreshold{};
+		float MinFallHeightThresholdBase{};
     //высота падения при которой урон максимален
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fall Damage")
 		float MaxfallHeightThresholdBase{};
 
-private:
+protected:
+    float MinFallHeightThreshold;
+    float MaxfallHeightThreshold;
      //высота персонажа в момент потери контакта с поверхностью
 	float fallLocationHeight{};
     //проверка на получение урона от падения
@@ -166,12 +169,6 @@ public:
     // максимальное отклонение направления чарактера относительно нормали стены в градусах
     UPROPERTY(EditAnywhere, Category = "Climb general")
 			float MaxClimbRotationAngle{};
-    // вертикальная скорость прыжка от стены
-    UPROPERTY(EditAnywhere, Category = "Climb general")
-			float JumpWallZVelocity{};
-    // горизонтальная скорость прыжка от стены
-    UPROPERTY(EditAnywhere, Category = "Climb general")
-			float JumpWallHorizVelocity{};
     // доп смещение от стены при старте анимации
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb general")
 			float LocationHorizOffset = 0;
@@ -180,7 +177,7 @@ public:
 			float LocationVertOffset = 0;
     // check if character playing root motion or teleporting
     bool IsRootOrTeleport();
-private:
+protected:
     FTraceParams params;
     // проверка если угол относительно стены и перса не превышает максимум
     bool checkRelativeRotation(const float WallNormalYaw);
@@ -231,8 +228,6 @@ public:
     void HangOnWall(TSharedPtr<StartClimbData> HangData, bool ClimbDown);
     // jump from wall while hanging
     void JumpOffWall(const EControlDirections& Directions);
-
-private:
 
 	//////////////////////////Ledge Climb///////////////////////////
 
@@ -299,6 +294,49 @@ private:
 
     //////////////////=========== Общие вспомогательные =======/////////////////////////
 public:
+    ////// базовые параметры передвижения задаваемые в редакторе, из которых при апдейте
+    // расчитываются актуальные значения
+    // параметры прыжка
+
+    // отзывчиваость в воздухе, 0-1
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+        float AirControlBase{};
+    // сила прыжка
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+        float JumpZVelocityBase{};
+    // замедление в воздухе при отстутствии движения вперед
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+        float BrakingDecelerationFallingBase{};
+    // трение о воздух при движении
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+        float FallingLateralFrictionBase{};
+    // время на которое можно продлить возвышение прыжка
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+        float JumpMaxHoldTimeBase{};
+    // вертикальная скорость прыжка от стены
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+        float JumpWallZVelocityBase{};
+    // горизонтальная скорость прыжка от стены
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+        float JumpWallXYVelocityBase{};
+
+    // параметры наземного движения
+
+    // макс. ускорение на земле
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+        float MaxAccelerationBase{};
+    // аналогично замедление
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+        float BrakingDecelerationWalkingBase{};
+    // сцепление на земле
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+        float BrakingFrictionBase{};
+    // макс отношение перегруза при котором можно двигаться
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+        float MaxOverweightMoveFactorBase{};
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+        float AnimPlayRateBase{};
+    ////////
 	bool bWasCrouching{false}; // тру если персонваж был в присяде перед тем как начать падать
 	bool bWasJumpingOff{false}; // тру если персонаж прыгал от стены до полета
 	bool bWasJustJumping{false};
@@ -311,21 +349,25 @@ public:
     void OnSprintConsume();
 	virtual void Update();
     // false если перс перегружен или замедлен до остановки 
-	bool CanMove(); 
+	bool CanMove();
+    float GetWeightFactor() const;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
-		FMoveStaminaCosts StaminaCostValues; //!< Базовые аттрибуты (сила, ловкость и т.д.)
+		FMoveStaminaCosts StaminaCostValues;
 
-    //todo для использования таких масок в блупринтах приходится создавать местную переменную там
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EMoveAbilities"),
             Category = "Character Movement")
 		int MoveAbilitiesDefault;
-    
 	int MoveAbilitiesCurrent; 
-	UFUNCTION(BlueprintCallable, Category = "transition")// todo temp
-			void On_TransitionInterrupt();
 
-	UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
+	UFUNCTION(BlueprintCallable, Category = "Transition")// todo temp
+			void On_TransitionInterrupt();
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transition")
+        float TransitionMoveSpeed{};
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transition")
+        float TransitionRotationSpeed{};
+
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
 		void SetUpdate() { IsDirty = true; }
 	UFUNCTION(BlueprintCallable, Category = "Component Update")
 		void UnSetUpdate() { IsDirty = false; }
@@ -350,8 +392,11 @@ protected:
 	void TickComponent(float DeltaTime,
                         enum ELevelTick TickType,
                         FActorComponentTickFunction *ThisTickFunction) override;
-
-private:
+    ///
+    float JumpWallZVelocity;
+    float JumpWallXYVelocity;
+    float MaxOverweightMoveFactor;
+    float AnimPlayRate; 
 
     ////////// smoooth transition //////////////////
     TUniquePtr<FVector> TransitionLocEnd = nullptr;
@@ -360,6 +405,7 @@ private:
     EMovementMode TransitionFinishMode;
     // тру если сейчас телепортируется
     bool bIsTransitioning{false};
+
     void TransitionProcess();
     void TransitionStart(const FVector& EndLoc,
                         const FRotator& EndRot,
@@ -367,8 +413,7 @@ private:
                         ECustomMovementMode InMode);
     void On_TransitionFinished();
     void TransitionDestroy();
-    float AnimPlayRate; 
+    ///
     bool IsDirty = false;
-    
     class ACharacterBase* Character;
 };

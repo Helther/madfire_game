@@ -17,12 +17,12 @@ class MADFIRE_API UConsumableAttribute : public UObject
 public:
 	UConsumableAttribute();
 
-	virtual void SetValue(float NewVal){ CurrentVal = NewVal; }
-	virtual void SetBaseMaxValue(float NewVal){ BaseMaxVal = NewVal; }
-	virtual void SetCurrentMaxVal(float NewVal){ CurrentMaxVal = NewVal; }
-	virtual float GetValue() const { return CurrentVal; }
-	virtual float GetBaseMaxValue() const { return BaseMaxVal; }
-	virtual float GetCurrentMaxValue() const { return CurrentMaxVal; }
+	void SetValue(float NewVal){ CurrentVal = NewVal; }
+	void SetBaseMaxValue(float NewVal){ BaseMaxVal = NewVal; }
+	void SetCurrentMaxVal(float NewVal){ CurrentMaxVal = NewVal; }
+	float GetValue() const { return CurrentVal; }
+	float GetBaseMaxValue() const { return BaseMaxVal; }
+	float GetCurrentMaxValue() const { return CurrentMaxVal; }
 	//UFUNCTION(BlueprintCallable, Category = "Character Stats") 
 	// возвращает фолс если не хватило ресурса
 	virtual bool Consume(float amount);
@@ -60,8 +60,8 @@ public:
 
 protected:
 	class UWorld* GetWorld() const override;
-	virtual void OnNoConsumeTimeFinish();
-	virtual void OnRegenTick();
+	void OnNoConsumeTimeFinish();
+	void OnRegenTick();
 	void NoConsumeLeft() override;
 
 	// увеличивается при каждом вызове BlockRegen на 1

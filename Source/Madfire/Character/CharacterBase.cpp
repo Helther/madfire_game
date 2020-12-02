@@ -13,6 +13,7 @@ ACharacterBase::ACharacterBase(const FObjectInitializer& ObjectInitializer) :
 	LevelComponent = CreateDefaultSubobject<ULevelComponent>("LevelComponent");
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
 	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
 	CurrentCCState = ECCState::NoCC;
 }
 
@@ -43,6 +44,12 @@ UEquipmentComponent* ACharacterBase::GetEquipmentComponent() const
 {
 	check(EquipmentComponent != nullptr && "No EquipmentComponent")
 	return EquipmentComponent;
+}
+
+UInventoryComponent* ACharacterBase::GetInventoryComponent() const
+{
+	check(InventoryComponent != nullptr && "No InventoryComponent")
+	return InventoryComponent;
 }
 
 float ACharacterBase::TakeDamage(float DamageAmount,
@@ -115,13 +122,15 @@ void ACharacterBase::Update()
 		GetAttributesComponent()->Update();
 	if(GetEquipmentComponent()->IsUpdateNeeded())
 		GetEquipmentComponent()->Update();
+	if(GetInventoryComponent()->IsUpdateNeeded())
+		GetInventoryComponent()->Update();
 	if(GetMovementComponent()->IsUpdateNeeded())		
 		GetMovementComponent()->Update();
 
 	//other calculation
 }
 
-void ACharacterBase::DoLevelUp(const FLevelInfo& levelInfo) // todo replace in BP
+void ACharacterBase::DoLevelUp(const FLevelInfo& levelInfo)
 {
 	GetLevelComponent()->LevelUp(levelInfo);
 	GetLevelComponent()->SetUpdate();
@@ -130,7 +139,10 @@ void ACharacterBase::DoLevelUp(const FLevelInfo& levelInfo) // todo replace in B
 	bool strChanged = UAttributesHelper::GetAttribute(levelInfo.Attributes, EAttributes::Str) != 0;
 	bool acrobaticsChanged = USkillHelper::GetValue(levelInfo.SkillList, ESkill::Tumble) != 0;
 	if(strChanged)
+	{
+		GetInventoryComponent()->SetUpdate();
 		GetEquipmentComponent()->SetUpdate();
+	}
 	if(dexChanged || strChanged || acrobaticsChanged)
 		GetMovementComponent()->SetUpdate();
 	// может что то еще

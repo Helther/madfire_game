@@ -5,6 +5,7 @@
 #include "CharacterBase.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/PhysicsVolume.h"
+#include "Rules/Utils.h"
 #include "Runtime/Engine/Classes/Components/CapsuleComponent.h"
 
 
@@ -23,17 +24,45 @@ UBaseMovementComponent::UBaseMovementComponent(const class FObjectInitializer &O
     MaxRunSpeedCrouchedDefault = 300;
     MaxSprintSpeedDefault = 700;
     MaxClimbRotationAngle = 70;
-    JumpWallZVelocity = 400;
-    JumpWallHorizVelocity = 200;
     MaxVaultLedgeSize = 85;
     MaxStepHeight = 40;
     LedgeTraceLength = 70;
     LocationHorizOffset = 3;
     LocationVertOffset = 3;
-    AnimPlayRate = 1;
+    TransitionMoveSpeed = 0.4f;
+    TransitionRotationSpeed = 0.5f;
     MoveAbilitiesCurrent = MoveAbilitiesDefault = 0xff;
     SprintConsumeTime = 0.5;
-    //todo calculate Character->JumpMaxHoldTime from acrobatics
+
+    JumpWallZVelocityBase = 400;
+    JumpWallXYVelocityBase = 200;
+    MinFallHeightThresholdBase = 100;
+    MaxfallHeightThresholdBase = 500;
+    
+    AirControlBase = 0.05f;
+    JumpZVelocityBase = 400.f;
+    BrakingDecelerationFallingBase = 0.f;
+    FallingLateralFrictionBase = 1.f;
+    JumpMaxHoldTimeBase = 1.f;
+    MaxAccelerationBase = 2048.f;
+    BrakingDecelerationWalkingBase = 2048.f;
+    BrakingFrictionBase = 2.f;
+    AnimPlayRateBase = 1.f;
+    MaxOverweightMoveFactorBase = 1.2f;
+
+    JumpWallZVelocity = JumpWallZVelocityBase;
+    JumpWallXYVelocity = JumpWallXYVelocityBase;
+    MinFallHeightThreshold = MinFallHeightThresholdBase;
+    MaxfallHeightThreshold = MaxfallHeightThresholdBase;
+    AirControl = AirControlBase;
+    JumpZVelocity = JumpZVelocityBase;
+    BrakingDecelerationFalling = BrakingDecelerationFallingBase;
+    FallingLateralFriction = FallingLateralFrictionBase;
+    MaxAcceleration = MaxAccelerationBase;
+    BrakingDecelerationWalking = BrakingDecelerationWalkingBase;
+    BrakingFriction = BrakingFrictionBase;
+    AnimPlayRate = AnimPlayRateBase;
+    MaxOverweightMoveFactor = MaxOverweightMoveFactorBase;
 
     //MoveAbilitiesCurent &= ~ (EMoveAbilities::CanCrouch | EMoveAbilities::CanJump);
 
@@ -173,7 +202,6 @@ bool UBaseMovementComponent::CanVaultOrClimb(bool IsLow)
 bool UBaseMovementComponent::DoVault(const StartClimbData& LocationData, 
                                     bool IsLow)
 {
-    ///TODO add stamina calculation and usage
     // vector in the direction opposite to the wall's normal
     const auto res = FQuat(FRotator(0, LocationData.Rotation.Yaw, 0)) * FQuat(FRotator(0, 180, 0));
     const FRotator wallNormalDir(res.Rotator());
@@ -701,12 +729,12 @@ void UBaseMovementComponent::JumpOffWall(const EControlDirections& Directions)
             const auto characterBackDir = (FQuat(FRotator(0, Character->GetActorRotation().Yaw, 0)) * 
                                             FQuat(FRotator(0, 180, 0))).Rotator();
             Character->SetActorRotation(characterBackDir);
-            Velocity += characterBackDir.Vector() * JumpWallHorizVelocity;
+            Velocity += characterBackDir.Vector() * JumpWallXYVelocity;
         }
         else if(Directions == EControlDirections::RightD)
-            Velocity += Character->GetActorRightVector() * JumpWallHorizVelocity;
+            Velocity += Character->GetActorRightVector() * JumpWallXYVelocity;
         else if(Directions == EControlDirections::LeftD)
-            Velocity += Character->GetActorRightVector() * -JumpWallHorizVelocity;
+            Velocity += Character->GetActorRightVector() * -JumpWallXYVelocity;
 	}
 }
 
@@ -786,15 +814,16 @@ float UBaseMovementComponent::GetMaxSpeed() const
     case MOVE_Walking:
     case MOVE_NavWalking:
     {
-        if (IsCrouching() && bIsRunning)
+        if (IsCrouching() && bIsRunning && GetWeightFactor() <= 1)
             return MaxRunSpeedCrouched;
         else if (IsCrouching() && !bIsRunning)
             return MaxWalkSpeedCrouched;
         else if (!bWantToSprint && !bIsRunning)
             return MaxWalkSpeed;
-        else if (!bWantToSprint && bIsRunning)
+        else if (!bWantToSprint && bIsRunning && GetWeightFactor() <= 1)
             return MaxRunSpeed;
-        else if (bWantToSprint && Character->GetAttributesComponent()->Stamina->GetValue() > 0)
+        else if (bWantToSprint && Character->GetAttributesComponent()->Stamina->GetValue() > 0 && 
+                    GetWeightFactor() <= 1)
             return MaxSprintSpeed;
         else 
             return MaxRunSpeed;
@@ -819,7 +848,8 @@ void UBaseMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
     Super::PhysWalking(deltaTime, Iterations);
 
     if(bWantToSprint && Velocity.Size() > MaxWalkSpeedCrouched - 1.f &&
-        !IsCrouching() && Character->GetAttributesComponent()->Stamina->GetValue() > 0)
+        !IsCrouching() && Character->GetAttributesComponent()->Stamina->GetValue() > 0
+        && GetWeightFactor() <= 1)
     {
         if(!bIsSprinting)
         {
@@ -931,7 +961,7 @@ bool UBaseMovementComponent::FallDamageCheck()
 {
     const float difference = fallLocationHeight - Character->GetActorLocation().Z;
     fallLocationHeight = 0;
-    if (fallHeightThreshold < difference)
+    if (MinFallHeightThreshold < difference)
     {
         ApplyFallDamage(difference);
         return true;
@@ -943,13 +973,8 @@ bool UBaseMovementComponent::FallDamageCheck()
 void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
 {
     float damage = Character->GetAttributesComponent()->Health->GetCurrentMaxValue();
-     //TODO учесть модификатор ловкости
-    //max fall height calculation
-    const int32 DexMod = UAttributesHelper::GetModifier(
-        Character->GetAttributesComponent()->CurrentAttributes,EAttributes::Dex); //TODO temp
-    auto MaxFallHeightMod = 1 + DexMod;// TODO temp
-    if (FallDistance < MaxfallHeightThresholdBase * MaxFallHeightMod)
-        damage *= (FallDistance - fallHeightThreshold) / fallHeightThreshold;
+    if (FallDistance < MaxfallHeightThreshold)
+        damage *= (FallDistance - MinFallHeightThreshold) / MinFallHeightThreshold;	// NOT NULL!
 }
 
 void UBaseMovementComponent::TransitionStart(const FVector& EndLoc,
@@ -973,7 +998,7 @@ void UBaseMovementComponent::TransitionStart(const FVector& EndLoc,
     SetMovementMode(EMovementMode::MOVE_Custom, InMode);
     TransitionLocEnd = MakeUnique<FVector>(EndLoc);
     TransitionRotEnd = MakeUnique<FRotator>(EndRot);
-    CurrentTransitionAnim = AnimToPlay;// todo добавить блок регена стамины
+    CurrentTransitionAnim = AnimToPlay;// todo добавить блок регена стамины в аниации
     Character->PlayAnimMontage(CurrentTransitionAnim, AnimPlayRate,
         FTransitionSectionNames::Start);
 }
@@ -995,9 +1020,9 @@ void UBaseMovementComponent::TransitionProcess()
     else
     {
         const bool locSweep = Character->SetActorLocation(FMath::Lerp(Character->GetActorLocation(), 
-                *TransitionLocEnd.Get(), 0.4f), true); // todo temp speed
+                *TransitionLocEnd.Get(),TransitionMoveSpeed), true);
         const bool rotSweep = Character->SetActorRotation(FMath::Lerp(Character->GetActorRotation(),
-                *TransitionRotEnd.Get(), 0.5f)); // todo temp speed
+                *TransitionRotEnd.Get(), TransitionRotationSpeed));
         if(!locSweep || !rotSweep)
         {
             TransitionDestroy();
@@ -1063,13 +1088,65 @@ void UBaseMovementComponent::OnSprintConsume()
 
 void UBaseMovementComponent::Update()
 {
-    //todo jump velocity calculation with agility(dex)
-    //todo animation play rate (dex) AnimPlayRate
-    //todo изменения в возможностях передвижения например перегрузка
-	//TODO: рассчитать реальный мод скорости с учетом текущих бафов и 
-    // веса снаряжения относительно максимума
+    const auto dex = UAttributesHelper::GetAttribute(Character->GetAttributesComponent()->CurrentAttributes, EAttributes::Dex);
+	const auto tumble = USkillHelper::GetValue(Character->GetAttributesComponent()->CurrentSkills, ESkill::Tumble);
+    const auto dexMod = UAttributesHelper::GetModifier(
+    Character->GetAttributesComponent()->CurrentAttributes,EAttributes::Dex);
+    // debug todo
+    const float abilityMod = 1;
+    const float skillMod = 1;
+    const float weightMod = 1;
+    float weightFactorBalanceMod = 10.f;
+    // end debug
+    
+    // todo временные значения пределов значений
+    // ловкость
+
+    MinFallHeightThreshold = GetSigmoidValue(dexMod, abilityMod, MinFallHeightThresholdBase * 0.75, MinFallHeightThresholdBase * 1.25f); //  0.75*base-1.25*base
+    MaxfallHeightThreshold = GetSigmoidValue(dexMod, abilityMod, MaxfallHeightThresholdBase * 0.75, MaxfallHeightThresholdBase * 1.25f);
+
+    JumpWallZVelocity = GetSigmoidValue(dexMod, abilityMod, JumpWallZVelocityBase * 0.75, JumpWallZVelocityBase * 1.25f);
+    JumpWallXYVelocity = GetSigmoidValue(dexMod, abilityMod, JumpWallXYVelocityBase * 0.75, JumpWallXYVelocityBase * 1.25f);
+    JumpZVelocity = GetSigmoidValue(dexMod, abilityMod, JumpZVelocityBase * 0.75, JumpZVelocityBase * 1.25f);
+    AnimPlayRate = GetSigmoidValue(dexMod, abilityMod, AnimPlayRateBase * 0.75f, AnimPlayRateBase * 1.25f); // 0.75-1.25
+    MaxOverweightMoveFactor = GetSigmoidValue(dexMod, abilityMod, 1.f, MaxOverweightMoveFactorBase * 1.2f); // 1-1.2*base
+
+    // акробатика
+    
+    AirControl = GetSigmoidValue(tumble, skillMod, -1.f + AirControlBase, 1.f);  // 0.05-1 - масштаб(сигмоид почти)
+    BrakingDecelerationFalling = GetSigmoidValue(tumble, skillMod, -BrakingDecelerationFallingBase * 0.5f, BrakingDecelerationFallingBase); // 0-base
+    FallingLateralFriction = GetSigmoidValue(tumble, skillMod, -FallingLateralFrictionBase * 0.5f, FallingLateralFrictionBase); // 0-base
+    Character->JumpMaxHoldTime = GetSigmoidValue(tumble, skillMod, -JumpMaxHoldTimeBase * 0.5f, JumpMaxHoldTimeBase); // 0-base // ue4 имплементация (поэтому в персе)
+    
+    // нагрузка
+    // todo разделить на категории загруженности как в дарк соулс
+    const float weightFactor = GetWeightFactor(); // 0-?
+    MaxAcceleration = GetSigmoidValue(dexMod + weightFactorBalanceMod * (-weightFactor), weightMod, MaxAccelerationBase * 0.75f, 
+        MaxAccelerationBase * 1.25f); // 0.75*base-1.25*base
+    BrakingDecelerationWalking = GetSigmoidValue(dexMod + weightFactorBalanceMod * (-weightFactor), weightMod, 
+        BrakingDecelerationWalkingBase * 0.75f, BrakingDecelerationWalkingBase * 1.25f); // 0.75*base-1.25*base
+    BrakingFriction = GetSigmoidValue(dexMod + weightFactorBalanceMod * (-weightFactor), weightMod, BrakingFrictionBase * 0.75f, BrakingFrictionBase); // 0.75*base-base
+
+	//TODO: рассчитать реальный мод скорости с учетом текущих бафов
     //Max Speed update
-    CalculateMaxSpeeds(1);
+    const float speedMod = GetSigmoidValue(dexMod + weightFactorBalanceMod * (-weightFactor), weightMod, 0.75f, 1.25f); // нормально
+    CalculateMaxSpeeds(speedMod);
+
+    // debug log todo
+    UE_LOG(LogTemp, Warning, TEXT("MinFallHeightThreshold %f"), MinFallHeightThreshold)
+    UE_LOG(LogTemp, Warning, TEXT("MaxfallHeightThreshold %f"), MaxfallHeightThreshold)
+    UE_LOG(LogTemp, Warning, TEXT("JumpWallZVelocity %f"), JumpWallZVelocity)
+    UE_LOG(LogTemp, Warning, TEXT("JumpWallXYVelocity %f"), JumpWallXYVelocity)
+    UE_LOG(LogTemp, Warning, TEXT("JumpZVelocity %f"), JumpZVelocity)
+    UE_LOG(LogTemp, Warning, TEXT("AnimPlayRate %f"), AnimPlayRate)
+    UE_LOG(LogTemp, Warning, TEXT("AirControl %f"), AirControl)
+    UE_LOG(LogTemp, Warning, TEXT("BrakingDecelerationFalling %f"), BrakingDecelerationFalling)
+    UE_LOG(LogTemp, Warning, TEXT("FallingLateralFriction %f"), FallingLateralFriction)
+    UE_LOG(LogTemp, Warning, TEXT("JumpMaxHoldTime %f"), Character->JumpMaxHoldTime)
+    UE_LOG(LogTemp, Warning, TEXT("MaxAcceleration %f"), MaxAcceleration)
+    UE_LOG(LogTemp, Warning, TEXT("BrakingDecelerationWalking %f"), BrakingDecelerationWalking)
+    UE_LOG(LogTemp, Warning, TEXT("BrakingFriction %f"), BrakingFriction)
+    
     UnSetUpdate();
 }
 
@@ -1087,15 +1164,18 @@ void UBaseMovementComponent::Crouch(bool bClientSimulation)
 bool UBaseMovementComponent::DoJump(bool bReplayingMoves)
 {
     if((MoveAbilitiesCurrent & EMoveAbilities::CanJump) != EMoveAbilities::CanJump || 
-        !CanMove() || bConstrainToPlane || FMath::Abs(PlaneConstraintNormal.Z) == 1.f)
+        bConstrainToPlane || FMath::Abs(PlaneConstraintNormal.Z) == 1.f ||
+        GetWeightFactor() > 1)
     {
         UE_LOG(LogTemp, Warning, TEXT("blocked jump"));
         return false;
     }
     if(Character->GetAttributesComponent()->Stamina->GetValue() <= 0)
         return false;
-    Character->GetAttributesComponent()->Stamina->Consume(StaminaCostValues.Jump);
-    Character->GetAttributesComponent()->Stamina->BlockRegen();
+    if(!Character->bWasJumping)
+        Character->GetAttributesComponent()->Stamina->Consume(StaminaCostValues.Jump);
+    if(!Character->GetAttributesComponent()->Stamina->IsRegenBlocked())
+        Character->GetAttributesComponent()->Stamina->BlockRegen();
     if(bWasJumpingOff)
     {
         if(bOrientRotationToMovement)
@@ -1110,6 +1190,18 @@ bool UBaseMovementComponent::DoJump(bool bReplayingMoves)
 
 bool UBaseMovementComponent::CanMove()
 {
-    //todo определить см объявление
+    if(GetWeightFactor() > MaxOverweightMoveFactor)
+        return false;
     return true;
+}
+
+float UBaseMovementComponent::GetWeightFactor() const
+{
+    const float invMaxWeight = Character->GetInventoryComponent()->MaxWeight;
+    const float equipMaxWeight = Character->GetEquipmentComponent()->MaxWeight;
+    const float epsilon = 0.001f;
+    if(invMaxWeight < epsilon || equipMaxWeight < epsilon )
+        return 0;
+    return FMath::Max(Character->GetInventoryComponent()->CurrentWeight / invMaxWeight, 
+        Character->GetEquipmentComponent()->CurrentWeight / equipMaxWeight);
 }

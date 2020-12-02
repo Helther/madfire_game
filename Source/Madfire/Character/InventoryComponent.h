@@ -21,14 +21,14 @@ struct FInventorySlot
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UInventoryComponent : public UActorComponent
+class MADFIRE_API UInventoryComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:	
 	// Sets default values for this component's properties
 	UInventoryComponent();
-	
+	void OnComponentCreated() override;
 
 	//Slots helper
 	UFUNCTION(BlueprintPure, Category = "Inventory Slot")
@@ -89,7 +89,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory Component")
 		float CurrentWeight;
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory Component")
+		float MaxWeight;
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
 		void Update();
 
@@ -104,7 +105,9 @@ private:
 	TArray<FInventorySlot> Inventory;
 	
 	static float WeightOfSlot(FInventorySlot &Slot);
+	void CalculateMaxWeight();
 
 	void CalculateWeight();
 	bool IsDirty = false;
+	class ACharacterBase *Owner = nullptr;
 };

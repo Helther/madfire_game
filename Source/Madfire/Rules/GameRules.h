@@ -206,11 +206,3 @@
 		
 		Max					UMETA(Hidden)
 	};
-
-
-
-
-
-
-
-

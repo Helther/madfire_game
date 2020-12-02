@@ -80,7 +80,7 @@ void URegenConsumable::NoConsumeLeft()
 bool URegenConsumable::Consume(float amount)
 {
 	bool ret = Super::Consume(amount);
-	if(!IsRegenBlocked())
+	if(!IsRegenBlocked())// todo check w/o it
 		EnableRegen();
 	return ret;
 }

@@ -14,7 +14,8 @@ void UEquipmentComponent::Update()
 {
 	// todo подумать что еще можно заапдейтить
 	// проверить что содержимое слота изменилось
-	CalculateWeight();
+	//CalculateWeight(); debug temp
+	CalculateMaxWeight();
 	UnSetUpdate();
 }
 
@@ -59,4 +60,16 @@ void UEquipmentComponent::CalculateMaxWeight()
 	float k = 10.f;
 	int32 str =	UAttributesHelper::GetAttribute(Owner->GetAttributesComponent()->CurrentAttributes, EAttributes::Str);
 	MaxWeight = k * str;	// clever formula!
+}
+
+void UEquipmentComponent::UpWeight()
+{
+	CurrentWeight += 0.1f * MaxWeight;
+	SetUpdate();
+}
+
+void UEquipmentComponent::DownWeight()
+{
+	CurrentWeight -= 0.1f * MaxWeight;
+	SetUpdate();
 }

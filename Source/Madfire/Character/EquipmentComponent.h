@@ -89,6 +89,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Component Update")
 		bool IsUpdateNeeded() { return IsDirty; }
 
+
+	// debug
+	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
+		void UpWeight();
+	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
+		void DownWeight();
+
 private:
 	class ACharacterBase *Owner = nullptr;
   FEquipmentSlot Slot[(int32)EItemSlot::Max];
