@@ -21,7 +21,7 @@ struct FAttributes
 	FORCEINLINE FAttributes &operator+=(const FAttributes &attributes)
 	{
 		for (auto i = 0; i < (int32)EAttributes::Max; ++i)
-			AttributeMap[i] = attributes.AttributeMap[i];
+			AttributeMap[i] += attributes.AttributeMap[i];
 		return *this;
 	}
 

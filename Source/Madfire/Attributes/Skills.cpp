@@ -32,7 +32,7 @@ FSkillList::FSkillList() :
 FSkillList &FSkillList::operator+=(const FSkillList &rhs)
 {
 	for (auto i = 0; i < (int32)ESkill::Max; ++i)
-		SkillMap[i] = rhs.SkillMap[i];
+		SkillMap[i] += rhs.SkillMap[i];
 	return *this;
 }
 

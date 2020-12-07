@@ -32,6 +32,7 @@ void ULevelComponent::Update()
 {
 	LevelAttributes = FAttributes();
 	LevelSkills = FSkillList();
+	LevelHealthBonus = 0;
 	
 	for (auto &levelInfo : LevelList)
 	{

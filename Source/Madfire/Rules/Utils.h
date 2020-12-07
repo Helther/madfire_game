@@ -13,9 +13,7 @@
 static float GetSigmoidValue(float x, float mod = 1, float lowerBound = 0, float upperBound = 1)
 {
 	const float epsilon = 0.001f;
-	if(upperBound - lowerBound < epsilon)
-		return 0.f;
-	check(upperBound - lowerBound > 0 && "Bad Arguments")
+	check(upperBound - lowerBound > epsilon && "Bad Arguments")
 	const float dividend = upperBound - lowerBound;
 	return dividend / (FMath::Exp(-(FMath::Abs(mod) * x)) + 1.f) + lowerBound;
 }

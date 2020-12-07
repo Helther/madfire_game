@@ -72,7 +72,7 @@
 		MoveSilently = 10	UMETA(DisplayName = "MoveSilently"),	//Скрытное перемещение (Dex)
 		Listen = 11			UMETA(DisplayName = "Listen"),			//Слух (Wis)
 		Balance	= 12		UMETA(DisplayName = "Balance"),			//Баланс (Dex)
-		Concetration = 13	UMETA(DisplayName = "Concetration"),	//Концентрация (Con)
+		Concentration = 13	UMETA(DisplayName = "Concentration"),	//Концентрация (Con)
 		Tumble = 14			UMETA(DisplayName = "Tumble"),			//Акробатика (Dex)
 		Survival = 15		UMETA(DisplayName = "Survival"),		//Выживание (Wis)
 		Blacksmithing = 16	UMETA(DisplayName = "Blacksmithing"),	//Кузнечество (Str)

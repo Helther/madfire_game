@@ -145,12 +145,16 @@ protected:
 public:
     // блокировка урона от падения
     bool bFallDamageInvul{false};
-    //высота падения при которой начинает наносится дамаг
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fall Damage")
+    //высота падения при которой начинает наносится дамаг, пределы 0.75*base-1.25*base
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params")
 		float MinFallHeightThresholdBase{};
-    //высота падения при которой урон максимален
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fall Damage")
+    //высота падения при которой урон максимален, пределы 0.75*base-1.25*base
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params")
 		float MaxfallHeightThresholdBase{};
+    //максимальное отклонеие относительно базового значения ((1 -+ k)*base)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params", 
+    meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+		float FallDamageScale{};
 
 protected:
     float MinFallHeightThreshold;
@@ -176,7 +180,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb general")
 			float LocationVertOffset = 0;
     // check if character playing root motion or teleporting
-    bool IsRootOrTeleport();
+    bool IsRootOrTeleport() const;
 protected:
     FTraceParams params;
     // проверка если угол относительно стены и перса не превышает максимум
@@ -294,49 +298,94 @@ private:
 
     //////////////////=========== Общие вспомогательные =======/////////////////////////
 public:
+    //////////////////======= рпг параметры
     ////// базовые параметры передвижения задаваемые в редакторе, из которых при апдейте
     // расчитываются актуальные значения
     // параметры прыжка
 
-    // отзывчиваость в воздухе, 0-1
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    // отзывчиваость в воздухе, пределы 0-1
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params", 
+        meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
         float AirControlBase{};
-    // сила прыжка
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    // сила прыжка, пределы 0.75*base-1.25*base
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params")
         float JumpZVelocityBase{};
-    // замедление в воздухе при отстутствии движения вперед
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    // замедление в воздухе при отстутствии движения вперед, пределы 0.75*base-1.25*base
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params")
         float BrakingDecelerationFallingBase{};
-    // трение о воздух при движении
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    // трение о воздух при движении, пределы 0.75*base-1.25*base
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params")
         float FallingLateralFrictionBase{};
-    // время на которое можно продлить возвышение прыжка
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    // время на которое можно продлить возвышение прыжка, пределы 0-JumpMaxHoldTimeBase
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params", 
+        meta = (ClampMin = "0.0", UIMin = "0.0"))
         float JumpMaxHoldTimeBase{};
-    // вертикальная скорость прыжка от стены
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    // вертикальная скорость прыжка от стены, пределы 0.75*base-1.25*base
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params")
         float JumpWallZVelocityBase{};
-    // горизонтальная скорость прыжка от стены
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    // горизонтальная скорость прыжка от стены, пределы 0.75*base-1.25*base
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params")
         float JumpWallXYVelocityBase{};
 
     // параметры наземного движения
 
-    // макс. ускорение на земле
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    // макс. ускорение на земле, пределы 0.75*base-1.25*base
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params")
         float MaxAccelerationBase{};
-    // аналогично замедление
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    // аналогично замедление, пределы 0.75*base-1.25*base
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params")
         float BrakingDecelerationWalkingBase{};
-    // сцепление на земле
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    // сцепление на земле, пределы 0.75*base-1.25*base
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params")
         float BrakingFrictionBase{};
-    // макс отношение перегруза при котором можно двигаться
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    // макс отношение перегруза при котором можно двигаться, пределы 1-1.2*base
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params", 
+        meta = (ClampMin = "1.0", UIMin = "1.0"))
         float MaxOverweightMoveFactorBase{};
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    //скорость вопроизведения анимаций паркура, пределы 0.75-1.25
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params")
         float AnimPlayRateBase{};
-    ////////
+    //////// базовые параметры енд
+
+    //// параметры баланса
+    //максимальное отклонеие относительно базового значения ((1-+k)*base)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params", 
+        meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+		float SpeedScale{};
+    //максимальное отклонеие относительно базового значения ((1-+k)*base)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params", 
+        meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+		float AccelerationScale{};
+    ///максимальное отклонеие относительно базового значения ((1-+k)*base)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params", 
+        meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+		float AnimPlayRateScale{};
+    ///максимальное отклонеие относительно базового значения ((1-+k)*base)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params", 
+        meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+		float FrictionScale{};
+
+    // параметры формы кривой, чем больше мод тем меньше зименяется функция от аргумента
+    //  при больших значениях базового значения делать меньше mod
+    // форма кривой для расчета влияния от параметра
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params", 
+        meta = (ClampMin = "0.0", UIMin = "0.0"))
+        float abilityMod{};
+    // форма кривой для расчета влияния от скилла
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params", 
+        meta = (ClampMin = "0.0", UIMin = "0.0"))
+        float skillMod{};
+    // форма кривой для расчета влияния от нагруженности
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params", 
+        meta = (ClampMin = "0.0", UIMin = "0.0"))
+        float weightMod{};
+
+    // просто коэффициент влияния веса на макс. скорость
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement Params", 
+        meta = (ClampMin = "0.0", UIMin = "0.0"))
+        float weightFactorBalanceMod{};
+    //////////////////======= рпг параметры энд =========///////
+
 	bool bWasCrouching{false}; // тру если персонваж был в присяде перед тем как начать падать
 	bool bWasJumpingOff{false}; // тру если персонаж прыгал от стены до полета
 	bool bWasJustJumping{false};
@@ -349,7 +398,7 @@ public:
     void OnSprintConsume();
 	virtual void Update();
     // false если перс перегружен или замедлен до остановки 
-	bool CanMove();
+	bool CanMove() const;
     float GetWeightFactor() const;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
@@ -397,6 +446,7 @@ protected:
     float JumpWallXYVelocity;
     float MaxOverweightMoveFactor;
     float AnimPlayRate; 
+    float WeightFactor;
 
     ////////// smoooth transition //////////////////
     TUniquePtr<FVector> TransitionLocEnd = nullptr;

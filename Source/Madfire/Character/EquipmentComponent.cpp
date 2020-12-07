@@ -64,12 +64,16 @@ void UEquipmentComponent::CalculateMaxWeight()
 
 void UEquipmentComponent::UpWeight()
 {
-	CurrentWeight += 0.1f * MaxWeight;
+	if(CurrentWeight < 1.5f * MaxWeight)
+		CurrentWeight += 0.1f * MaxWeight;
 	SetUpdate();
 }
 
 void UEquipmentComponent::DownWeight()
 {
-	CurrentWeight -= 0.1f * MaxWeight;
+	if(CurrentWeight > 0 * MaxWeight)
+		CurrentWeight -= 0.1f * MaxWeight;
+	else
+		CurrentWeight = 0;
 	SetUpdate();
 }
