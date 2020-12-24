@@ -15,6 +15,7 @@ ACharacterBase::ACharacterBase(const FObjectInitializer& ObjectInitializer) :
 	EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
 	CurrentCCState = ECCState::NoCC;
+	MaxWeightMod = 10.f;
 }
 
 UBaseMovementComponent* ACharacterBase::GetMovementComponent() const
@@ -119,7 +120,10 @@ void ACharacterBase::Update()
 	if(GetLevelComponent()->IsUpdateNeeded())
 		GetLevelComponent()->Update();
 	if(GetAttributesComponent()->IsUpdateNeeded())
+	{
 		GetAttributesComponent()->Update();
+		CalculateMaxWeight();
+	}
 	if(GetEquipmentComponent()->IsUpdateNeeded())
 		GetEquipmentComponent()->Update();
 	if(GetInventoryComponent()->IsUpdateNeeded())
@@ -153,4 +157,10 @@ void ACharacterBase::DoLevelUp(const FLevelInfo& levelInfo)
 void ACharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void ACharacterBase::CalculateMaxWeight()
+{
+	const int32 str =	UAttributesHelper::GetAttribute(GetAttributesComponent()->CurrentAttributes, EAttributes::Str);
+	MaxWeight = MaxWeightMod * str;	// clever formula!
 }

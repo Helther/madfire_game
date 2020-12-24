@@ -62,6 +62,12 @@ public:
     Category = "Character Stats")
 		int CurrentCCState;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats", 
+		meta = (ClampMin = "0.0", UIMin = "0.0"))
+		float MaxWeightMod;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Stats")	
+		float MaxWeight;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -83,4 +89,6 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Character Components", 
 		VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
 		UInventoryComponent *InventoryComponent;
+
+		void CalculateMaxWeight();
 };

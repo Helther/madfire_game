@@ -1220,11 +1220,12 @@ bool UBaseMovementComponent::CanMove() const
 
 float UBaseMovementComponent::GetWeightFactor() const
 {
-    const float invMaxWeight = Character->GetInventoryComponent()->MaxWeight;
-    const float equipMaxWeight = Character->GetEquipmentComponent()->MaxWeight;
+    const float maxWeight = Character->MaxWeight;
     const float epsilon = 0.001f;
-    if(invMaxWeight < epsilon || equipMaxWeight < epsilon )
+    const float invMod = 0.5f;
+    const float eqMod = 1.f;
+    if(maxWeight < epsilon)
         return 0;
-    return FMath::Max(Character->GetInventoryComponent()->CurrentWeight / invMaxWeight, 
-        Character->GetEquipmentComponent()->CurrentWeight / equipMaxWeight);
+    return (Character->GetInventoryComponent()->CurrentWeight * invMod + 
+        Character->GetEquipmentComponent()->CurrentWeight * eqMod) / maxWeight;
 }

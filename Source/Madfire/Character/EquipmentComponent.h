@@ -76,9 +76,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment Component")
 		float CurrentWeight;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment Component")
-		float MaxWeight;
-
 	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
 		void Update();
 
@@ -104,5 +101,4 @@ private:
 private: //Methods
 	bool EquipHeadItem(UItemArmor *item);
 	void CalculateWeight();	
-	void CalculateMaxWeight();
 };

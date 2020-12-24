@@ -15,7 +15,6 @@ void UEquipmentComponent::Update()
 	// todo подумать что еще можно заапдейтить
 	// проверить что содержимое слота изменилось
 	//CalculateWeight(); debug temp
-	CalculateMaxWeight();
 	UnSetUpdate();
 }
 
@@ -55,24 +54,19 @@ void UEquipmentComponent::CalculateWeight()
 	}
 }
 
-void UEquipmentComponent::CalculateMaxWeight()
-{
-	float k = 10.f;
-	int32 str =	UAttributesHelper::GetAttribute(Owner->GetAttributesComponent()->CurrentAttributes, EAttributes::Str);
-	MaxWeight = k * str;	// clever formula!
-}
+
 
 void UEquipmentComponent::UpWeight()
 {
-	if(CurrentWeight < 1.5f * MaxWeight)
-		CurrentWeight += 0.1f * MaxWeight;
+	if(CurrentWeight < 1.5f * Owner->MaxWeight)
+		CurrentWeight += 0.1f * Owner->MaxWeight;
 	SetUpdate();
 }
 
 void UEquipmentComponent::DownWeight()
 {
-	if(CurrentWeight > 0 * MaxWeight)
-		CurrentWeight -= 0.1f * MaxWeight;
+	if(CurrentWeight > 0 * Owner->MaxWeight)
+		CurrentWeight -= 0.1f * Owner->MaxWeight;
 	else
 		CurrentWeight = 0;
 	SetUpdate();

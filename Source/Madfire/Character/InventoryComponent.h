@@ -89,8 +89,7 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory Component")
 		float CurrentWeight;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory Component")
-		float MaxWeight;
+		
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
 		void Update();
 
@@ -105,7 +104,6 @@ private:
 	TArray<FInventorySlot> Inventory;
 	
 	static float WeightOfSlot(FInventorySlot &Slot);
-	void CalculateMaxWeight();
 
 	void CalculateWeight();
 	bool IsDirty = false;

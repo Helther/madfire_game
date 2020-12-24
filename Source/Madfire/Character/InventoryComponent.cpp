@@ -384,7 +384,6 @@ void UInventoryComponent::Update()
 {
 	// todo define
 	CalculateWeight();
-	CalculateMaxWeight();
 	UnSetUpdate();
 }
 
@@ -393,12 +392,4 @@ void UInventoryComponent::CalculateWeight()
 	CurrentWeight = 0;
 	for (auto &slot : Inventory)
 		CurrentWeight += WeightOfSlot(slot);
-	
-}
-
-void UInventoryComponent::CalculateMaxWeight()
-{
-	float k = 20.f;
-	int32 str =	UAttributesHelper::GetAttribute(Owner->GetAttributesComponent()->CurrentAttributes, EAttributes::Str);
-	MaxWeight = k * str;	// clever formula!
 }
