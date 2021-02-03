@@ -1,6 +1,3 @@
-
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -15,19 +12,20 @@
 
 
 UENUM(BlueprintType, meta = (Bitflags))
-// состояния контроля персонажа
+// Character Control Bit mask with values as priorities (the more the better)
 enum ECCState
 {
-	NoCC = 0					UMETA(DisplayName = "Stunned"),
-	Stun = 1					UMETA(DisplayName = "KnockedDown"),
-	KnockDown = 2			UMETA(DisplayName = "LostAllBalance"),
-	LossOfBalance = 4	UMETA(DisplayName = "UnderStasis"),
-	Stasis = 8				UMETA(DisplayName = "Sleeping"),
-	Sleep	= 16				
+	NoCC = 0					UMETA(DisplayName = "Sleeping"),
+	Sleep = 1					UMETA(DisplayName = "LostAllBalance"),
+	LossOfBalance = 2	UMETA(DisplayName = "Stunned"),
+	Stun = 4					UMETA(DisplayName = "KnockedDown"),
+	KnockDown = 8			UMETA(DisplayName = "UnderStasis"),
+	Stasis	= 16				
 };
 ENUM_CLASS_FLAGS(ECCState)
+
 /**
- * 
+ * Obvious Class Decription
  */
 UCLASS()
 class MADFIRE_API ACharacterBase : public ACharacter
@@ -47,6 +45,16 @@ public:
 	void OnJumped_Implementation() override;
 	UFUNCTION(BlueprintCallable, Category = "Character Base")
 		void OnUpdate(); //!< Blueprint interface  for Blueprints
+
+	UFUNCTION(BlueprintCallable, Category = "Character Base")
+		void StartAnimation(UAnimMontage* AnimMontage, AnimTypes Type, float InPlayRate, FName StartSectionName = NAME_None);
+
+	UFUNCTION(BlueprintCallable, Category = "Character Base")
+		void InterruptAnimation(ECCState Source, int OldState);
+
+	// interface for global interrupt of any visual activity(fighting, parkour)
+	UFUNCTION(BlueprintCallable, Category = "Character Base")
+		void InterruptAction(ECCState Source);
 
 	UBaseMovementComponent* GetMovementComponent() const override;
   UCombatComponent* GetCombatComponent() const;

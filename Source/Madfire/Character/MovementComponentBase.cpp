@@ -243,10 +243,12 @@ bool UBaseMovementComponent::DoVault(const StartClimbData& LocationData,
         if(IsLow)
          //todo сделать на время выполнения анимации капсуле размер капсулы в присяде
             TransitionStart(VaultAnimationStartLocation, LocationData.Rotation,
-                                 VaultMontageLow, ECustomMovementMode::ClimbingLedge);
+                                 VaultMontageLow, AnimTypes::Parkour,
+                                 ECustomMovementMode::ClimbingLedge);
         else
             TransitionStart(VaultAnimationStartLocation, LocationData.Rotation,
-                                 VaultMontageHigh, ECustomMovementMode::ClimbingLedge);
+                                 VaultMontageHigh, AnimTypes::Parkour,
+                                 ECustomMovementMode::ClimbingLedge);
         return true;
     }
     return false;
@@ -292,10 +294,12 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData& LocationData, bo
             Character->GetAttributesComponent()->Stamina->Consume(StaminaCostValues.Climb);
             if(IsLow)
                 TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
-                                 ClimbLedgeMontageLow, ECustomMovementMode::ClimbingLedge);
+                                 ClimbLedgeMontageLow, AnimTypes::Parkour,
+                                 ECustomMovementMode::ClimbingLedge);
             else
                 TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
-                                 ClimbLedgeMontageHigh, ECustomMovementMode::ClimbingLedge);
+                                 ClimbLedgeMontageHigh, AnimTypes::Parkour,
+                                 ECustomMovementMode::ClimbingLedge);
             return true;
         }
         case EClimbTraceResult::SuccessCrouch:
@@ -305,10 +309,12 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData& LocationData, bo
                 //bWantsToCrouch = true; // todo temp
             if(IsLow)
                 TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
-                                 ClimbLedgeCrouchedMontageLow, ECustomMovementMode::ClimbingLedge);
+                                 ClimbLedgeCrouchedMontageLow,  AnimTypes::Parkour,
+                                 ECustomMovementMode::ClimbingLedge);
             else
                 TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
-                                 ClimbLedgeCrouchedMontageHigh, ECustomMovementMode::ClimbingLedge);
+                                 ClimbLedgeCrouchedMontageHigh,  AnimTypes::Parkour,
+                                 ECustomMovementMode::ClimbingLedge);
             return true;
         }
         default:
@@ -613,10 +619,10 @@ void UBaseMovementComponent::HangOnWall(TSharedPtr<StartClimbData> HangData, boo
         {
             if(ClimbDown)
                 TransitionStart(climbDownStartLocation, wallNormalDir,
-                                 ClimbDownMontage, ECustomMovementMode::ClimbingWall);            
+                                 ClimbDownMontage, AnimTypes::Parkour, ECustomMovementMode::ClimbingWall);            
             else
                 TransitionStart(hangLocation, HangData.Get()->Rotation,
-                                 HangMontage, ECustomMovementMode::ClimbingWall);
+                                 HangMontage, AnimTypes::Parkour, ECustomMovementMode::ClimbingWall);
         }
     }
 }
@@ -959,11 +965,11 @@ void UBaseMovementComponent::PhysCustom(float deltaTime, int32 Iterations)///TOD
     //TODO for parkur
     switch(CustomMovementMode)
     {
-        case(ECustomMovementMode::ClimbingLadder):
-        case(ECustomMovementMode::ClimbingWall):
-        case(ECustomMovementMode::ClimbingLedge):
-        case(ECustomMovementMode::Slide):
-        case(ECustomMovementMode::Dodge):
+        //case ECustomMovementMode::ClimbingLadder: // deprecated
+        case ECustomMovementMode::ClimbingWall:
+        case ECustomMovementMode::ClimbingLedge:
+        //caseECustomMovementMode::Slide: // deprecated
+        case ECustomMovementMode::Dodge:
         default:
             return;
     }
@@ -993,53 +999,62 @@ void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
 
 void UBaseMovementComponent::TransitionStart(const FVector& EndLoc,
                     const FRotator& EndRot,
-                    UAnimMontage* AnimToPlay, 
+                    UAnimMontage* AnimToPlay,
+                    AnimTypes Type, 
                     ECustomMovementMode InMode)
 {
     if(bIsTransitioning){
-        UE_LOG(LogTemp, Warning, TEXT("TransitionStart error: is already transitions"))
+        UE_LOG(LogTemp, Warning, TEXT("TransitionStart error: already transitioning"))
         return;
     }
-    if(AnimToPlay == nullptr || !AnimToPlay->IsValidSectionName(FTransitionSectionNames::Start)){
+    if(AnimToPlay == nullptr || !AnimToPlay->IsValidSectionName(FTransitionSectionNames::End)){
         UE_LOG(LogTemp, Warning, TEXT("TransitionStart error: bad animation to play"))// todo add return after anims addition
             return;
     }
     bIsTransitioning = true;
-    if(AnimToPlay->IsValidSectionName(FTransitionSectionNames::End))// todo пока нет анимации
+    // if none then return to normal movement when finished
+    if(InMode == ECustomMovementMode::NoParkour)
         TransitionFinishMode = MovementMode;
     else
         TransitionFinishMode = EMovementMode::MOVE_Custom;
     SetMovementMode(EMovementMode::MOVE_Custom, InMode);
     TransitionLocEnd = MakeUnique<FVector>(EndLoc);
     TransitionRotEnd = MakeUnique<FRotator>(EndRot);
-    CurrentTransitionAnim = AnimToPlay;// todo добавить блок регена стамины в аниации
-    Character->PlayAnimMontage(CurrentTransitionAnim, AnimPlayRate,
-        FTransitionSectionNames::Start);
+    CurrentTransitionAnim = AnimToPlay;
+    if(AnimToPlay->IsValidSectionName(FTransitionSectionNames::Start))
+    {
+        Character->StartAnimation(CurrentTransitionAnim, Type, AnimPlayRate,
+            FTransitionSectionNames::Start);
+        animType = Type;
+    }
+    else
+        UE_LOG(LogTemp, Warning, TEXT("TransitionStart info: no anim start section"))
 }
 
 void UBaseMovementComponent::On_TransitionFinished()
 {
-    if(CurrentTransitionAnim != nullptr)
-        Character->PlayAnimMontage(CurrentTransitionAnim, AnimPlayRate,
+    check(CurrentTransitionAnim != nullptr && "Transition: no anim!")
+        Character->StartAnimation(CurrentTransitionAnim, animType, AnimPlayRate,
             FTransitionSectionNames::End);
-    TransitionDestroy();
+    TransitionEnd();
     UE_LOG(LogTemp, Warning, TEXT("TransitionFinished!"))
 }
 
-void UBaseMovementComponent::TransitionProcess()
+void UBaseMovementComponent::TransitionProcess(float deltaTime)
 {
+    // todo add cancel if can't reach the end
     if(TransitionLocEnd.Get()->Equals(Character->GetActorLocation(),1) && 
         TransitionRotEnd.Get()->Equals(Character->GetActorRotation(),1))
         On_TransitionFinished();
     else
     {
         const bool locSweep = Character->SetActorLocation(FMath::Lerp(Character->GetActorLocation(), 
-                *TransitionLocEnd.Get(),TransitionMoveSpeed), true);
+                *TransitionLocEnd.Get(), TransitionMoveSpeed * deltaTime), true);
         const bool rotSweep = Character->SetActorRotation(FMath::Lerp(Character->GetActorRotation(),
-                *TransitionRotEnd.Get(), TransitionRotationSpeed));
+                *TransitionRotEnd.Get(), TransitionRotationSpeed * deltaTime));
         if(!locSweep || !rotSweep)
         {
-            TransitionDestroy();
+            TransitionEnd();
             UE_LOG(LogTemp, Warning, TEXT("TransitionProcess error: collision hit!!")) 
         }
     }
@@ -1047,19 +1062,22 @@ void UBaseMovementComponent::TransitionProcess()
 
 void UBaseMovementComponent::On_TransitionInterrupt()
 {
-    TransitionDestroy();
+    TransitionEnd();
     UE_LOG(LogTemp, Warning, TEXT("TransitionInterrupt error: interrupted!!"))
 }
 
-void UBaseMovementComponent::TransitionDestroy()
+void UBaseMovementComponent::TransitionEnd()
 {
+    check(bIsTransitioning && "Transition: can't' cancel")
     bIsTransitioning = false;
     if(MovementMode != EMovementMode::MOVE_Custom)
         SetMovementMode(TransitionFinishMode);
+    Character->StopAnimMontage(CurrentTransitionAnim);
     CurrentTransitionAnim = nullptr;
-    TransitionLocEnd = nullptr;
-    TransitionRotEnd = nullptr;
+    TransitionLocEnd.Release();
+    TransitionRotEnd.Release();
 }
+
 void UBaseMovementComponent::BeginPlay()
 {
     Super::BeginPlay();
@@ -1088,7 +1106,7 @@ void UBaseMovementComponent::TickComponent(float DeltaTime,
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     VisualizeMovement();// debug
     if(bIsTransitioning)
-        TransitionProcess();
+        TransitionProcess(DeltaTime);
     //UE_LOG(LogTemp, Warning, TEXT("iswalkablefloor %s"), CurrentFloor.IsWalkableFloor() ? TEXT("true") : TEXT("false"));
     //UE_LOG(LogTemp, Warning, TEXT("floor distance %f"), CurrentFloor.GetDistanceToFloor());
 }
@@ -1228,4 +1246,35 @@ float UBaseMovementComponent::GetWeightFactor() const
         return 0;
     return (Character->GetInventoryComponent()->CurrentWeight * invMod + 
         Character->GetEquipmentComponent()->CurrentWeight * eqMod) / maxWeight;
+}
+
+void UBaseMovementComponent::ParkourInterrupt(UAnimMontage* animMontage, bool bInterrupted)
+{
+    if(bInterrupted)
+        UE_LOG(LogTemp, Warning, TEXT("ParkourInterrupt"))
+    else
+        UE_LOG(LogTemp, Warning, TEXT("ParkourFinishedNormally"))
+    // todo reset movement mode to some valid state and restore character capsule size if modified
+}
+
+void UBaseMovementComponent::DodgeInterrupt(UAnimMontage* animMontage, bool bInterrupted)
+{
+    if(bInterrupted)
+        UE_LOG(LogTemp, Warning, TEXT("DodgeInterrupt"))
+    else
+        UE_LOG(LogTemp, Warning, TEXT("DodgeFinishedNormally"))
+    // todo disable invul
+}
+
+void UBaseMovementComponent::On_StartAnimation()
+{
+    Character->StartAnimation(VaultMontageHigh, AnimTypes::Parkour, 1);
+    auto animInstance2 = Cast<UCharacterAnimInstance>(Character->GetMesh()->GetAnimInstance());
+	auto montageInstance2 = animInstance2->GetActiveInstanceForMontage(VaultMontageHigh);
+	montageInstance2->OnMontageBlendingOutStarted.BindUObject(this, &UBaseMovementComponent::ParkourInterrupt);
+}
+
+void UBaseMovementComponent::On_InterruptAnimation()
+{
+    Character->InterruptAction(ECCState::NoCC);
 }

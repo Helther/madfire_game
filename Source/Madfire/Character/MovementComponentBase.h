@@ -2,7 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "./TraceFunctional/TraceFunctional.h"
+#include "TraceFunctional/TraceFunctional.h"
+#include "CharacterAnimInstance.h"
 #include "MovementComponentBase.generated.h"
 
 
@@ -42,10 +43,11 @@ struct FMoveStaminaCosts
 UENUM(BlueprintType)
 enum ECustomMovementMode
 {
-	ClimbingWall = 0, //Повисание на стене
-	ClimbingLadder, //Лазаие по лестнице
+    NoParkour = 0,
+	ClimbingWall, //Повисание на стене
+	//ClimbingLadder, //Лазаие по лестнице
 	ClimbingLedge, //Перелезание через невысокое препядствие
-	Slide, //подкат
+	//Slide, //подкат
 	Dodge // уклонение
 };
 
@@ -409,8 +411,6 @@ public:
 		int MoveAbilitiesDefault;
 	int MoveAbilitiesCurrent; 
 
-	UFUNCTION(BlueprintCallable, Category = "Transition")// todo temp
-			void On_TransitionInterrupt();
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transition")
         float TransitionMoveSpeed{};
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transition")
@@ -448,22 +448,52 @@ protected:
     float AnimPlayRate; 
     float WeightFactor;
 
-    ////////// smoooth transition //////////////////
+//========================== Animation Related =========================//
+	//todo
+
+	//Interrupt and AninEnd Actions (UFUNCTION) for delegate binding
+    // Note: no need to unbind function from delegate when done
+
+// debug////////// todo make interrupts for all movement modes
+public:
+    UFUNCTION(BlueprintCallable, Category = "Animation")
+        void ParkourInterrupt(UAnimMontage* animMontage, bool bInterrupted);
+    UFUNCTION(BlueprintCallable, Category = "Animation")
+        void DodgeInterrupt(UAnimMontage* animMontage, bool bInterrupted);
+
+    UFUNCTION(BlueprintCallable, Category = "Transition")// todo temp debug
+        void On_StartAnimation();
+    UFUNCTION(BlueprintCallable, Category = "Transition")// todo temp debug
+        void On_InterruptAnimation();
+
+////////////////// ======================== /////////////////////
+
+///////////=========== smoooth transition ================///////
+public:
+    UFUNCTION(BlueprintCallable, Category = "Transition")// todo temp delete!
+        void On_TransitionInterrupt();
+
+    void TransitionStart(const FVector& EndLoc,
+                        const FRotator& EndRot,
+                        UAnimMontage* AnimToPlay,
+                        AnimTypes Type,
+                        ECustomMovementMode InMode);
+    void TransitionEnd();
+    bool IsTransitionInProgress() { return bIsTransitioning; }
+
+protected:
     TUniquePtr<FVector> TransitionLocEnd = nullptr;
     TUniquePtr<FRotator> TransitionRotEnd = nullptr;
     UAnimMontage *CurrentTransitionAnim = nullptr;
     EMovementMode TransitionFinishMode;
-    // тру если сейчас телепортируется
+    // is currently moving
     bool bIsTransitioning{false};
+    AnimTypes animType;
 
-    void TransitionProcess();
-    void TransitionStart(const FVector& EndLoc,
-                        const FRotator& EndRot,
-                        UAnimMontage* AnimToPlay, 
-                        ECustomMovementMode InMode);
+    void TransitionProcess(float deltaTime);
     void On_TransitionFinished();
-    void TransitionDestroy();
-    ///
+///////////////////// ================= /////////////////
+
     bool IsDirty = false;
     class ACharacterBase* Character;
 };

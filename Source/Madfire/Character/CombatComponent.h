@@ -26,6 +26,7 @@ protected:
 	virtual void BeginPlay() override;
 
 public:	
+	/// todo replace with SM
 	bool IsInCombat = false;
 	bool IsWeaponDrawn = false;
 	bool IsAttacking = false;

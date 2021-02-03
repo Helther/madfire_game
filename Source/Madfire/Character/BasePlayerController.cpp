@@ -95,9 +95,9 @@ void ABasePlayerController::MoveForward(float AxisValue)
 					//todo for parkur
 					switch(Player->GetMovementComponent()->CustomMovementMode)
 					{
-						case(ECustomMovementMode::ClimbingLedge):
-						case(ECustomMovementMode::Slide):
-						case(ECustomMovementMode::Dodge):
+						case ECustomMovementMode::ClimbingLedge:
+						//case ECustomMovementMode::Slide: //deprecated
+						case ECustomMovementMode::Dodge:
 							return;
 						default:
 							return;
@@ -133,9 +133,9 @@ void ABasePlayerController::MoveRight(float AxisValue)
                     //todo for parkur
                     switch(Player->GetMovementComponent()->CustomMovementMode)
                     {
-                        case(ECustomMovementMode::ClimbingLedge):
-                        case(ECustomMovementMode::Slide):
-                        case(ECustomMovementMode::Dodge):
+                        case ECustomMovementMode::ClimbingLedge:
+                        //case ECustomMovementMode::Slide: // deprecated
+                        case ECustomMovementMode::Dodge:
                             return;
                         default:
                             return;
@@ -266,12 +266,14 @@ void ABasePlayerController::CrouchAction()
                     switch (Player->GetMovementComponent()->CustomMovementMode)
                     {
                         case ECustomMovementMode::ClimbingWall:
-                            Player->GetMovementComponent()->GetOffWall();
-                            break;
+												{
+													Player->GetMovementComponent()->GetOffWall();
+													break;
+												}
                         case ECustomMovementMode::ClimbingLedge:
-                        case ECustomMovementMode::ClimbingLadder:
+                        //case ECustomMovementMode::ClimbingLadder: // deprecated
                         case ECustomMovementMode::Dodge:
-                        case ECustomMovementMode::Slide:
+                        //case ECustomMovementMode::Slide: // deprecated
                         default:
                             break;
                     }
@@ -316,26 +318,28 @@ void ABasePlayerController::JumpAction()
                         case ECustomMovementMode::ClimbingLedge:
                             break;
                         case ECustomMovementMode::ClimbingWall:
-							if(InputComponent->GetAxisValue(FInputKeyNames::MoveForward) > 0.f)
-                            	Player->GetMovementComponent()->ClimbWall();
-							else 
-							{
-								const auto fwd = InputComponent->GetAxisValue(FInputKeyNames::MoveForward);
-								const auto rght =InputComponent->GetAxisValue(FInputKeyNames::MoveRight);
-								if(fwd != 0 || rght != 0)
-								{
-									if(FMath::Abs(fwd) > FMath::Abs(rght))
-										Player->GetMovementComponent()->JumpOffWall(EControlDirections::BackD);
-									else if(rght > 0)
-										Player->GetMovementComponent()->JumpOffWall(EControlDirections::RightD);
-									else
-										Player->GetMovementComponent()->JumpOffWall(EControlDirections::LeftD);
-								}
-							}
-                            break;
-                        case ECustomMovementMode::ClimbingLadder:
+												{
+													if(InputComponent->GetAxisValue(FInputKeyNames::MoveForward) > 0.f)
+																					Player->GetMovementComponent()->ClimbWall();
+													else 
+													{
+														const auto fwd = InputComponent->GetAxisValue(FInputKeyNames::MoveForward);
+														const auto rght =InputComponent->GetAxisValue(FInputKeyNames::MoveRight);
+														if(fwd != 0 || rght != 0)
+														{
+															if(FMath::Abs(fwd) > FMath::Abs(rght))
+																Player->GetMovementComponent()->JumpOffWall(EControlDirections::BackD);
+															else if(rght > 0)
+																Player->GetMovementComponent()->JumpOffWall(EControlDirections::RightD);
+															else
+																Player->GetMovementComponent()->JumpOffWall(EControlDirections::LeftD);
+														}
+													}
+                          break;
+												}
+                        //case ECustomMovementMode::ClimbingLadder: // deprecated
                         case ECustomMovementMode::Dodge:
-                        case ECustomMovementMode::Slide:
+                        //case ECustomMovementMode::Slide: // deprecated
                         default:
                             break;
                     }

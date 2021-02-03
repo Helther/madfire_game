@@ -1,7 +1,5 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "CharacterBase.h"
-
+#include "CharacterAnimInstance.h"
 
 
 ACharacterBase::ACharacterBase(const FObjectInitializer& ObjectInitializer) :
@@ -163,4 +161,131 @@ void ACharacterBase::CalculateMaxWeight()
 {
 	const int32 str =	UAttributesHelper::GetAttribute(GetAttributesComponent()->CurrentAttributes, EAttributes::Str);
 	MaxWeight = MaxWeightMod * str;	// clever formula!
+}
+
+void ACharacterBase::StartAnimation(UAnimMontage* AnimMontage, AnimTypes Type, float InPlayRate, FName StartSectionName)
+{
+	PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
+	// todo add delegates according to anim type
+	auto animInstance = Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
+	auto montageInstance = animInstance->GetActiveInstanceForMontage(AnimMontage);
+	switch(Type)
+	{
+		case AnimTypes::Block:
+		{
+			break;
+		}
+		case AnimTypes::Parkour:
+		{
+			montageInstance->OnMontageBlendingOutStarted.BindUObject(GetMovementComponent(), 
+				&UBaseMovementComponent::ParkourInterrupt);		
+			break;
+		}
+		case AnimTypes::SpellCast:
+		{
+			break;
+		}
+		case AnimTypes::Attack:
+		{
+			break;
+		}
+		case AnimTypes::Dodge:
+		{
+			montageInstance->OnMontageBlendingOutStarted.BindUObject(GetMovementComponent(), 
+				&UBaseMovementComponent::DodgeInterrupt);		
+			break;
+		}
+		case AnimTypes::CC:
+		{
+			break;
+		}
+		default:
+			check(0 && "Start Anim: invalid anim type")
+	}
+}
+
+void ACharacterBase::InterruptAnimation(ECCState Source, int OldState)
+{
+	//todo
+
+	// already controlled
+	if(OldState != ECCState::NoCC)
+	{
+		if(ffs(Source) < ffs(OldState))	//check if highest order bit of source is lower than old
+		{
+			UE_LOG(LogTemp, Warning, TEXT("InterruptAnimation: cant interrupt CC, low priority"))
+			return;
+		}
+		// todo replace old CC anim with New via the powerfull switch(Source){}
+		//StartAnimation(Source, someCCAnim, 1)
+	}
+	else
+	{
+		///// todo determine character state (combat, movement, transition, )
+		// interrupted by character
+		// player can interrupt blocks, spell casts, wall hanging, some attacks and not much else
+		if(Source == ECCState::NoCC)
+		{
+			if(GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
+			{
+				auto animInstance = Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
+				if(animInstance->Montage_IsActive(GetMovementComponent()->HangMontage))
+					StopAnimMontage(GetMovementComponent()->HangMontage);
+			}
+			StopAnimMontage(GetMovementComponent()->VaultMontageHigh);	// todo temp debug
+			return;
+		}
+		// interrupted by CC
+		if(GetMovementComponent()->IsTransitionInProgress())
+		{
+			GetMovementComponent()->TransitionEnd();
+			return;
+		}
+		if(GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
+		{
+			auto animInstance = Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
+			switch (GetMovementComponent()->CustomMovementMode)
+			{
+					case ECustomMovementMode::ClimbingWall:
+					{
+						UAnimMontage* wallClimbAnims[] = {GetMovementComponent()->ClimbWallCrouchedMontage, 
+														GetMovementComponent()->ClimbWallMontage, 
+														GetMovementComponent()->ClimbDownMontage, 
+														GetMovementComponent()->HangMontage};
+						for(int i = 0; i < 4; ++i)
+						{
+							if(animInstance->Montage_IsActive(wallClimbAnims[i]))
+								StopAnimMontage(wallClimbAnims[i]);
+						}
+						break;
+					}
+					case ECustomMovementMode::ClimbingLedge:
+					{
+						UAnimMontage* ledgeClimbAnims[] = {GetMovementComponent()->VaultMontageLow, 
+														GetMovementComponent()->VaultMontageHigh, 
+														GetMovementComponent()->ClimbLedgeMontageLow, 
+														GetMovementComponent()->ClimbLedgeMontageHigh,
+														GetMovementComponent()->ClimbLedgeCrouchedMontageLow,
+														GetMovementComponent()->ClimbLedgeCrouchedMontageHigh};
+						for(int i = 0; i < 6; ++i)
+						{
+							if(animInstance->Montage_IsActive(ledgeClimbAnims[i]))
+								StopAnimMontage(ledgeClimbAnims[i]);
+						}
+						break;
+					}				
+					case ECustomMovementMode::Dodge: // dodge is implemented via transition
+						break;
+					default:
+						check(0 && "interrupt Anim: invalid move mode")
+			}
+		}
+	}
+}
+
+void ACharacterBase::InterruptAction(ECCState Source)
+{
+	// todo handle states and ...
+	InterruptAnimation(Source, CurrentCCState);
+	CurrentCCState |= Source;
 }
