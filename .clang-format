@@ -28,7 +28,7 @@ BraceWrapping:
   AfterStruct: true
   AfterUnion: false
   BeforeCatch: false
-  BeforeElse: false
+  BeforeElse: true
   IndentBraces: false
   SplitEmptyFunction: false
   SplitEmptyNamespace: false
@@ -69,8 +69,8 @@ IncludeCategories:
   - Regex:           '^<.*>'
     Priority:        4
 IncludeIsMainRegex: (Test)?$
-IndentCaseLabels: false
-IndentWidth: 2
+IndentCaseLabels: true
+IndentWidth: 4
 IndentWrappedFunctionNames: true
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
@@ -92,7 +92,7 @@ SpaceAfterTemplateKeyword: false
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements
 SpaceInEmptyParentheses: false
-SpacesBeforeTrailingComments: 0
+SpacesBeforeTrailingComments: 4
 SpacesInAngles: false
 SpacesInCStyleCastParentheses: false
 SpacesInContainerLiterals: true
@@ -101,4 +101,4 @@ SpacesInSquareBrackets: false
 Standard: c++14
 TabWidth: 2
 ColumnLimit: 90
-UseTab: ForIndentation
+#UseTab: ForIndentation

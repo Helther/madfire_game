@@ -211,9 +211,20 @@ void ACharacterBase::InterruptAnimation(ECCState Source, int OldState)
 	// already controlled
 	if(OldState != ECCState::NoCC)
 	{
-		if(ffs(Source) < ffs(OldState))	//check if highest order bit of source is lower than old
+	//check if highest order bit of source is lower than old
+	#ifdef PLATFORM_WINDOWS
+		unsigned long sourceIndex;
+		unsigned long oldIndex;
+		_BitScanReverse(&sourceIndex, Source);
+		_BitScanReverse(&oldIndex, OldState);
+		if (sourceIndex < oldIndex)
+	#else
+		if (ffs(Source) < ffs(OldState))
+	#endif
 		{
-			UE_LOG(LogTemp, Warning, TEXT("InterruptAnimation: cant interrupt CC, low priority"))
+			UE_LOG(LogTemp,
+			       Warning,
+			       TEXT("InterruptAnimation: cant interrupt CC, low priority"))
 			return;
 		}
 		// todo replace old CC anim with New via the powerfull switch(Source){}

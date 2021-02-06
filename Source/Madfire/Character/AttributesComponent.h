@@ -67,7 +67,6 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TSubclassOf<UMagicShieldContainer> MagicShieldClass;
 	*/
-// clang-format on
 	virtual void Update();
 	UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
 		void SetUpdate() { IsDirty = true; }
@@ -75,6 +74,7 @@ public:
 		void UnSetUpdate() { IsDirty = false; }
 	UFUNCTION(BlueprintCallable, Category = "Component Update")
 		bool IsUpdateNeeded() { return IsDirty; }
+ // clang-format on
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
