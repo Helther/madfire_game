@@ -1,395 +1,399 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "InventoryComponent.h"
-#include "Kismet/GameplayStatics.h"
-#include "CharacterBase.h"
+
 #include "../TraceFunctional/TraceDefines.h"
+#include "CharacterBase.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
-UInventoryComponent::UInventoryComponent()
-{}
+UInventoryComponent::UInventoryComponent() {}
 
-void UInventoryComponent::OnComponentCreated() 
+void UInventoryComponent::OnComponentCreated()
 {
-	Super::OnComponentCreated();
-	Owner = Cast<ACharacterBase>(GetOwner());
-	check(Owner != nullptr && "No Owner!")
+    Super::OnComponentCreated();
+    Owner = Cast<ACharacterBase>(GetOwner());
+    check(Owner != nullptr && "No Owner!");
 }
 
-bool UInventoryComponent::RemoveFromSlot(UPARAM(ref) FInventorySlot &slot, int32 amount, bool removeWholeStack)
+bool UInventoryComponent::RemoveFromSlot(UPARAM(ref) FInventorySlot &slot, int32 amount,
+                                         bool removeWholeStack)
 {
-	if (amount > slot.Count)
-		return false;
+    if (amount > slot.Count)
+        return false;
 
-	if (removeWholeStack || slot.Count == amount)
-		slot = FInventorySlot();
-	else
-		slot.Count -= amount;
-	return true;
+    if (removeWholeStack || slot.Count == amount)
+        slot = FInventorySlot();
+    else
+        slot.Count -= amount;
+    return true;
 }
 
-bool UInventoryComponent::MergeSlots(UPARAM(ref) FInventorySlot &SlotA, UPARAM(ref) FInventorySlot &SlotB)
+bool UInventoryComponent::MergeSlots(UPARAM(ref) FInventorySlot &SlotA,
+                                     UPARAM(ref) FInventorySlot &SlotB)
 {
-	if (SlotIsEmpty(SlotA) || SlotIsEmpty(SlotB))
-		return false;
-	if (!(SlotA.Item->GetClass() == SlotB.Item->GetClass()))
-		return false;
+    if (SlotIsEmpty(SlotA) || SlotIsEmpty(SlotB))
+        return false;
+    if (!(SlotA.Item->GetClass() == SlotB.Item->GetClass()))
+        return false;
 
-	if (SlotA.Item->MaxCount >= SlotA.Count + SlotB.Count)
-	{
-		SlotA.Count += SlotB.Count;
+    if (SlotA.Item->MaxCount >= SlotA.Count + SlotB.Count)
+    {
+        SlotA.Count += SlotB.Count;
 
-		RemoveFromSlot(SlotB, 0, true);
-		return true;
-	}
-	else
-	{
-		int32 remainder = SlotA.Item->MaxCount - SlotA.Count;
-		SlotA.Count = SlotA.Item->MaxCount;
-		SlotB.Count -= remainder;
+        RemoveFromSlot(SlotB, 0, true);
+        return true;
+    }
+    else
+    {
+        int32 remainder = SlotA.Item->MaxCount - SlotA.Count;
+        SlotA.Count     = SlotA.Item->MaxCount;
+        SlotB.Count -= remainder;
 
-		return true;
-	}
+        return true;
+    }
 }
 
 float UInventoryComponent::WeightOfSlot(FInventorySlot &Slot)
 {
-	if (Slot.Item)
-		return Slot.Item->Weight * Slot.Count;
-	return 0;
+    if (Slot.Item)
+        return Slot.Item->Weight * Slot.Count;
+    return 0;
 }
 
 int32 UInventoryComponent::StacksFromAmount(int32 StackSize, int32 inAmount)
 {
-	if (inAmount <= 0)
-		return 0;
+    if (inAmount <= 0)
+        return 0;
 
-	if (StackSize <= 0)
-		return 0;
+    if (StackSize <= 0)
+        return 0;
 
-	inAmount = FMath::DivideAndRoundUp(inAmount, StackSize);
-	return inAmount;
+    inAmount = FMath::DivideAndRoundUp(inAmount, StackSize);
+    return inAmount;
 }
 
 int32 UInventoryComponent::GetFreeInventorySlotsCount() const
 {
-	int32 counter = 0;
+    int32 counter = 0;
 
-	for (const auto &slot : Inventory)
-		if (slot.Item == nullptr)
-			++counter;
+    for (const auto &slot : Inventory)
+        if (slot.Item == nullptr)
+            ++counter;
 
-	return counter;
+    return counter;
 }
 
 
 int32 UInventoryComponent::GetItemCountByClass(UClass *itemClass) const
 {
-	int32 counter = 0;
+    int32 counter = 0;
 
-	if (itemClass == nullptr)
-		return 0;
+    if (itemClass == nullptr)
+        return 0;
 
-	for (const auto &slot : Inventory)
-	{
-		if (slot.Item == nullptr)
-			continue;
-		if (slot.Item->GetClass() == itemClass)
-			counter += slot.Count;
-	}
+    for (const auto &slot : Inventory)
+    {
+        if (slot.Item == nullptr)
+            continue;
+        if (slot.Item->GetClass() == itemClass)
+            counter += slot.Count;
+    }
 
-	return counter;	
+    return counter;
 }
 
 
-bool UInventoryComponent::GetStackByClass(UClass *ItemClass, FInventorySlot &outSlot, int32 &foundIndex, bool returnFullStacks) 
+bool UInventoryComponent::GetStackByClass(UClass *ItemClass, FInventorySlot &outSlot,
+                                          int32 &foundIndex, bool returnFullStacks)
 {
-	for (auto Iterator(Inventory.CreateIterator()); Iterator; ++Iterator)
-	{
-		if ((Iterator->Item != nullptr) && (Iterator->Item->GetClass() == ItemClass))
-		{
-			if (Iterator->Count < Iterator->Item->MaxCount)
-			{
-				outSlot = *Iterator;
-				foundIndex = Iterator.GetIndex();
+    for (auto Iterator(Inventory.CreateIterator()); Iterator; ++Iterator)
+    {
+        if ((Iterator->Item != nullptr) && (Iterator->Item->GetClass() == ItemClass))
+        {
+            if (Iterator->Count < Iterator->Item->MaxCount)
+            {
+                outSlot    = *Iterator;
+                foundIndex = Iterator.GetIndex();
 
-				return true;
-			}
-			else
-			{
-				if (returnFullStacks)
-				{
-					outSlot = *Iterator;
-					foundIndex = Iterator.GetIndex();
+                return true;
+            }
+            else
+            {
+                if (returnFullStacks)
+                {
+                    outSlot    = *Iterator;
+                    foundIndex = Iterator.GetIndex();
 
-					return true;
-				}
-			}
-		}
-	}
+                    return true;
+                }
+            }
+        }
+    }
 
-	return false;
+    return false;
 }
 
 bool UInventoryComponent::GetEmptySlot(FInventorySlot &outSlot, int32 &foundIndex)
 {
-	for (auto Iterator(Inventory.CreateIterator()); Iterator; ++Iterator)
-	{
-		if (Iterator->Item == nullptr)
-		{
-			foundIndex = Iterator.GetIndex();
-			outSlot = *Iterator;
+    for (auto Iterator(Inventory.CreateIterator()); Iterator; ++Iterator)
+    {
+        if (Iterator->Item == nullptr)
+        {
+            foundIndex = Iterator.GetIndex();
+            outSlot    = *Iterator;
 
-			return true;
-		}
-	}
+            return true;
+        }
+    }
 
-	return false;
+    return false;
 }
 
 bool UInventoryComponent::InitializeInventory(int32 SlotsCount)
 {
-	Inventory = TArray<FInventorySlot>();
-	Inventory.SetNum(SlotsCount);
+    Inventory = TArray<FInventorySlot>();
+    Inventory.SetNum(SlotsCount);
 
-	return true;
+    return true;
 }
 
 FInventorySlot &UInventoryComponent::GetSlotByIndex(int32 Index)
 {
-	check((Index >= 0 && Index < Inventory.Num()) && "Out of Range");
+    check((Index >= 0 && Index < Inventory.Num()) && "Out of Range");
 
-	return Inventory[Index];
+    return Inventory[Index];
 }
 
 bool UInventoryComponent::SplitStack(int32 index, int32 splitCount)
 {
-	FInventorySlot &slot = GetSlotByIndex(index);
-	if (!slot.Item)
-		return false;
+    FInventorySlot &slot = GetSlotByIndex(index);
+    if (!slot.Item)
+        return false;
 
-	int32 remainder;
-	const int32 freeSlots = GetFreeInventorySlotsCount();
+    int32 remainder;
+    const int32 freeSlots = GetFreeInventorySlotsCount();
 
-	if (freeSlots < 1)
-		return false;
+    if (freeSlots < 1)
+        return false;
 
-	if ((splitCount >= slot.Count) || (splitCount <= 0))
-		return false;
+    if ((splitCount >= slot.Count) || (splitCount <= 0))
+        return false;
 
-	auto newItemInstance = DuplicateObject(slot.Item, slot.Item->GetOuter());
-	if (!newItemInstance)
-		return false;
+    auto newItemInstance = DuplicateObject(slot.Item, slot.Item->GetOuter());
+    if (!newItemInstance)
+        return false;
 
-	remainder = slot.Count - splitCount;
-	slot.Count = remainder;
+    remainder  = slot.Count - splitCount;
+    slot.Count = remainder;
 
-	return AddToInventory(newItemInstance, splitCount, true);
+    return AddToInventory(newItemInstance, splitCount, true);
 }
 
 bool UInventoryComponent::MergeStacks(int32 indexA, int32 indexB)
 {
-	FInventorySlot &slotA = GetSlotByIndex(indexA);
-	FInventorySlot &slotB = GetSlotByIndex(indexB);
+    FInventorySlot &slotA = GetSlotByIndex(indexA);
+    FInventorySlot &slotB = GetSlotByIndex(indexB);
 
-	if (slotA.Item == nullptr || slotB.Item == nullptr)
-		return false;
-	if (slotA.Item->GetClass() != slotB.Item->GetClass())
-		return false;
+    if (slotA.Item == nullptr || slotB.Item == nullptr)
+        return false;
+    if (slotA.Item->GetClass() != slotB.Item->GetClass())
+        return false;
 
-	if (slotA.Item->MaxCount >= slotA.Count + slotB.Count)
-	{
-		slotA.Count += slotB.Count;
+    if (slotA.Item->MaxCount >= slotA.Count + slotB.Count)
+    {
+        slotA.Count += slotB.Count;
 
-		RemoveFromStack(indexB, 0, true);
-		return true;
-	}
-	else
-	{
-		int32 remainder = slotA.Item->MaxCount - slotA.Count;
-		slotA.Count = slotA.Item->MaxCount;
-		slotB.Count -= remainder;
+        RemoveFromStack(indexB, 0, true);
+        return true;
+    }
+    else
+    {
+        int32 remainder = slotA.Item->MaxCount - slotA.Count;
+        slotA.Count     = slotA.Item->MaxCount;
+        slotB.Count -= remainder;
 
-		return true;
-	}
+        return true;
+    }
 }
 
 bool UInventoryComponent::SwapStacks(int32 indexA, int32 indexB)
 {
-	const FInventorySlot tempSlot = Inventory[indexA];
-	Inventory[indexA] = Inventory[indexB];
-	Inventory[indexB] = tempSlot;
-	return true;
+    const FInventorySlot tempSlot = Inventory[indexA];
+    Inventory[indexA]             = Inventory[indexB];
+    Inventory[indexB]             = tempSlot;
+    return true;
 }
 
 
 bool UInventoryComponent::AddToInventory(UItemBase *Item, int32 amount, bool addNewStack)
 {
-	bool result;
-	int32 foundStack = -1;
+    bool result;
+    int32 foundStack = -1;
 
-	if (amount <= 0 || Item == nullptr)
-		return false;
+    if (amount <= 0 || Item == nullptr)
+        return false;
 
-	const int32 stackSize = Item->MaxCount;
+    const int32 stackSize = Item->MaxCount;
 
-	if (!addNewStack) 
-	{
-		FInventorySlot slot;
-		result = GetStackByClass(Item->GetClass(), slot, foundStack);
-		
-		if(result) //if inventory already contain item of that class
-		{
-			if (stackSize < slot.Count + amount) // if not enough space in slot
-			{
-				int32 Remainder = Item->MaxCount - slot.Count;
-				Remainder = amount - Remainder;
-				Inventory[foundStack].Count = stackSize;
+    if (!addNewStack)
+    {
+        FInventorySlot slot;
+        result = GetStackByClass(Item->GetClass(), slot, foundStack);
 
-				auto NewItemInstance = DuplicateObject(Item, Item->GetOuter());
+        if (result)    //if inventory already contain item of that class
+        {
+            if (stackSize < slot.Count + amount)    // if not enough space in slot
+            {
+                int32 Remainder             = Item->MaxCount - slot.Count;
+                Remainder                   = amount - Remainder;
+                Inventory[foundStack].Count = stackSize;
 
-				AddToInventory(NewItemInstance, Remainder);
-				return true;
-			}
-			else //if we have enough space in slot
-			{
-				Inventory[foundStack].Count += amount;
-				return true;
-			}
-		}
-		else // if not we create new stack
-		{ 
-			if (amount > stackSize) //if we have more item then slot can contain
-			{
-				const int32 freeSlots = GetFreeInventorySlotsCount();
+                auto NewItemInstance = DuplicateObject(Item, Item->GetOuter());
 
-				if (StacksFromAmount(stackSize, amount))
-					return false;
-				
-				const int32 Remainder = amount - stackSize;
-				FInventorySlot itemSlot;
+                AddToInventory(NewItemInstance, Remainder);
+                return true;
+            }
+            else    //if we have enough space in slot
+            {
+                Inventory[foundStack].Count += amount;
+                return true;
+            }
+        }
+        else    // if not we create new stack
+        {
+            if (amount > stackSize)    //if we have more item then slot can contain
+            {
+                const int32 freeSlots = GetFreeInventorySlotsCount();
 
-				result = GetEmptySlot(itemSlot, foundStack);
+                if (StacksFromAmount(stackSize, amount))
+                    return false;
 
-				if (!result)
-					return false;
+                const int32 Remainder = amount - stackSize;
+                FInventorySlot itemSlot;
 
-				Inventory[foundStack].Count = stackSize;
-				Inventory[foundStack].Item = Item;
+                result = GetEmptySlot(itemSlot, foundStack);
 
-				auto NewItemInstance = DuplicateObject(Item, Item->GetOuter());
+                if (!result)
+                    return false;
 
-				AddToInventory(NewItemInstance, Remainder);
+                Inventory[foundStack].Count = stackSize;
+                Inventory[foundStack].Item  = Item;
 
-				return true;
-			}
-			else //otherwise 
-			{
-				FInventorySlot itemSlot;
-				result = GetStackByClass(Item->GetClass(), itemSlot, foundStack, true);
+                auto NewItemInstance = DuplicateObject(Item, Item->GetOuter());
 
-				if (!result)
-					return false;
+                AddToInventory(NewItemInstance, Remainder);
 
-				Inventory[foundStack].Count = amount;
-				Inventory[foundStack].Item = Item;
+                return true;
+            }
+            else    //otherwise
+            {
+                FInventorySlot itemSlot;
+                result = GetStackByClass(Item->GetClass(), itemSlot, foundStack, true);
 
-				return true;
-			}
-		}		
-	}
-	else //if add new stack
-	{
-		int32 freeSlots = GetFreeInventorySlotsCount();
+                if (!result)
+                    return false;
 
-		if (StacksFromAmount(stackSize, amount) > freeSlots)
-			return false;
+                Inventory[foundStack].Count = amount;
+                Inventory[foundStack].Item  = Item;
 
-		FInventorySlot inventorySlot;
-		
-		result = GetEmptySlot(inventorySlot, foundStack);
+                return true;
+            }
+        }
+    }
+    else    //if add new stack
+    {
+        int32 freeSlots = GetFreeInventorySlotsCount();
 
-		if (stackSize >= amount)  // if enough space in slot
-		{
-			Inventory[foundStack].Item = Item;
-			Inventory[foundStack].Count = amount;
+        if (StacksFromAmount(stackSize, amount) > freeSlots)
+            return false;
 
-			return true;
-		}
-		else // if not enough space in slot
-		{
-			const int32 Remainder = amount - stackSize;
+        FInventorySlot inventorySlot;
 
-			Inventory[foundStack].Item = Item;
-			Inventory[foundStack].Count = stackSize;
+        result = GetEmptySlot(inventorySlot, foundStack);
 
-			auto NewItemInstance = DuplicateObject(Item, Item->GetOuter());
-			AddToInventory(NewItemInstance, Remainder, true);
-		}
-	}
-	return true;
+        if (stackSize >= amount)    // if enough space in slot
+        {
+            Inventory[foundStack].Item  = Item;
+            Inventory[foundStack].Count = amount;
+
+            return true;
+        }
+        else    // if not enough space in slot
+        {
+            const int32 Remainder = amount - stackSize;
+
+            Inventory[foundStack].Item  = Item;
+            Inventory[foundStack].Count = stackSize;
+
+            auto NewItemInstance = DuplicateObject(Item, Item->GetOuter());
+            AddToInventory(NewItemInstance, Remainder, true);
+        }
+    }
+    return true;
 }
 
 bool UInventoryComponent::RemoveFromInventory(UClass *itemClass, int32 amount)
 {
-	const int32 Counter = GetItemCountByClass(itemClass);
+    const int32 Counter = GetItemCountByClass(itemClass);
 
-	if (amount > Counter)
-		return false;
+    if (amount > Counter)
+        return false;
 
-	int32 slotIndex = -1;
-	FInventorySlot slot;
+    int32 slotIndex = -1;
+    FInventorySlot slot;
 
-	const auto result = GetStackByClass(itemClass, slot, slotIndex);
+    const auto result = GetStackByClass(itemClass, slot, slotIndex);
 
-	if (!result)
-		return false;
+    if (!result)
+        return false;
 
-	if (slot.Count > amount)
-	{
-		Inventory[slotIndex].Item -= amount;
-		return true;
-	}
-	else
-	{
-		const int32 Remainder = amount - slot.Count;
-		Inventory[slotIndex].Item->ConditionalBeginDestroy();
-		Inventory[slotIndex] = FInventorySlot();
+    if (slot.Count > amount)
+    {
+        Inventory[slotIndex].Item -= amount;
+        return true;
+    }
+    else
+    {
+        const int32 Remainder = amount - slot.Count;
+        Inventory[slotIndex].Item->ConditionalBeginDestroy();
+        Inventory[slotIndex] = FInventorySlot();
 
-		return RemoveFromInventory(itemClass, Remainder);
-	}
+        return RemoveFromInventory(itemClass, Remainder);
+    }
 }
 
-bool UInventoryComponent::RemoveFromStack(int32 index, int32 amount, bool removeWholeStack)
+bool UInventoryComponent::RemoveFromStack(int32 index, int32 amount,
+                                          bool removeWholeStack)
 {
-	FInventorySlot slot = GetSlotByIndex(index);
-	
-	if (amount > slot.Count)
-		return false;
+    FInventorySlot slot = GetSlotByIndex(index);
 
-	if (removeWholeStack || slot.Count == amount)
-	{
-		Inventory[index].Item->ConditionalBeginDestroy();
-		Inventory[index] = FInventorySlot();
-		return true;
-	}
-	else
-	{
-		Inventory[index].Count -= amount;
-		return true;
-	}
+    if (amount > slot.Count)
+        return false;
+
+    if (removeWholeStack || slot.Count == amount)
+    {
+        Inventory[index].Item->ConditionalBeginDestroy();
+        Inventory[index] = FInventorySlot();
+        return true;
+    }
+    else
+    {
+        Inventory[index].Count -= amount;
+        return true;
+    }
 }
 
 void UInventoryComponent::Update()
 {
-	// todo define
-	CalculateWeight();
-	UnSetUpdate();
+    // todo define
+    CalculateWeight();
+    UnSetUpdate();
 }
 
 void UInventoryComponent::CalculateWeight()
 {
-	CurrentWeight = 0;
-	for (auto &slot : Inventory)
-		CurrentWeight += WeightOfSlot(slot);
+    CurrentWeight = 0;
+    for (auto &slot : Inventory)
+        CurrentWeight += WeightOfSlot(slot);
 }

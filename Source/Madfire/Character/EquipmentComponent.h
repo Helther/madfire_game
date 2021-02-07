@@ -2,22 +2,22 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
-#include "../Items/ItemBase.h"
-#include "../Items/ItemArmor.h"
-#include "../Items/ItemWeapon.h"
 #include "../Attributes/Attributes.h"
 #include "../Attributes/Skills.h"
-#include "EquipmentComponent.generated.h"
+#include "../Items/ItemArmor.h"
+#include "../Items/ItemBase.h"
+#include "../Items/ItemWeapon.h"
+#include "Components/ActorComponent.h"
+#include "CoreMinimal.h"
 
+#include "EquipmentComponent.generated.h"
 
 
 USTRUCT(BlueprintType)
 struct FEquipmentSlot
 {
-	GENERATED_BODY()
-		
+    GENERATED_BODY()
+    // clang-format off
 	UPROPERTY(BlueprintReadWrite, Category = "Equipment Slot")
 		EItemSlot SlotType;
 
@@ -29,17 +29,18 @@ struct FEquipmentSlot
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Slot")
 		FTransform RelativeTransform;
+    // clang-format on
 };
 
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class MADFIRE_API UEquipmentComponent : public UActorComponent
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-public:	
-	void OnComponentCreated() override;
-
+public:
+    void OnComponentCreated() override;
+    // clang-format off
 	/*
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
 		class UItemWeapon *MainWeapon;
@@ -92,13 +93,13 @@ public:
 		void UpWeight();
 	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
 		void DownWeight();
-
+    // clang-format on
 private:
-	class ACharacterBase *Owner = nullptr;
-  FEquipmentSlot Slot[(int32)EItemSlot::Max];
-	bool IsDirty = false;
+    class ACharacterBase *Owner = nullptr;
+    FEquipmentSlot Slot[(int32)EItemSlot::Max];
+    bool IsDirty = false;
 
-private: //Methods
-	bool EquipHeadItem(UItemArmor *item);
-	void CalculateWeight();	
+private:    //Methods
+    bool EquipHeadItem(UItemArmor *item);
+    void CalculateWeight();
 };

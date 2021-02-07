@@ -3,7 +3,6 @@
 #include "ItemArmor.h"
 
 
-UItemArmor::UItemArmor(const class FObjectInitializer &ObjectInititalizer) :
-	Super(ObjectInititalizer)
+UItemArmor::UItemArmor(const class FObjectInitializer &ObjectInititalizer)
+  : Super(ObjectInititalizer)
 {}
-

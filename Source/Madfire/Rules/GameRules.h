@@ -3,12 +3,12 @@
 #pragma once
 
 #include "Engine/UserDefinedEnum.h"
-#include "GameRules.generated.h"
 
+#include "GameRules.generated.h"
+// clang-format off
 /**
  * 
  */
- 
 	UENUM(BlueprintType)
 	enum class EMagicSchool : uint8
 	{
@@ -206,3 +206,4 @@
 		
 		Max					UMETA(Hidden)
 	};
+// clang-format on

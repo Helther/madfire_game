@@ -1,8 +1,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
 #include "GameFramework/Character.h"
+#include "UObject/NoExportTypes.h"
+
 #include "AbilityAction.generated.h"
 
 /*
@@ -13,58 +14,33 @@
 UCLASS(Abstract, Blueprintable, HideDropdown, EditInlineNew)
 class UAbilityAction : public UObject
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Skill System")
-		bool Execute(AActor *Target, int32 Empowerment = 0); //Empowerment намного лучше, я считаю
+    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Skill System")
+    bool Execute(AActor *Target,
+                 int32 Empowerment = 0);    //Empowerment намного лучше, я считаю
 
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
-		ACharacter *Caster = nullptr; //тот, кто скастовал заклинание
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
+    ACharacter *Caster = nullptr;    //тот, кто скастовал заклинание
 
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
-		AActor *Causer = nullptr; //То, что является причиной этого действия - то есть проджектайл, или область, или ещё что в таком же духе
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
+    AActor *Causer =
+      nullptr;    //То, что является причиной этого действия - то есть проджектайл, или область, или ещё что в таком же духе
 };
 
 
 UCLASS(Blueprintable, HideDropdown)
 class UAbilityActionCollection : public UAbilityAction
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	/// dead code - TODO: remove if just works
-	//UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Actions")
-		//bool Execute(AActor *Target, int32 Empowerment = 0);
-	bool Execute_Implementation(AActor *Target, int32 Empowerment = 0);
+    /// dead code - TODO: remove if just works
+    //UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Actions")
+    //bool Execute(AActor *Target, int32 Empowerment = 0);
+    bool Execute_Implementation(AActor *Target, int32 Empowerment = 0);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		TArray<TSubclassOf<UAbilityAction>> ActionList;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<TSubclassOf<UAbilityAction>> ActionList;
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

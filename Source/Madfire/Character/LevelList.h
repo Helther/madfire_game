@@ -1,38 +1,39 @@
 #pragma once
 
-#include "Object.h"
-#include "../Attributes/Skills.h"
 #include "../Attributes/Attributes.h"
+#include "../Attributes/Skills.h"
 #include "Components/ActorComponent.h"
+#include "Object.h"
+
 #include "LevelList.generated.h"
 
 constexpr auto DefaultHPBonus = 9;
-constexpr auto MaxLevel = 30;
-#define EXPERIENCE_FUCKING_EQUATION(x) ((x)*=2)
+constexpr auto MaxLevel       = 30;
+#define EXPERIENCE_FUCKING_EQUATION(x) ((x) *= 2)
 
 USTRUCT(BlueprintType)
 struct FLevelInfo
 {
-	GENERATED_USTRUCT_BODY()
-	FLevelInfo();
+    GENERATED_USTRUCT_BODY()
+    FLevelInfo();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
-		float hpBonus;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
-		FSkillList SkillList;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
-		FAttributes Attributes;
-	//todo add feats
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    float hpBonus;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    FSkillList SkillList;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    FAttributes Attributes;
+    //todo add feats
 };
 
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class ULevelComponent : public UActorComponent
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 public:
-	ULevelComponent(const class FObjectInitializer &ObjectInitilizer);
-
+    ULevelComponent(const class FObjectInitializer &ObjectInitilizer);
+    // clang-format off
 	UFUNCTION(BlueprintCallable, Category = "Character Attributes")
 		void ResetLevel();
 
@@ -69,7 +70,7 @@ public:
 		float RequiredExperience = 100;
 	UPROPERTY(BlueprintReadOnly, Category = "Character Attributes")
 		TArray<FLevelInfo> LevelList;
-
+    // clang-format on
 private:
-	bool IsDirty = false;
+    bool IsDirty = false;
 };

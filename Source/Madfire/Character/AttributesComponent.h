@@ -2,28 +2,30 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
-#include <Attributes/ConsumableAttributes.h>
 #include "../Attributes/Attributes.h"
-#include "../Attributes/Skills.h"
-#include "../Attributes/DamageMap.h"
-#include "../Attributes/Damage.h"
 #include "../Attributes/ConsumableAttributes.h"
+#include "../Attributes/Damage.h"
+#include "../Attributes/DamageMap.h"
+#include "../Attributes/Skills.h"
+#include "Components/ActorComponent.h"
+#include "CoreMinimal.h"
+
+#include <Attributes/ConsumableAttributes.h>
+
 #include "AttributesComponent.generated.h"
 
 /**
  * 
  */
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class MADFIRE_API UAttributesComponent : public UActorComponent
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-public:	
-	// Sets default values for this component's properties
-	UAttributesComponent();
-// clang-format off
+public:
+    // Sets default values for this component's properties
+    UAttributesComponent();
+    // clang-format off
 	//============= Base stats
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
 		FAttributes BaseAttributes; //!< Базовые аттрибуты (сила, ловкость и т.д.)
@@ -74,14 +76,15 @@ public:
 		void UnSetUpdate() { IsDirty = false; }
 	UFUNCTION(BlueprintCallable, Category = "Component Update")
 		bool IsUpdateNeeded() { return IsDirty; }
- // clang-format on
+    // clang-format on
 protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+    // Called when the game starts
+    virtual void BeginPlay() override;
+    // Called every frame
+    virtual void TickComponent(float DeltaTime, ELevelTick TickType,
+                               FActorComponentTickFunction *ThisTickFunction) override;
 
-	private:
-	    class ACharacterBase* Character;
-			bool IsDirty = false;
+private:
+    class ACharacterBase *Character;
+    bool IsDirty = false;
 };

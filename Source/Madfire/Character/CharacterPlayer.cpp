@@ -2,26 +2,29 @@
 
 
 #include "CharacterPlayer.h"
+
 #include "BasePlayerController.h"
 
-ACharacterPlayer::ACharacterPlayer(const FObjectInitializer& ObjectInitializer) :
-    Super(ObjectInitializer)
+ACharacterPlayer::ACharacterPlayer(const FObjectInitializer &ObjectInitializer)
+  : Super(ObjectInitializer)
 {}
 
 // Called to bind functionality to input
-void ACharacterPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ACharacterPlayer::SetupPlayerInputComponent(UInputComponent *PlayerInputComponent)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+    Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
-void ACharacterPlayer::OnWalkingOffLedge_Implementation(const FVector &PreviousFloorImpactNormal, 
-													const FVector &PreviousFloorContactNormal, 
-													const FVector &PreviousLocation, 
-													float TimeDelta)
+void ACharacterPlayer::OnWalkingOffLedge_Implementation(
+  const FVector &PreviousFloorImpactNormal,
+  const FVector &PreviousFloorContactNormal,
+  const FVector &PreviousLocation,
+  float TimeDelta)
 {
     UE_LOG(LogTemp, Warning, TEXT("OnWalkingOffLedge"));
-    ABasePlayerController *PlayerController = Cast<ABasePlayerController>(GetController());
-    if(PlayerController->IsActionKeyPressed(FInputKeyNames::ClimbDownTest))
+    ABasePlayerController *PlayerController =
+      Cast<ABasePlayerController>(GetController());
+    if (PlayerController->IsActionKeyPressed(FInputKeyNames::ClimbDownTest))
     {
         UE_LOG(LogTemp, Warning, TEXT("climb down"));
         GetMovementComponent()->ClimbDownWall();

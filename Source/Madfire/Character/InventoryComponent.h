@@ -2,34 +2,35 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
 #include "../Items/ItemBase.h"
+#include "Components/ActorComponent.h"
+#include "CoreMinimal.h"
+
 #include "InventoryComponent.generated.h"
 
 
 USTRUCT(BlueprintType)
 struct FInventorySlot
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory Slot")
-		uint8 Count = 0;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory Slot")
-		UItemBase *Item = nullptr;	
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory Slot")
+    uint8 Count = 0;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory Slot")
+    UItemBase *Item = nullptr;
 };
 
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class MADFIRE_API UInventoryComponent : public UActorComponent
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-public:	
-	// Sets default values for this component's properties
-	UInventoryComponent();
-	void OnComponentCreated() override;
-
+public:
+    // Sets default values for this component's properties
+    UInventoryComponent();
+    void OnComponentCreated() override;
+    // clang-format off
 	//Slots helper
 	UFUNCTION(BlueprintPure, Category = "Inventory Slot")
 		static bool SlotIsEmpty(UPARAM(ref) FInventorySlot &slot) { return slot.Item == nullptr; }
@@ -99,13 +100,13 @@ public:
 		void UnSetUpdate() { IsDirty = false; }
 	UFUNCTION(BlueprintCallable, Category = "Component Update")
 		bool IsUpdateNeeded() { return IsDirty; }
-
+    // clang-format on
 private:
-	TArray<FInventorySlot> Inventory;
-	
-	static float WeightOfSlot(FInventorySlot &Slot);
+    TArray<FInventorySlot> Inventory;
 
-	void CalculateWeight();
-	bool IsDirty = false;
-	class ACharacterBase *Owner = nullptr;
+    static float WeightOfSlot(FInventorySlot &Slot);
+
+    void CalculateWeight();
+    bool IsDirty                = false;
+    class ACharacterBase *Owner = nullptr;
 };

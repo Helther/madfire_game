@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Character/CharacterBase.h"
+
 #include "CharacterPlayer.generated.h"
 
 /**
@@ -11,17 +12,19 @@
 UCLASS()
 class MADFIRE_API ACharacterPlayer : public ACharacterBase
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	ACharacterPlayer(const FObjectInitializer& ObjectInitializer);
-    
-protected:
-	// Called to bind functionality to input 
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+    ACharacterPlayer(const FObjectInitializer &ObjectInitializer);
 
-    virtual void OnWalkingOffLedge_Implementation( const FVector & PreviousFloorImpactNormal,
-                                                   const FVector & PreviousFloorContactNormal,
-                                                   const FVector & PreviousLocation,
-                                                   float TimeDelta) override;
+protected:
+    // Called to bind functionality to input
+    virtual void
+      SetupPlayerInputComponent(class UInputComponent *PlayerInputComponent) override;
+
+    virtual void
+      OnWalkingOffLedge_Implementation(const FVector &PreviousFloorImpactNormal,
+                                       const FVector &PreviousFloorContactNormal,
+                                       const FVector &PreviousLocation,
+                                       float TimeDelta) override;
 };

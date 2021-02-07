@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+
 #include "MadfireGameModeBase.generated.h"
 
 /**
@@ -12,7 +13,7 @@
 UCLASS()
 class MADFIRE_API AMadfireGameModeBase : public AGameModeBase
 {
-	GENERATED_BODY()
-	
+    GENERATED_BODY()
+
 public:
 };

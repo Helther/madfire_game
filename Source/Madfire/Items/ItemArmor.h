@@ -2,28 +2,28 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
-#include "ItemBase.h"
-#include "Attributes/DamageMap.h"
 #include "../Rules/GameRules.h"
+#include "Attributes/DamageMap.h"
+#include "CoreMinimal.h"
+#include "ItemBase.h"
+#include "UObject/NoExportTypes.h"
+
 #include "ItemArmor.generated.h"
 
 UCLASS(config = Game, EditInlineNew, BlueprintType, Blueprintable)
 class UItemArmor : public UItemBase
 {
-	GENERATED_BODY()
-	
+    GENERATED_BODY()
+
 public:
-	UItemArmor(const class FObjectInitializer &ObjectInititalizer);
-	
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Weapon Stats")
-		EArmorType ArmorType;
+    UItemArmor(const class FObjectInitializer &ObjectInititalizer);
 
-	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Weapon Stats")
-		FDamageAbsorb DamageLimit;
+    UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Weapon Stats")
+    EArmorType ArmorType;
 
-	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Weapon Stats")
-		FDamageResistance DamageResistance;
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Weapon Stats")
+    FDamageAbsorb DamageLimit;
+
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Weapon Stats")
+    FDamageResistance DamageResistance;
 };
-

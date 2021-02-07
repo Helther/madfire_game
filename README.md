@@ -1,9 +1,14 @@
 # MadFire_Source
-temp repo for source keeping
 
 Command to generate project files
 ```
-%ue4%/GenerateProjectFiles.sh -cmakefile -vscode -game -project "/path/to/Game.uproject"
+%ue4%/GenerateProjectFiles.sh -cmakefile-game -project "/path/to/Game.uproject"
+```
+add -vscode  for vscode (duh)
+
+Use the following command in bash to format all source files:
+```
+find . -regex '.*\.\(cpp\|hpp\|cc\|h\|cxx\)' -exec clang-format-%version% -style=file -i {} \;
 ```
 
-MadFire docs repo: https://helther666@bitbucket.org/helther/madfire_docs.git
+MadFire docs repo url: https://bitbucket.org/helther/madfire_docs.git

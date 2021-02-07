@@ -3,7 +3,6 @@
 #include "ItemWeapon.h"
 
 
-UItemWeapon::UItemWeapon(const class FObjectInitializer &ObjectInititalizer) :
-	Super(ObjectInititalizer)
+UItemWeapon::UItemWeapon(const class FObjectInitializer &ObjectInititalizer)
+  : Super(ObjectInititalizer)
 {}
-

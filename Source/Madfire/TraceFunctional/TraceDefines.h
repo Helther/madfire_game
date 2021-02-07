@@ -1,4 +1,4 @@
-    #pragma once
+#pragma once
 
 #include "TraceFunctional.h"
 
@@ -8,5 +8,5 @@
  *
  */
 
-constexpr ECollisionChannel EWallChannel = ECollisionChannel::ECC_GameTraceChannel1;
+constexpr ECollisionChannel EWallChannel     = ECollisionChannel::ECC_GameTraceChannel1;
 constexpr ECollisionChannel EInteractChannel = ECollisionChannel::ECC_GameTraceChannel2;

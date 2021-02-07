@@ -11,29 +11,28 @@ FDamageMap::FDamageMap(const FDamageMap &resistance)
 */
 FDamageResistance &FDamageResistance::operator+=(const FDamageResistance &resistance)
 {
-	for (int i = 0; i < (int32)EDamageType::Max; ++i)
-		DamageMap[i] += resistance.DamageMap[i];
-	return *this;
+    for (int i = 0; i < (int32)EDamageType::Max; ++i)
+        DamageMap[i] += resistance.DamageMap[i];
+    return *this;
 }
 
 FDamageResistance FDamageResistance::operator+(const FDamageResistance &resistance)
 {
-	FDamageResistance temp(*this);
-	temp += resistance;
-	return temp;
+    FDamageResistance temp(*this);
+    temp += resistance;
+    return temp;
 }
 
 FDamageAbsorb &FDamageAbsorb::operator+=(const FDamageAbsorb &resistance)
 {
-	for (int i = 0; i < (int32)EDamageType::Max; ++i)
-		DamageMap[i] += resistance.DamageMap[i];
-	return *this;
+    for (int i = 0; i < (int32)EDamageType::Max; ++i)
+        DamageMap[i] += resistance.DamageMap[i];
+    return *this;
 }
 
 FDamageAbsorb FDamageAbsorb::operator+(const FDamageAbsorb &resistance)
 {
-	FDamageAbsorb temp(*this);
-	temp += resistance;
-	return temp;
+    FDamageAbsorb temp(*this);
+    temp += resistance;
+    return temp;
 }
-
