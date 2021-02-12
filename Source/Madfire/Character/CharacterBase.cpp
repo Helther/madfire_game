@@ -19,6 +19,13 @@ ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer)
       CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
     CurrentCCState = ECCState::NoCC;
     MaxWeightMod   = 10.f;
+    // todo add more
+    CCInterruptDelegates.Emplace(ECCState::Sleep, &ACharacterBase::CCStunEnded);
+    CCInterruptDelegates.Emplace(ECCState::LossOfBalance, &ACharacterBase::CCStunEnded);
+    CCInterruptDelegates.Emplace(ECCState::Stun, &ACharacterBase::CCStunEnded);
+    CCInterruptDelegates.Emplace(ECCState::KnockDown,
+                                 &ACharacterBase::CCKnockDownEnded);
+    CCInterruptDelegates.Emplace(ECCState::Stasis, &ACharacterBase::CCStatisEnded);
 }
 
 UBaseMovementComponent *ACharacterBase::GetMovementComponent() const
@@ -76,12 +83,12 @@ float ACharacterBase::TakeDamage(float DamageAmount,
           * (GetAttributesComponent()->CurrentDamageResistance.DamageMap[(int32)Type]
              - 100)
           / 100;
-        GetAttributesComponent()->Health->Consume(DamageAmount);    // -> bool
+        GetAttributesComponent()->Health->Consume(DamageAmount); // -> bool
         //TODO: Death, Force, DamageItem
         return DamageAmount;
     }
     else if (MagicD != nullptr)
-    {    // тоже что и физический + проверка на пробитие магического щита если такой имеется
+    { // тоже что и физический + проверка на пробитие магического щита если такой имеется
         auto Type        = MagicD->Type;
         auto MagicSchool = MagicD->MagicSchool;
         DamageAmount -=
@@ -95,14 +102,13 @@ float ACharacterBase::TakeDamage(float DamageAmount,
             if (GetAttributesComponent()->Health->Consume(DamageAmount))
                 return DamageAmount = 0;
             else
-                return DamageAmount =
-                         DamageAmount - GetAttributesComponent()->MagicShield->GetValue();
+                return DamageAmount - GetAttributesComponent()->MagicShield->CurrentVal;
         }
         return DamageAmount = 0;
     }
-    else if (DamageType)    //if damage nor Physical or Magical, then itВґs raw Damage
+    else if (DamageType) //if damage nor Physical or Magical, then itВґs raw Damage
     {
-        GetAttributesComponent()->Health->Consume(-DamageAmount);    // -> bool
+        GetAttributesComponent()->Health->Consume(-DamageAmount); // -> bool
         return DamageAmount;
     }
 
@@ -163,76 +169,58 @@ void ACharacterBase::DoLevelUp(const FLevelInfo &levelInfo)
 // Called every frame
 void ACharacterBase::Tick(float DeltaTime) { Super::Tick(DeltaTime); }
 
+void ACharacterBase::PostInitializeComponents()
+{
+    Super::PostInitializeComponents();
+    auto animInstance = Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
+    CCAnims.Emplace(ECCState::KnockDown, animInstance->KnockDownAnim);
+    CCAnims.Emplace(ECCState::LossOfBalance, animInstance->LossOfBalanceAnim);
+    CCAnims.Emplace(ECCState::Sleep, animInstance->SleepAnim);
+    CCAnims.Emplace(ECCState::Stasis, animInstance->StasisAnim);
+    CCAnims.Emplace(ECCState::Stun, animInstance->StunAnim);
+}
+
+
 void ACharacterBase::CalculateMaxWeight()
 {
     const int32 str = UAttributesHelper::GetAttribute(
       GetAttributesComponent()->CurrentAttributes, EAttributes::Str);
-    MaxWeight = MaxWeightMod * str;    // clever formula!
+    MaxWeight = MaxWeightMod * str; // clever formula!
+}
+
+void ACharacterBase::StartAnimTest(float InPlayRate)
+{
+    FOnMontageBlendingOutStarted callBack;
+    callBack.BindUObject(GetMovementComponent(), &UBaseMovementComponent::OnParkourEnded);
+    StartAnimation(GetMovementComponent()->VaultMontageHigh, callBack, InPlayRate);
 }
 
 void ACharacterBase::StartAnimation(UAnimMontage *AnimMontage,
-                                    AnimTypes Type,
+                                    const FOnMontageBlendingOutStarted &EndCallBack,
                                     float InPlayRate,
                                     FName StartSectionName)
 {
+    check(AnimMontage != nullptr && "Start Anim: null anim");
     PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
-    // todo add delegates according to anim type
     auto animInstance    = Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
     auto montageInstance = animInstance->GetActiveInstanceForMontage(AnimMontage);
-    switch (Type)
-    {
-        case AnimTypes::Block: {
-            break;
-        }
-        case AnimTypes::Parkour: {
-            montageInstance->OnMontageBlendingOutStarted.BindUObject(
-              GetMovementComponent(), &UBaseMovementComponent::ParkourInterrupt);
-            break;
-        }
-        case AnimTypes::SpellCast: {
-            break;
-        }
-        case AnimTypes::Attack: {
-            break;
-        }
-        case AnimTypes::Dodge: {
-            montageInstance->OnMontageBlendingOutStarted.BindUObject(
-              GetMovementComponent(), &UBaseMovementComponent::DodgeInterrupt);
-            break;
-        }
-        case AnimTypes::CC: {
-            break;
-        }
-        default:
-            check(0 && "Start Anim: invalid anim type");
-    }
+    montageInstance->OnMontageBlendingOutStarted = EndCallBack;
 }
 
 void ACharacterBase::InterruptAnimation(ECCState Source, int OldState)
 {
     //todo
-
     // already controlled
     if (OldState != ECCState::NoCC)
     {
-//check if highest order bit of source is lower than old
-#if PLATFORM_WINDOWS
-        unsigned long sourceIndex;
-        unsigned long oldIndex;
-        _BitScanReverse(&sourceIndex, Source);
-        _BitScanReverse(&oldIndex, OldState);
-        if (sourceIndex < oldIndex)
-#else
-        if (ffs(Source) < ffs(OldState))
-#endif
+        //check if highest order bit of source is lower than old
+        if (GetHighestPriorityCC(Source) < GetHighestPriorityCC(OldState))
         {
             UE_LOG(LogTemp,
                    Warning,
                    TEXT("InterruptAnimation: cant interrupt CC, low priority"))
             return;
         }
-        // todo replace old CC anim with New via the powerfull switch(Source){}
-        //StartAnimation(Source, someCCAnim, 1)
     }
     else
     {
@@ -246,66 +234,52 @@ void ACharacterBase::InterruptAnimation(ECCState Source, int OldState)
                 auto animInstance =
                   Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
                 if (animInstance->Montage_IsActive(GetMovementComponent()->HangMontage))
-                    StopAnimMontage(GetMovementComponent()->HangMontage);
+                    animInstance->StopSlotAnimation(0.f, FAnimSlotNames::FullBody);
             }
-            StopAnimMontage(
-              GetMovementComponent()->VaultMontageHigh);    // todo temp debug
             return;
         }
         // interrupted by CC
         if (GetMovementComponent()->IsTransitionInProgress())
-        {
-            GetMovementComponent()->TransitionEnd();
-            return;
-        }
-        if (GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
-        {
-            auto animInstance =
-              Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
-            switch (GetMovementComponent()->CustomMovementMode)
-            {
-                case ECustomMovementMode::ClimbingWall: {
-                    UAnimMontage *wallClimbAnims[] = {
-                        GetMovementComponent()->ClimbWallCrouchedMontage,
-                        GetMovementComponent()->ClimbWallMontage,
-                        GetMovementComponent()->ClimbDownMontage,
-                        GetMovementComponent()->HangMontage
-                    };
-                    for (int i = 0; i < 4; ++i)
-                    {
-                        if (animInstance->Montage_IsActive(wallClimbAnims[i]))
-                            StopAnimMontage(wallClimbAnims[i]);
-                    }
-                    break;
-                }
-                case ECustomMovementMode::ClimbingLedge: {
-                    UAnimMontage *ledgeClimbAnims[] = {
-                        GetMovementComponent()->VaultMontageLow,
-                        GetMovementComponent()->VaultMontageHigh,
-                        GetMovementComponent()->ClimbLedgeMontageLow,
-                        GetMovementComponent()->ClimbLedgeMontageHigh,
-                        GetMovementComponent()->ClimbLedgeCrouchedMontageLow,
-                        GetMovementComponent()->ClimbLedgeCrouchedMontageHigh
-                    };
-                    for (int i = 0; i < 6; ++i)
-                    {
-                        if (animInstance->Montage_IsActive(ledgeClimbAnims[i]))
-                            StopAnimMontage(ledgeClimbAnims[i]);
-                    }
-                    break;
-                }
-                case ECustomMovementMode::Dodge:    // dodge is implemented via transition
-                    break;
-                default:
-                    check(0 && "interrupt Anim: invalid move mode");
-            }
-        }
+            GetMovementComponent()->TransitionInterrupt();
+        // something else
     }
+    CurrentCCState |= Source;
+    FOnMontageBlendingOutStarted callBack;
+    callBack.BindUObject(this,
+                         CCInterruptDelegates[static_cast<ECCState>(
+                           1 << GetHighestPriorityCC(CurrentCCState))]);
+    StartAnimation(CCAnims[Source], callBack, 1.f); // play another instead
+    // todo account for repeated CC application (stunLock)
 }
 
-void ACharacterBase::InterruptAction(ECCState Source)
+void ACharacterBase::CCStunEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
-    // todo handle states and ...
-    InterruptAnimation(Source, CurrentCCState);
-    CurrentCCState |= Source;
+    // todo
+    UE_LOG(LogTemp, Warning, TEXT("CCInterrupt: Stun"));
+    CurrentCCState &= ~ECCState::Stun;
+}
+
+void ACharacterBase::CCKnockDownEnded(UAnimMontage *animMontage, bool bInterrupted)
+{
+    // todo reset some armor debuffs
+    UE_LOG(LogTemp, Warning, TEXT("CCInterrupt: KnockDown"));
+    CurrentCCState &= ~ECCState::KnockDown;
+}
+
+void ACharacterBase::CCStatisEnded(UAnimMontage *animMontage, bool bInterrupted)
+{
+    // todo reset invul
+    UE_LOG(LogTemp, Warning, TEXT("CCInterrupt: Stasis"));
+    CurrentCCState &= ~ECCState::Stasis;
+}
+
+int ACharacterBase::GetHighestPriorityCC(int bitmask)
+{
+#if PLATFORM_WINDOWS
+    unsigned long index;
+    _BitScanReverse(&index, bitmask);
+    return index;
+#else
+    return ffs(bitmask);
+#endif
 }

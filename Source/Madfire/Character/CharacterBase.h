@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Animation/AnimMontage.h"
 #include "AttributesComponent.h"
 #include "CombatComponent.h"
 #include "CoreMinimal.h"
@@ -16,12 +17,12 @@ UENUM(BlueprintType, meta = (Bitflags))
 // Character Control Bit mask with values as priorities (the more the better)
 enum ECCState
 {
-    NoCC          = 0 UMETA(DisplayName = "Sleeping"),
-    Sleep         = 1 UMETA(DisplayName = "LostAllBalance"),
-    LossOfBalance = 2 UMETA(DisplayName = "Stunned"),
-    Stun          = 4 UMETA(DisplayName = "KnockedDown"),
-    KnockDown     = 8 UMETA(DisplayName = "UnderStasis"),
-    Stasis        = 16
+    NoCC          = 0,
+    Sleep         = 1 UMETA(DisplayName = "Sleeping"),
+    LossOfBalance = 2 UMETA(DisplayName = "LostAllBalance"),
+    Stun          = 4 UMETA(DisplayName = "Stunned"),
+    KnockDown     = 8 UMETA(DisplayName = "KnockedDown"),
+    Stasis        = 16 UMETA(DisplayName = "UnderStasis")
 };
 ENUM_CLASS_FLAGS(ECCState)
 
@@ -45,18 +46,18 @@ public:
     virtual void Update();
     void OnJumped_Implementation() override;
     UFUNCTION(BlueprintCallable, Category = "Character Base")
-    void OnUpdate();    //!< Blueprint interface  for Blueprints
+    void OnUpdate(); //!< Blueprint interface  for Blueprints
 
-    UFUNCTION(BlueprintCallable, Category = "Character Base")
-    void StartAnimation(UAnimMontage *AnimMontage, AnimTypes Type, float InPlayRate,
+    UFUNCTION(BlueprintCallable, Category = "Character Base") // todo debug
+    void StartAnimTest(float InPlayRate);
+
+    void StartAnimation(UAnimMontage *AnimMontage,
+                        const FOnMontageBlendingOutStarted &EndCallBack,
+                        float InPlayRate,
                         FName StartSectionName = NAME_None);
 
     UFUNCTION(BlueprintCallable, Category = "Character Base")
     void InterruptAnimation(ECCState Source, int OldState);
-
-    // interface for global interrupt of any visual activity(fighting, parkour)
-    UFUNCTION(BlueprintCallable, Category = "Character Base")
-    void InterruptAction(ECCState Source);
 
     UBaseMovementComponent *GetMovementComponent() const override;
     UCombatComponent *GetCombatComponent() const;
@@ -78,12 +79,24 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Stats")
     float MaxWeight;
 
+
 protected:
     // Called when the game starts or when spawned
     virtual void BeginPlay() override;
     // Called every frame
     virtual void Tick(float DeltaTime) override;
+
+    void PostInitializeComponents() override;
+
     // clang-format off
+    UFUNCTION(BlueprintCallable, Category = "Animation")
+        void CCStunEnded(UAnimMontage *animMontage, bool bInterrupted);
+    UFUNCTION(BlueprintCallable, Category = "Animation")
+        void CCKnockDownEnded(UAnimMontage *animMontage, bool bInterrupted);
+    UFUNCTION(BlueprintCallable, Category = "Animation")
+        void CCStatisEnded(UAnimMontage *animMontage, bool bInterrupted);
+    // todo add other
+
 	UPROPERTY(BlueprintReadWrite, Category = "Character Components", 
 		VisibleAnywhere, meta = (AllowPrivateAccess = "true"))
 		UCombatComponent *CombatComponent;
@@ -101,4 +114,9 @@ protected:
 		UInventoryComponent *InventoryComponent;
     // clang-format on
     void CalculateMaxWeight();
+
+    int GetHighestPriorityCC(int bitmask);
+
+    TMap<ECCState, void (ACharacterBase::*)(UAnimMontage *, bool)> CCInterruptDelegates;
+    TMap<ECCState, UAnimMontage *> CCAnims;
 };

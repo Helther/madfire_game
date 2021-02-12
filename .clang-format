@@ -97,7 +97,7 @@ SpaceAfterTemplateKeyword: false
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements
 SpaceInEmptyParentheses: false
-SpacesBeforeTrailingComments: 4
+SpacesBeforeTrailingComments: 1
 SpacesInAngles: false
 SpacesInCStyleCastParentheses: false
 SpacesInContainerLiterals: true

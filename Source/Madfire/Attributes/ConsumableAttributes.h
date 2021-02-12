@@ -18,25 +18,19 @@ class MADFIRE_API UConsumableAttribute : public UObject
 public:
     UConsumableAttribute();
 
-    void SetValue(float NewVal) { CurrentVal = NewVal; }
-    void SetBaseMaxValue(float NewVal) { BaseMaxVal = NewVal; }
-    void SetCurrentMaxVal(float NewVal) { CurrentMaxVal = NewVal; }
-    float GetValue() const { return CurrentVal; }
-    float GetBaseMaxValue() const { return BaseMaxVal; }
-    float GetCurrentMaxValue() const { return CurrentMaxVal; }
-    //UFUNCTION(BlueprintCallable, Category = "Character Stats")
     // возвращает фолс если не хватило ресурса
+    UFUNCTION(BlueprintCallable, Category = "Character Stats")
     virtual bool Consume(float amount);
-    //virtual void Update(){}; // todo
 
-protected:
-    virtual void NoConsumeLeft(){};
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float BaseMaxVal = 0;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float CurrentVal = 0;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float CurrentMaxVal = 0;
+
+protected:
+    virtual void NoConsumeLeft(){};
 };
 
 // Зарефакторить реген блок с исопльзованием счетчика ссылок
@@ -65,18 +59,8 @@ public:
     float GetCurrentRegenRate() const { return CurrentRegenRate; }
     float GetBaseRegenRate() const { return BaseRegenRate; }
     bool Consume(float amount) override;
-    void EnableRegen();
-
-protected:
-    class UWorld *GetWorld() const override;
-    void OnNoConsumeTimeFinish();
     void OnRegenTick();
-    void NoConsumeLeft() override;
 
-    // увеличивается при каждом вызове BlockRegen на 1
-    int RegenBlocker = 0;
-    // если уменьшается до нуля устанавливается то тру
-    bool NoConsumeBlock = false;
     // время блокировки регена при опустошении
     UPROPERTY(EditAnywhere)
     float NoConsumeTime = 3;
@@ -89,6 +73,16 @@ protected:
     float RegenInterval = 0;
     // число на которое увеличивается параметр за период времени
     UPROPERTY(EditAnywhere)
-    float BaseRegenRate    = 5;
+    float BaseRegenRate = 5;
+
+protected:
+    class UWorld *GetWorld() const override;
+    void OnNoConsumeTimeFinish();
+    void NoConsumeLeft() override;
+
+    // увеличивается при каждом вызове BlockRegen на 1
+    int RegenBlocker = 0;
+    // если уменьшается до нуля устанавливается то тру
+    bool NoConsumeBlock    = false;
     float CurrentRegenRate = 0;
 };

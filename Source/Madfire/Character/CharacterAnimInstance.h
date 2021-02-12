@@ -7,6 +7,22 @@
 
 #include "CharacterAnimInstance.generated.h"
 
+// names of animation slots which used to play one anim at a time
+struct FAnimSlotNames
+{
+    static const FName FullBody;
+    static const FName UpperBody;
+    static const FName Head;
+    static const FName RightHand;
+    static const FName LeftHand;
+};
+
+// name of groups of anim slots to potentialy interrupt several animations in
+// different slots at one go
+struct FAnimGroupNames
+{
+    static const FName MainGroup;
+};
 
 UENUM(BlueprintType)
 // Animation classification types with values as priorities
@@ -28,6 +44,18 @@ class MADFIRE_API UCharacterAnimInstance : public UAnimInstance
 public:
     UPROPERTY(BlueprintReadOnly, Category = "Character")
     class ACharacterBase *Character;
+
+    // ниже монтажи играемые пока персонаж под контролем
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *SleepAnim;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *LossOfBalanceAnim;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *StunAnim;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *KnockDownAnim;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *StasisAnim;
 
 private:
     void NativeUpdateAnimation(float DeltaSeconds) override;

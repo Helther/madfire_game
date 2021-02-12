@@ -28,8 +28,8 @@ UAttributesComponent::UAttributesComponent()
 
 void UAttributesComponent::Update()
 {
-    float hk = Health->GetValue() / Health->GetCurrentMaxValue();
-    float sk = Stamina->GetValue() / Stamina->GetCurrentMaxValue();
+    float hk = Health->CurrentVal / Health->CurrentMaxVal;
+    float sk = Stamina->CurrentVal / Stamina->CurrentMaxVal;
 
     CurrentAttributes =
       BaseAttributes + Character->GetLevelComponent()->LevelAttributes;    // + equipment
@@ -44,18 +44,18 @@ void UAttributesComponent::Update()
     if (ConMod < 0)
         ConMod = 0;    // todo нужно ли?
 
-    Health->SetCurrentMaxVal(Health->GetBaseMaxValue()
+    Health->CurrentMaxVal = Health->BaseMaxVal
                              + Character->GetLevelComponent()->LevelHealthBonus
-                             + (ConMod * Character->GetLevelComponent()->GetLevelNum()));
-    Health->SetValue(Health->GetCurrentMaxValue() * hk);
+                             + (ConMod * Character->GetLevelComponent()->GetLevelNum());
+    Health->CurrentVal = Health->CurrentMaxVal * hk;
 
     auto StrMod = UAttributesHelper::GetModifier(CurrentAttributes, EAttributes::Str);
     if (StrMod < 0)
         StrMod = 0;    // todo нужно ли?
-    Stamina->SetCurrentMaxVal(Stamina->GetBaseMaxValue()
+    Stamina->CurrentMaxVal = Stamina->BaseMaxVal
                               + (Character->GetLevelComponent()->GetLevelNum() * ConMod)
-                              + (Character->GetLevelComponent()->GetLevelNum() * StrMod));
-    Stamina->SetValue(Stamina->GetCurrentMaxValue() * sk);
+                              + (Character->GetLevelComponent()->GetLevelNum() * StrMod);
+    Stamina->CurrentVal = Stamina->CurrentMaxVal * sk;
 
     Health->SetCurrentRegenRate(Health->GetBaseRegenRate() + ConMod);
     Stamina->SetCurrentRegenRate(Stamina->GetBaseRegenRate() + ConMod);
@@ -70,10 +70,8 @@ void UAttributesComponent::BeginPlay()
     Character = Cast<ACharacterBase>(GetOwner());
     check(Character != nullptr && "UBaseMovementComponent error: No pawn");
 
-    if (!Health->IsRegenBlocked())
-        Health->EnableRegen();
-    if (!Stamina->IsRegenBlocked())
-        Stamina->EnableRegen();
+    Health->OnRegenTick();
+    Stamina->OnRegenTick();
     // ...
 }
 

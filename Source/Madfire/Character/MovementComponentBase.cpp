@@ -89,6 +89,8 @@ UBaseMovementComponent::UBaseMovementComponent(
     AirControl
     MaxCustomMovementSpeed
     */
+    AnimDelegates.Emplace(AnimTypes::Parkour, &UBaseMovementComponent::OnParkourEnded);
+    AnimDelegates.Emplace(AnimTypes::Dodge, &UBaseMovementComponent::OnDodgeEnded);
 }
 
 // вызывать при изменении модификатора
@@ -243,7 +245,7 @@ bool UBaseMovementComponent::DoVault(const StartClimbData &LocationData, bool Is
            + LocationHorizOffset + MaxVaultLedgeSize);    // todo temp
 
     if (IsEnoughSpace(VaultAnimationStartLocation) == EClimbTraceResult::SuccessStand
-        && Character->GetAttributesComponent()->Stamina->GetValue() > 0)
+        && Character->GetAttributesComponent()->Stamina->CurrentVal > 0)
     {
         Character->GetAttributesComponent()->Stamina->Consume(StaminaCostValues.Vault);
         if (IsLow)
@@ -292,7 +294,7 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData &LocationData, bo
         ClimbledgeAnimationEndLocation.Z +=
           -Character->GetDefaultHalfHeight() + CrouchedHalfHeight;
     // check for available space at the start position before anim
-    if (Character->GetAttributesComponent()->Stamina->GetValue() <= 0)
+    if (Character->GetAttributesComponent()->Stamina->CurrentVal <= 0)
         return false;
     switch (
       IsEnoughSpace(ClimbledgeAnimationStartLocation, ClimbledgeAnimationEndLocation))
@@ -884,7 +886,7 @@ float UBaseMovementComponent::GetMaxSpeed() const
             else if (!bWantToSprint && bIsRunning && WeightFactor <= 1)
                 return MaxRunSpeed;
             else if (bWantToSprint
-                     && Character->GetAttributesComponent()->Stamina->GetValue() > 0
+                     && Character->GetAttributesComponent()->Stamina->CurrentVal > 0
                      && WeightFactor <= 1)
                 return MaxSprintSpeed;
             else if (WeightFactor <= 1)
@@ -911,7 +913,7 @@ void UBaseMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
     Super::PhysWalking(deltaTime, Iterations);
 
     if (bWantToSprint && Velocity.Size() > MaxWalkSpeedCrouched - 1.f && !IsCrouching()
-        && Character->GetAttributesComponent()->Stamina->GetValue() > 0
+        && Character->GetAttributesComponent()->Stamina->CurrentVal > 0
         && WeightFactor <= 1)
     {
         if (!bIsSprinting)
@@ -1039,7 +1041,7 @@ bool UBaseMovementComponent::FallDamageCheck()
 
 void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
 {
-    float damage = Character->GetAttributesComponent()->Health->GetCurrentMaxValue();
+    float damage = Character->GetAttributesComponent()->Health->CurrentMaxVal;
     if (FallDistance < MaxfallHeightThreshold)
         damage *= (FallDistance - MinFallHeightThreshold)
           / MinFallHeightThreshold;    // NOT NULL!
@@ -1077,20 +1079,31 @@ void UBaseMovementComponent::TransitionStart(const FVector &EndLoc,
     CurrentTransitionAnim = AnimToPlay;
     if (AnimToPlay->IsValidSectionName(FTransitionSectionNames::Start))
     {
-        Character->StartAnimation(CurrentTransitionAnim, Type, AnimPlayRate,
-                                  FTransitionSectionNames::Start);
         animType = Type;
+        FOnMontageBlendingOutStarted callBack;
+        callBack.BindUObject(this, AnimDelegates[static_cast<AnimTypes>(animType)]);
+        Character->StartAnimation(CurrentTransitionAnim, callBack, AnimPlayRate,
+                                  FTransitionSectionNames::Start);
     }
     else
         UE_LOG(LogTemp, Warning, TEXT("TransitionStart info: no anim start section"))
 }
 
+void UBaseMovementComponent::TransitionStart(const UCurveFloat &Curve,
+                                             UAnimMontage *AnimToPlay, AnimTypes Type,
+                                             ECustomMovementMode InMode)
+{
+    // todo
+}
+
 void UBaseMovementComponent::On_TransitionFinished()
 {
     check(CurrentTransitionAnim != nullptr && "Transition: no anim!");
-    Character->StartAnimation(CurrentTransitionAnim, animType, AnimPlayRate,
+    FOnMontageBlendingOutStarted callBack;
+    callBack.BindUObject(this, AnimDelegates[static_cast<AnimTypes>(animType)]);
+    Character->StartAnimation(CurrentTransitionAnim, callBack, AnimPlayRate,
                               FTransitionSectionNames::End);
-    TransitionEnd();
+    TransitionCleanUp();
     UE_LOG(LogTemp, Warning, TEXT("TransitionFinished!"))
 }
 
@@ -1111,25 +1124,26 @@ void UBaseMovementComponent::TransitionProcess(float deltaTime)
                       TransitionRotationSpeed * deltaTime));
         if (!locSweep || !rotSweep)
         {
-            TransitionEnd();
+            TransitionInterrupt();
             UE_LOG(LogTemp, Warning, TEXT("TransitionProcess error: collision hit!!"))
         }
     }
 }
 
-void UBaseMovementComponent::On_TransitionInterrupt()
+void UBaseMovementComponent::TransitionInterrupt()
 {
-    TransitionEnd();
+    check(bIsTransitioning && "Transition: can't interrupt");
+    Character->StopAnimMontage(CurrentTransitionAnim);
+    TransitionCleanUp();
     UE_LOG(LogTemp, Warning, TEXT("TransitionInterrupt error: interrupted!!"))
 }
 
-void UBaseMovementComponent::TransitionEnd()
+void UBaseMovementComponent::TransitionCleanUp()
 {
     check(bIsTransitioning && "Transition: can't' cancel");
     bIsTransitioning = false;
     if (MovementMode != EMovementMode::MOVE_Custom)
         SetMovementMode(TransitionFinishMode);
-    Character->StopAnimMontage(CurrentTransitionAnim);
     CurrentTransitionAnim = nullptr;
     TransitionLocEnd.Release();
     TransitionRotEnd.Release();
@@ -1301,7 +1315,7 @@ bool UBaseMovementComponent::DoJump(bool bReplayingMoves)
         UE_LOG(LogTemp, Warning, TEXT("blocked jump"));
         return false;
     }
-    if (Character->GetAttributesComponent()->Stamina->GetValue() <= 0)
+    if (Character->GetAttributesComponent()->Stamina->CurrentVal <= 0)
         return false;
     if (!Character->bWasJumping)
         Character->GetAttributesComponent()->Stamina->Consume(StaminaCostValues.Jump);
@@ -1338,36 +1352,21 @@ float UBaseMovementComponent::GetWeightFactor() const
       / maxWeight;
 }
 
-void UBaseMovementComponent::ParkourInterrupt(UAnimMontage *animMontage,
+void UBaseMovementComponent::OnParkourEnded(UAnimMontage *animMontage,
                                               bool bInterrupted)
 {
     if (bInterrupted)
         UE_LOG(LogTemp, Warning, TEXT("ParkourInterrupt"))
     else
         UE_LOG(LogTemp, Warning, TEXT("ParkourFinishedNormally"))
-    // todo reset movement mode to some valid state and restore character capsule size if modified
+    // todo reset character capsule size if modified
 }
 
-void UBaseMovementComponent::DodgeInterrupt(UAnimMontage *animMontage, bool bInterrupted)
+void UBaseMovementComponent::OnDodgeEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
     if (bInterrupted)
         UE_LOG(LogTemp, Warning, TEXT("DodgeInterrupt"))
     else
         UE_LOG(LogTemp, Warning, TEXT("DodgeFinishedNormally"))
     // todo disable invul
-}
-
-void UBaseMovementComponent::On_StartAnimation()
-{
-    Character->StartAnimation(VaultMontageHigh, AnimTypes::Parkour, 1);
-    auto animInstance2 =
-      Cast<UCharacterAnimInstance>(Character->GetMesh()->GetAnimInstance());
-    auto montageInstance2 = animInstance2->GetActiveInstanceForMontage(VaultMontageHigh);
-    montageInstance2->OnMontageBlendingOutStarted.BindUObject(
-      this, &UBaseMovementComponent::ParkourInterrupt);
-}
-
-void UBaseMovementComponent::On_InterruptAnimation()
-{
-    Character->InterruptAction(ECCState::NoCC);
 }

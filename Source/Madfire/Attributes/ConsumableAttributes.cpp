@@ -28,13 +28,13 @@ bool UConsumableAttribute::Consume(float amount)
 URegenConsumable::URegenConsumable() : Super()
 {
     CurrentRegenRate = BaseRegenRate;
-    RegenInterval    = 1;    // temp value, seconds between ticks
+    RegenInterval    = 1; // temp value, seconds between ticks
 }
 
 void URegenConsumable::BlockRegen()
 {
     ++RegenBlocker;
-    UE_LOG(LogTemp, Warning, TEXT("block %d"), RegenBlocker);
+    UE_LOG(LogTemp, Warning, TEXT("regen blocked, counter: %d"), RegenBlocker);
     if (!IsRegenBlocked())
         GetWorld()->GetTimerManager().ClearTimer(RegenTickTimer);
 }
@@ -45,27 +45,26 @@ void URegenConsumable::UnblockRegen()
     {
         --RegenBlocker;
     }
-    UE_LOG(LogTemp, Warning, TEXT("unblock %d"), RegenBlocker);
-    if (!IsRegenBlocked())
-        EnableRegen();
+    UE_LOG(LogTemp, Warning, TEXT("regen unblocked, counter: %d"), RegenBlocker);
+    OnRegenTick();
 }
 
-void URegenConsumable::EnableRegen()
+void URegenConsumable::OnRegenTick()
 {
     // UGameplayStatics::IsGamePaused()
-    UE_LOG(LogTemp, Warning, TEXT("enable regen"));
-    if (!IsRegenBlocked() && GetValue() < GetCurrentMaxValue())
+    if (!IsRegenBlocked() && CurrentVal < CurrentMaxVal)
     {
-        SetValue(GetValue() + GetCurrentRegenRate());
-        if (GetValue() < GetCurrentMaxValue())
+        CurrentVal += CurrentRegenRate;
+        if (CurrentVal < CurrentMaxVal)
         {
+            UE_LOG(LogTemp, Warning, TEXT("enable regen"));
             if (!GetWorld()->GetTimerManager().IsTimerActive(RegenTickTimer))
                 GetWorld()->GetTimerManager().SetTimer(RegenTickTimer, this,
                                                        &URegenConsumable::OnRegenTick,
                                                        RegenInterval, true);
             return;
         }
-        SetValue(GetCurrentMaxValue());
+        CurrentVal = CurrentMaxVal;
     }
     if (GetWorld()->GetTimerManager().IsTimerActive(RegenTickTimer))
         GetWorld()->GetTimerManager().ClearTimer(RegenTickTimer);
@@ -83,26 +82,18 @@ void URegenConsumable::NoConsumeLeft()
 bool URegenConsumable::Consume(float amount)
 {
     bool ret = Super::Consume(amount);
-    if (!IsRegenBlocked())    // todo check w/o it
-        EnableRegen();
+    OnRegenTick();
     return ret;
 }
 
 void URegenConsumable::OnNoConsumeTimeFinish()
 {
     NoConsumeBlock = false;
-    if (!IsRegenBlocked())
-        EnableRegen();
+    OnRegenTick();
 }
 
 UWorld *URegenConsumable::GetWorld() const
 {
     UAttributesComponent *parent = Cast<UAttributesComponent>(GetOuter());
     check(parent != nullptr && "Consume atrr: no parent obj") return parent->GetWorld();
-}
-
-void URegenConsumable::OnRegenTick()
-{
-    if (!IsRegenBlocked())
-        EnableRegen();
 }

@@ -45,11 +45,11 @@ UENUM(BlueprintType)
 enum ECustomMovementMode
 {
     NoParkour = 0,
-    ClimbingWall,    //Повисание на стене
+    ClimbingWall, //Повисание на стене
+    ClimbingLedge, //Перелезание через невысокое препядствие
+    Dodge // уклонение
     //ClimbingLadder, //Лазаие по лестнице
-    ClimbingLedge,    //Перелезание через невысокое препядствие
     //Slide, //подкат
-    Dodge    // уклонение
 };
 
 // possible results of wall climbing check for available space
@@ -62,7 +62,7 @@ enum EClimbTraceResult
 };
 
 UENUM(BlueprintType, meta = (Bitflags))
-enum EMoveAbilities    //!< Флаги возможностей передвижения
+enum EMoveAbilities //!< Флаги возможностей передвижения
 {
     NoMove   = 0 UMETA(DisplayName = "CanJump"),
     CanJump  = 1 UMETA(DisplayName = "CanClimb"),
@@ -392,11 +392,11 @@ public:
     //////////////////======= рпг параметры энд =========///////
     // тру если персонваж был в присяде перед тем как начать падать
     bool bWasCrouching{ false };
-    bool bWasJumpingOff{ false };    // тру если персонаж прыгал от стены до полета
+    bool bWasJumpingOff{ false }; // тру если персонаж прыгал от стены до полета
     bool bWasJustJumping{ false };
-    bool bWantToSprint{ false };    //тру если пытается перейти на спринт
-    bool bIsRunning{ true };    // тру если персонаж в режима бега
-    bool bIsSprinting{ false };    // тру если персонаж в режиме спринта
+    bool bWantToSprint{ false }; //тру если пытается перейти на спринт
+    bool bIsRunning{ true }; // тру если персонаж в режима бега
+    bool bIsSprinting{ false }; // тру если персонаж в режиме спринта
     // таймер по которому тратится стамина при спринте
     FTimerHandle SprintConsumeTimer;
     float SprintConsumeTime;
@@ -453,39 +453,39 @@ protected:
     float WeightFactor;
 
     //========================== Animation Related =========================//
-    //todo
 
     //Interrupt and AninEnd Actions (UFUNCTION) for delegate binding
     // Note: no need to unbind function from delegate when done
 
-    // debug////////// todo make interrupts for all movement modes
+    // todo make interrupts for all movement modes
 public:
     UFUNCTION(BlueprintCallable, Category = "Animation")
-    void ParkourInterrupt(UAnimMontage *animMontage, bool bInterrupted);
+    void OnParkourEnded(UAnimMontage *animMontage, bool bInterrupted);
     UFUNCTION(BlueprintCallable, Category = "Animation")
-    void DodgeInterrupt(UAnimMontage *animMontage, bool bInterrupted);
-
-    UFUNCTION(BlueprintCallable, Category = "Transition")    // todo temp debug
-    void On_StartAnimation();
-    UFUNCTION(BlueprintCallable, Category = "Transition")    // todo temp debug
-    void On_InterruptAnimation();
+    void OnDodgeEnded(UAnimMontage *animMontage, bool bInterrupted);
 
     ////////////////// ======================== /////////////////////
 
     ///////////=========== smoooth transition ================///////
 public:
-    UFUNCTION(BlueprintCallable, Category = "Transition")    // todo temp delete!
-    void On_TransitionInterrupt();
-
     void TransitionStart(const FVector &EndLoc,
                          const FRotator &EndRot,
                          UAnimMontage *AnimToPlay,
                          AnimTypes Type,
                          ECustomMovementMode InMode);
-    void TransitionEnd();
+    // todo
+    void TransitionStart(const UCurveFloat &Curve,
+                         UAnimMontage *AnimToPlay,
+                         AnimTypes Type,
+                         ECustomMovementMode InMode);
+    UFUNCTION(BlueprintCallable, Category = "Animation")
+    void TransitionInterrupt();
+    UFUNCTION(BlueprintCallable, Category = "Animation")
     bool IsTransitionInProgress() { return bIsTransitioning; }
 
 protected:
+    void TransitionCleanUp();
+
     TUniquePtr<FVector> TransitionLocEnd  = nullptr;
     TUniquePtr<FRotator> TransitionRotEnd = nullptr;
     UAnimMontage *CurrentTransitionAnim   = nullptr;
@@ -497,6 +497,8 @@ protected:
     void TransitionProcess(float deltaTime);
     void On_TransitionFinished();
     ///////////////////// ================= /////////////////
+    TMap<AnimTypes, void (UBaseMovementComponent::*)(UAnimMontage *, bool)>
+      AnimDelegates;
 
     bool IsDirty = false;
     class ACharacterBase *Character;
