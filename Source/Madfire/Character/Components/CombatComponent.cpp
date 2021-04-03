@@ -2,7 +2,7 @@
 
 #include "CombatComponent.h"
 
-#include "CharacterBase.h"
+#include "../CharacterPlayer.h"
 
 // Sets default values for this component's properties
 UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitilizer)
@@ -20,7 +20,7 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitili
 void UCombatComponent::BeginPlay()
 {
     Super::BeginPlay();
-    Character = Cast<ACharacterBase>(GetOwner());    //для игрока каст в игрового перса
+    Character = Cast<ACharacterPlayer>(GetOwner());    //для игрока каст в игрового перса
     check(Character != nullptr && "UBaseMovementComponent: No pawn");
 }
 
@@ -60,7 +60,10 @@ float UCombatComponent::CalculatePower(AActor *Target, UItemWeapon *Weapon)
     return 0.0f;
 }
 
-bool UCombatComponent::HasAlreadyHitTarget(AActor *Target) { return false; }
+bool UCombatComponent::HasAlreadyHitTarget(AActor *Target)
+{
+    return false;
+}
 
 UCombatStance *UCombatComponent::GetCurrentCombatStance()
 {

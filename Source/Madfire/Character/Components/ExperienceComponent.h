@@ -1,11 +1,10 @@
 #pragma once
 
-#include "../Attributes/Attributes.h"
-#include "../Attributes/Skills.h"
+#include "../../Attributes/Attributes.h"
+#include "../../Attributes/Skills.h"
 #include "Components/ActorComponent.h"
 #include "Object.h"
-
-#include "LevelList.generated.h"
+#include "ExperienceComponent.generated.h"
 
 constexpr auto DefaultHPBonus = 9;
 constexpr auto MaxLevel       = 30;
@@ -28,11 +27,11 @@ struct FLevelInfo
 
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class ULevelComponent : public UActorComponent
+class UExperienceComponent : public UActorComponent
 {
     GENERATED_BODY()
 public:
-    ULevelComponent(const class FObjectInitializer &ObjectInitilizer);
+    UExperienceComponent(const class FObjectInitializer &ObjectInitilizer);
     // clang-format off
 	UFUNCTION(BlueprintCallable, Category = "Character Attributes")
 		void ResetLevel();
@@ -68,7 +67,7 @@ public:
 	
 	UPROPERTY(BlueprintReadOnly , Category = "Character Attributes")
 		float RequiredExperience = 100;
-	UPROPERTY(BlueprintReadOnly, Category = "Character Attributes")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character Attributes")
 		TArray<FLevelInfo> LevelList;
     // clang-format on
 private:

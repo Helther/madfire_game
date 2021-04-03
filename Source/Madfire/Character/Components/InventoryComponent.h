@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../Items/ItemBase.h"
+#include "../../Items/ItemBase.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 

@@ -9,8 +9,8 @@
 /**
  * 
  */
-	UENUM(BlueprintType)
-	enum class EMagicSchool : uint8
+    UENUM(Meta = (Bitflags))
+    enum class EMagicSchool
 	{
 		No				UMETA(DisplayName = "No"),
 		Abjuration		UMETA(DisplayName = "Abjuration"),

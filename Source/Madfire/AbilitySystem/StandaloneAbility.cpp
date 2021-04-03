@@ -56,7 +56,7 @@ void UStandaloneAbility::OnSkillNotify(void)
     Caster->GetWorld()->GetTimerManager().ClearTimer(CastTimer);
     for (auto &component : SkillComponents)
     {
-        auto Obj = UAbilityManager::SpawnComponent(Caster, component, impower);
+        //auto Obj = UAbilityManager::SpawnComponent(Caster, component, impower);
     }
 
     StopCast();

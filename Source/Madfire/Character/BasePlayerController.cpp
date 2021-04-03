@@ -225,7 +225,7 @@ void ABasePlayerController::SprintAction()    ///add equipment weight check
             if (Player->GetMovementComponent()->IsMovingOnGround()
                 && Player->CurrentCCState == ECCState::NoCC)
             {
-                if (Player->GetCombatComponent()->IsWeaponDrawn
+                if (Player->CombatComponent->IsWeaponDrawn
                     && InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.f)
                     return;
                 Player->GetMovementComponent()->bWantToSprint = true;

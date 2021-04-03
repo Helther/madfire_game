@@ -501,5 +501,5 @@ protected:
       AnimDelegates;
 
     bool IsDirty = false;
-    class ACharacterBase *Character;
+    class ACharacterPlayer *Character;
 };

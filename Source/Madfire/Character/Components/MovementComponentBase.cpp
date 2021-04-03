@@ -2,7 +2,7 @@
 
 #include "MovementComponentBase.h"
 
-#include "CharacterBase.h"
+#include "Character/CharacterPlayer.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Rules/Utils.h"
@@ -111,7 +111,7 @@ void UBaseMovementComponent::CalculateMaxSpeeds(float SpeedModifier)
     MaxCustomMovementSpeed = MaxWallClimbSpeedDefault * SpeedModifier;
     MaxSwimSpeed           = MaxSwimSpeedDefault * SpeedModifier;
     MaxFlySpeed            = MaxFlySpeedDefault * SpeedModifier;
-    if (Character->GetCombatComponent()->IsWeaponDrawn)
+    if (Character->CombatComponent->IsWeaponDrawn)
         CalculateMaxCombatSpeeds(SpeedModifier);
     else
     {
@@ -123,31 +123,22 @@ void UBaseMovementComponent::CalculateMaxSpeeds(float SpeedModifier)
 
 void UBaseMovementComponent::CalculateMaxCombatSpeeds(float SpeedModifier)
 {
-    if (Character->GetCombatComponent()->IsBlocking)
+    if (Character->CombatComponent->IsBlocking)
         CalculateMaxBlockingSpeed(SpeedModifier);
     else
-        MaxRunSpeed =
-          Character->GetCombatComponent()->GetCurrentCombatStance()->MaxCombatRunSpeed
-          * SpeedModifier;
-    MaxSprintSpeed =
-      Character->GetCombatComponent()->GetCurrentCombatStance()->MaxCombatSprintSpeed
-      * SpeedModifier;
-    MaxRunSpeedCrouched =
-      Character->GetCombatComponent()->GetCurrentCombatStance()->MaxCombatCrouchedSpeed
-      * SpeedModifier;
+        MaxRunSpeed = Character->CombatComponent->GetCurrentCombatStance()->MaxCombatRunSpeed * SpeedModifier;
+    MaxSprintSpeed = Character->CombatComponent->GetCurrentCombatStance()->MaxCombatSprintSpeed * SpeedModifier;
+    MaxRunSpeedCrouched = Character->CombatComponent->GetCurrentCombatStance()->MaxCombatCrouchedSpeed * SpeedModifier;
 }
 
 void UBaseMovementComponent::CalculateMaxBlockingSpeed(float SpeedModifier)
 {
-    MaxRunSpeed = Character->GetCombatComponent()->GetCurrentCombatStance()->MaxBlockSpeed
-      * SpeedModifier;
+    MaxRunSpeed = Character->CombatComponent->GetCurrentCombatStance()->MaxBlockSpeed * SpeedModifier;
 }
 
 void UBaseMovementComponent::CalculateMaxCastingSpeed(float SpeedModifier)
 {
-    MaxRunSpeed =
-      Character->GetCombatComponent()->GetCurrentCombatStance()->MaxCastingSpeed
-      * SpeedModifier;
+    MaxRunSpeed = Character->CombatComponent->GetCurrentCombatStance()->MaxCastingSpeed * SpeedModifier;
 }
 
 FTraceSpawnParams UBaseMovementComponent::GetTraceSpawnParams(bool IsLow)
@@ -222,12 +213,11 @@ bool UBaseMovementComponent::CanVaultOrClimb(bool IsLow)
 bool UBaseMovementComponent::DoVault(const StartClimbData &LocationData, bool IsLow)
 {
     // vector in the direction opposite to the wall's normal
-    const auto res =
-      FQuat(FRotator(0, LocationData.Rotation.Yaw, 0)) * FQuat(FRotator(0, 180, 0));
+    const auto res = FQuat(FRotator(0, LocationData.Rotation.Yaw, 0)) * FQuat(FRotator(0, 180, 0));
     const FRotator wallNormalDir(res.Rotator());
     //check for available space at the position before anim
     float charPelvisheight = Character->GetActorLocation().Z;
-    ;
+
     if (IsCrouching())
         charPelvisheight = Character->GetActorLocation().Z
           + Character->GetDefaultHalfHeight() - CrouchedHalfHeight;
@@ -245,9 +235,9 @@ bool UBaseMovementComponent::DoVault(const StartClimbData &LocationData, bool Is
            + LocationHorizOffset + MaxVaultLedgeSize);    // todo temp
 
     if (IsEnoughSpace(VaultAnimationStartLocation) == EClimbTraceResult::SuccessStand
-        && Character->GetAttributesComponent()->Stamina->CurrentVal > 0)
+        && Character->AttributesComponent->Stamina->CurrentVal > 0)
     {
-        Character->GetAttributesComponent()->Stamina->Consume(StaminaCostValues.Vault);
+        Character->AttributesComponent->Stamina->Consume(StaminaCostValues.Vault);
         if (IsLow)
             //todo сделать на время выполнения анимации капсуле размер капсулы в присяде
             TransitionStart(VaultAnimationStartLocation, LocationData.Rotation,
@@ -276,13 +266,12 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData &LocationData, bo
         charPelvisheight = Character->GetActorLocation().Z
           + Character->GetDefaultHalfHeight() - CrouchedHalfHeight;
     // коррекция по высоте
-    FVector ClimbledgeAnimationStartLocation = LocationData.Location
-      + FVector::UpVector * LocationVertOffset
-      + wallNormalDir.Vector()
-        * (Character->GetCapsuleComponent()->GetScaledCapsuleRadius()
-           + LocationHorizOffset);
+    FVector ClimbledgeAnimationStartLocation = LocationData.Location+ FVector::UpVector * LocationVertOffset + wallNormalDir.Vector()
+                                               * (Character->GetCapsuleComponent()->GetScaledCapsuleRadius() + LocationHorizOffset);
+
     if (LocationData.Location.Z < charPelvisheight)
         ClimbledgeAnimationStartLocation.Z = charPelvisheight + LocationVertOffset;
+
     FVector ClimbledgeAnimationEndLocation = ClimbledgeAnimationStartLocation
       + FVector(0, 0, Character->GetDefaultHalfHeight())
       + LocationData.Rotation.Vector()
@@ -293,15 +282,15 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData &LocationData, bo
     if (IsCrouching())    // todo temp
         ClimbledgeAnimationEndLocation.Z +=
           -Character->GetDefaultHalfHeight() + CrouchedHalfHeight;
+
     // check for available space at the start position before anim
-    if (Character->GetAttributesComponent()->Stamina->CurrentVal <= 0)
+    if (Character->AttributesComponent->Stamina->CurrentVal <= 0)
         return false;
-    switch (
-      IsEnoughSpace(ClimbledgeAnimationStartLocation, ClimbledgeAnimationEndLocation))
+    switch (IsEnoughSpace(ClimbledgeAnimationStartLocation, ClimbledgeAnimationEndLocation))
     {
-        case EClimbTraceResult::SuccessStand: {
-            Character->GetAttributesComponent()->Stamina->Consume(
-              StaminaCostValues.Climb);
+        case EClimbTraceResult::SuccessStand:
+        {
+            Character->AttributesComponent->Stamina->Consume(StaminaCostValues.Climb);
             if (IsLow)
                 TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
                                 ClimbLedgeMontageLow, AnimTypes::Parkour,
@@ -312,8 +301,9 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData &LocationData, bo
                                 ECustomMovementMode::ClimbingLedge);
             return true;
         }
-        case EClimbTraceResult::SuccessCrouch: {
-            Character->GetAttributesComponent()->Stamina->Consume(
+        case EClimbTraceResult::SuccessCrouch:
+        {
+            Character->AttributesComponent->Stamina->Consume(
               StaminaCostValues.Climb);
             //if(!IsCrouching())
             //bWantsToCrouch = true; // todo temp
@@ -343,6 +333,7 @@ bool UBaseMovementComponent::VaultSpaceCheck(const StartClimbData &LedgeData)
     sParams.Start =
       LedgeData.Location + FVector(0, 0, CrouchedHalfHeight + LocationVertOffset);
     sParams.End = sParams.Start + WallNormalDir.Vector() * MaxVaultLedgeSize;
+
     UTraceManager::CapsuleTraceSingleByChannel(
       Character->GetWorld(),
       CrouchedHalfHeight,
@@ -351,8 +342,9 @@ bool UBaseMovementComponent::VaultSpaceCheck(const StartClimbData &LedgeData)
       sParams,
       vaultHit,
       EWallChannel);
-    if (vaultHit.GetActor()
-        == nullptr)    // проверка достаточного места за преграждением для волта
+
+    // проверка достаточного места за преграждением для волта
+    if (vaultHit.GetActor() == nullptr)
     {
         float traceCapsuleRadius = 10;
         const float traceMod     = 0.5f;
@@ -711,17 +703,16 @@ void UBaseMovementComponent::ClimbWall()
           + Character->GetActorRotation().Vector() * AnimHorizMovement;    //todo temp
         switch (IsEnoughSpace(Character->GetActorLocation(), AnimEndLocation))
         {
-            case EClimbTraceResult::
-              SuccessStand:    // todo temp just play ClimbWallMontage
+            case EClimbTraceResult::SuccessStand:    // todo temp just play ClimbWallMontage
             {
                 return;
             }
-            case EClimbTraceResult::
-              SuccessCrouch:    // todo temp just play ClimbWallCrouchedMontage
+            case EClimbTraceResult::SuccessCrouch:    // todo temp just play ClimbWallCrouchedMontage
             {
                 //bWantsToCrouch = true;
                 return;
-                case EClimbTraceResult::FailAtEnd: {
+                case EClimbTraceResult::FailAtEnd:
+                {
                     if (bWallJumpAbility)
                     {
                         bWasJumpingOff = true;
@@ -830,7 +821,7 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
                 bOrientRotationToMovement = true;
         }
         if (bWasJustJumping)
-            Character->GetAttributesComponent()->Stamina->UnblockRegen();
+            Character->AttributesComponent->Stamina->UnblockRegen();
         bWasJustJumping = false;
     }
     if (MovementMode == MOVE_Walking)
@@ -849,7 +840,7 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
                 bOrientRotationToMovement = true;
         }
         if (bWasJustJumping)
-            Character->GetAttributesComponent()->Stamina->UnblockRegen();
+            Character->AttributesComponent->Stamina->UnblockRegen();
         bWasJustJumping = false;
     }
     if (prevMode == MOVE_Falling && MovementMode == MOVE_Walking)
@@ -864,7 +855,7 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
         {
             if (GetWorld()->GetTimerManager().IsTimerActive(SprintConsumeTimer))
                 GetWorld()->GetTimerManager().ClearTimer(SprintConsumeTimer);
-            Character->GetAttributesComponent()->Stamina->UnblockRegen();
+            Character->AttributesComponent->Stamina->UnblockRegen();
             bIsSprinting = false;
         }
     }
@@ -886,7 +877,7 @@ float UBaseMovementComponent::GetMaxSpeed() const
             else if (!bWantToSprint && bIsRunning && WeightFactor <= 1)
                 return MaxRunSpeed;
             else if (bWantToSprint
-                     && Character->GetAttributesComponent()->Stamina->CurrentVal > 0
+                     && Character->AttributesComponent->Stamina->CurrentVal > 0
                      && WeightFactor <= 1)
                 return MaxSprintSpeed;
             else if (WeightFactor <= 1)
@@ -913,7 +904,7 @@ void UBaseMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
     Super::PhysWalking(deltaTime, Iterations);
 
     if (bWantToSprint && Velocity.Size() > MaxWalkSpeedCrouched - 1.f && !IsCrouching()
-        && Character->GetAttributesComponent()->Stamina->CurrentVal > 0
+        && Character->AttributesComponent->Stamina->CurrentVal > 0
         && WeightFactor <= 1)
     {
         if (!bIsSprinting)
@@ -923,7 +914,7 @@ void UBaseMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
                 GetWorld()->GetTimerManager().SetTimer(
                   SprintConsumeTimer, this, &UBaseMovementComponent::OnSprintConsume,
                   SprintConsumeTime, true);
-            Character->GetAttributesComponent()->Stamina->BlockRegen();
+            Character->AttributesComponent->Stamina->BlockRegen();
             bIsSprinting = true;
         }
     }
@@ -933,7 +924,7 @@ void UBaseMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
         {
             if (GetWorld()->GetTimerManager().IsTimerActive(SprintConsumeTimer))
                 GetWorld()->GetTimerManager().ClearTimer(SprintConsumeTimer);
-            Character->GetAttributesComponent()->Stamina->UnblockRegen();
+            Character->AttributesComponent->Stamina->UnblockRegen();
             bIsSprinting = false;
         }
     }
@@ -1041,7 +1032,7 @@ bool UBaseMovementComponent::FallDamageCheck()
 
 void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
 {
-    float damage = Character->GetAttributesComponent()->Health->CurrentMaxVal;
+    float damage = Character->AttributesComponent->Health->CurrentMaxVal;
     if (FallDistance < MaxfallHeightThreshold)
         damage *= (FallDistance - MinFallHeightThreshold)
           / MinFallHeightThreshold;    // NOT NULL!
@@ -1153,7 +1144,7 @@ void UBaseMovementComponent::BeginPlay()
 {
     Super::BeginPlay();
     //для игрока каст в игрового перса
-    Character = Cast<ACharacterBase>(PawnOwner);
+    Character = Cast<ACharacterPlayer>(PawnOwner);
     check(Character != nullptr && "UBaseMovementComponent error: No pawn");
     params.ActorsToIgnore.Add(CharacterOwner);
     MoveAbilitiesCurrent = MoveAbilitiesDefault;
@@ -1184,7 +1175,7 @@ void UBaseMovementComponent::TickComponent(float DeltaTime,
 
 void UBaseMovementComponent::OnSprintConsume()
 {
-    if (Character->GetAttributesComponent()->Stamina->Consume(StaminaCostValues.Sprint))
+    if (Character->AttributesComponent->Stamina->Consume(StaminaCostValues.Sprint))
         GetWorld()->GetTimerManager().SetTimer(SprintConsumeTimer, this,
                                                &UBaseMovementComponent::OnSprintConsume,
                                                SprintConsumeTime, true);
@@ -1192,22 +1183,22 @@ void UBaseMovementComponent::OnSprintConsume()
 
 void UBaseMovementComponent::Update()
 {
-    //const auto dex = UAttributesHelper::GetAttribute(Character->GetAttributesComponent()->CurrentAttributes, EAttributes::Dex);
+    //const auto dex = UAttributesHelper::GetAttribute(Character->AttributesComponent->CurrentAttributes, EAttributes::Dex);
     const auto tumble = USkillHelper::GetValue(
-      Character->GetAttributesComponent()->CurrentSkills, ESkill::Tumble);
+      Character->AttributesComponent->CurrentSkills, ESkill::Tumble);
     const auto dexMod = UAttributesHelper::GetModifier(
-      Character->GetAttributesComponent()->CurrentAttributes, EAttributes::Dex);
+      Character->AttributesComponent->CurrentAttributes, EAttributes::Dex);
     const auto tumbleMod = UAttributesHelper::GetModifier(
-      Character->GetAttributesComponent()->CurrentAttributes,
+      Character->AttributesComponent->CurrentAttributes,
       FSkillList::ModifierMap[(
         int)ESkill::Tumble]);    // более verbose способ получения модификатора
 
     UE_LOG(LogTemp, Warning, TEXT("skill val %d"),
-           USkillHelper::GetValue(Character->GetAttributesComponent()->CurrentSkills,
+           USkillHelper::GetValue(Character->AttributesComponent->CurrentSkills,
                                   ESkill::Tumble))
     UE_LOG(LogTemp, Warning, TEXT("skill mod %d"),
            UAttributesHelper::GetModifier(
-             Character->GetAttributesComponent()->CurrentAttributes,
+             Character->AttributesComponent->CurrentAttributes,
              FSkillList::ModifierMap[(int)ESkill::Tumble]))
     // ловкость
 
@@ -1315,12 +1306,12 @@ bool UBaseMovementComponent::DoJump(bool bReplayingMoves)
         UE_LOG(LogTemp, Warning, TEXT("blocked jump"));
         return false;
     }
-    if (Character->GetAttributesComponent()->Stamina->CurrentVal <= 0)
+    if (Character->AttributesComponent->Stamina->CurrentVal <= 0)
         return false;
     if (!Character->bWasJumping)
-        Character->GetAttributesComponent()->Stamina->Consume(StaminaCostValues.Jump);
+        Character->AttributesComponent->Stamina->Consume(StaminaCostValues.Jump);
     if (MovementMode != EMovementMode::MOVE_Falling)
-        Character->GetAttributesComponent()->Stamina->BlockRegen();
+        Character->AttributesComponent->Stamina->BlockRegen();
     if (bWasJumpingOff)
     {
         if (bOrientRotationToMovement)
@@ -1347,8 +1338,8 @@ float UBaseMovementComponent::GetWeightFactor() const
     const float eqMod     = 1.f;
     if (maxWeight < epsilon)
         return 0;
-    return (Character->GetInventoryComponent()->CurrentWeight * invMod
-            + Character->GetEquipmentComponent()->CurrentWeight * eqMod)
+    return (Character->InventoryComponent->CurrentWeight * invMod
+            + Character->EquipmentComponent->CurrentWeight * eqMod)
       / maxWeight;
 }
 

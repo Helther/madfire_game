@@ -1,6 +1,5 @@
 #include "ConsumableAttributes.h"
-
-#include <Character/AttributesComponent.h>
+#include "Character/Components/AttributesComponent.h"
 
 UConsumableAttribute::UConsumableAttribute()
 {

@@ -19,18 +19,3 @@ bool UAbstractAbility::CheckRequirements_Implementation(void)
     return true;
 }
 
-UAbstractAbility *UAbilityManager::CreateSkill(ACharacter *caster,
-                                               TSubclassOf<UAbstractAbility> SkillClass)
-{
-    UAbstractAbility *skill = SkillClass.GetDefaultObject();
-    check(skill != nullptr && "Ability Manager: skill is invalid") skill->Caster = caster;
-    //for debug only
-    skill->CurrentCharges = skill->MaxCharges;
-    return skill;
-}
-
-AAbilityComponent *UAbilityManager::SpawnComponent(
-  AActor *target, FAbilityComponentSpawnParameters SpawnParameters, int impower)
-{
-    return SpawnParameters.Spawn(target);
-}

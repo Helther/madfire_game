@@ -2,8 +2,8 @@
 
 #include "InventoryComponent.h"
 
-#include "../TraceFunctional/TraceDefines.h"
-#include "CharacterBase.h"
+#include "TraceFunctional/TraceDefines.h"
+#include "Character/CharacterBase.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties

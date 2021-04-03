@@ -64,7 +64,7 @@ void UChannelAbility::OnTick(void)
     {
         for (auto &component : SkillComponents)
         {
-            auto Obj = UAbilityManager::SpawnComponent(Caster, component, 0);
+            //auto Obj = UAbilityManager::SpawnComponent(Caster, component, 0);
         }
         --CurrentCharges;
     }

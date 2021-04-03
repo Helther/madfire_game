@@ -2,7 +2,7 @@
 
 #include "AttributesComponent.h"
 
-#include "CharacterBase.h"
+#include "Character/CharacterBase.h"
 
 // Sets default values for this component's properties
 UAttributesComponent::UAttributesComponent()
@@ -31,12 +31,9 @@ void UAttributesComponent::Update()
     float hk = Health->CurrentVal / Health->CurrentMaxVal;
     float sk = Stamina->CurrentVal / Stamina->CurrentMaxVal;
 
-    CurrentAttributes =
-      BaseAttributes + Character->GetLevelComponent()->LevelAttributes;    // + equipment
-    CurrentSkills =
-      BaseSkills + Character->GetLevelComponent()->LevelSkills;    // + equipment
-    CurrentDamageResistance =
-      BaseDamageResistance;    // + Other Damage Resistance(equipment)
+    CurrentAttributes = BaseAttributes + Character->ExperienceComponent->LevelAttributes;    // + equipment
+    CurrentSkills = BaseSkills + Character->ExperienceComponent->LevelSkills;    // + equipment
+    CurrentDamageResistance = BaseDamageResistance;    // + Other Damage Resistance(equipment)
     CurrentDamageAbsorb = BaseDamageAbsorb;    // + Other Damage Absorb(equipment)
     CurrentDamageBonus  = BaseDamageBonus;    // + Other Damage Bonus(equipment)
 
@@ -44,17 +41,16 @@ void UAttributesComponent::Update()
     if (ConMod < 0)
         ConMod = 0;    // todo нужно ли?
 
-    Health->CurrentMaxVal = Health->BaseMaxVal
-                             + Character->GetLevelComponent()->LevelHealthBonus
-                             + (ConMod * Character->GetLevelComponent()->GetLevelNum());
+    Health->CurrentMaxVal = Health->BaseMaxVal + Character->ExperienceComponent->LevelHealthBonus
+                            + (ConMod * Character->ExperienceComponent->GetLevelNum());
     Health->CurrentVal = Health->CurrentMaxVal * hk;
 
     auto StrMod = UAttributesHelper::GetModifier(CurrentAttributes, EAttributes::Str);
     if (StrMod < 0)
         StrMod = 0;    // todo нужно ли?
     Stamina->CurrentMaxVal = Stamina->BaseMaxVal
-                              + (Character->GetLevelComponent()->GetLevelNum() * ConMod)
-                              + (Character->GetLevelComponent()->GetLevelNum() * StrMod);
+                              + (Character->ExperienceComponent->GetLevelNum() * ConMod)
+                              + (Character->ExperienceComponent->GetLevelNum() * StrMod);
     Stamina->CurrentVal = Stamina->CurrentMaxVal * sk;
 
     Health->SetCurrentRegenRate(Health->GetBaseRegenRate() + ConMod);
@@ -76,9 +72,7 @@ void UAttributesComponent::BeginPlay()
 }
 
 // Called every frame
-void UAttributesComponent::TickComponent(float DeltaTime,
-                                         ELevelTick TickType,
-                                         FActorComponentTickFunction *ThisTickFunction)
+void UAttributesComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 

@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include "../Attributes/Attributes.h"
-#include "../Attributes/Skills.h"
-#include "../Items/ItemArmor.h"
-#include "../Items/ItemBase.h"
-#include "../Items/ItemWeapon.h"
+#include "../../Attributes/Attributes.h"
+#include "../../Attributes/Skills.h"
+#include "../../Items/ItemArmor.h"
+#include "../../Items/ItemBase.h"
+#include "../../Items/ItemWeapon.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 

@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "../Interactable/Interactable.h"
-#include "../TraceFunctional/TraceFunctional.h"
+#include "../../Interactable/Interactable.h"
+#include "../../TraceFunctional/TraceFunctional.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 

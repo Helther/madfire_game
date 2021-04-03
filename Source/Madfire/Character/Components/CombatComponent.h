@@ -4,7 +4,7 @@
 #pragma once
 
 #include "./Items/ItemWeapon.h"
-#include "CombatStance.h"
+#include "../../CombatSystem/CombatStance.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 
@@ -65,7 +65,7 @@ protected:
     UItemWeapon *DefaultWeapon;
     UCombatStance *CurrentCombatStance;
     TSet<AActor *> CharactersHit;
-    class ACharacterBase *Character;
+    class ACharacterPlayer *Character;
     bool HasAlreadyHitTarget(AActor *Target);
 
 private:

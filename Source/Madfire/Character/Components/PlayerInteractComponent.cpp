@@ -2,7 +2,7 @@
 
 #include "PlayerInteractComponent.h"
 
-#include "../TraceFunctional/TraceDefines.h"
+#include "TraceFunctional/TraceDefines.h"
 #include "Kismet/GameplayStatics.h"
 
 

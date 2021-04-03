@@ -142,26 +142,4 @@ protected:
 };
 
 
-/*
- * Вот небольшой манагер для скилов
- */
-UCLASS()
-class UAbilityManager : public UObject
-{
-    GENERATED_BODY()
-public:
-    UFUNCTION(BlueprintPure,
-              meta     = (DisplayName      = "Create Skill From Class",
-                      CompactNodeTitle = "Create Skill", Keywords = "new create skill"),
-              Category = "Spell System")
-    static UAbstractAbility *CreateSkill(ACharacter *caster,
-                                         TSubclassOf<UAbstractAbility> SkillClass);
 
-    UFUNCTION(BlueprintPure,
-              meta     = (DisplayName      = "Create Skill From Class",
-                      CompactNodeTitle = "Create Skill", Keywords = "new create skill"),
-              Category = "Spell System")
-    static AAbilityComponent *
-      SpawnComponent(AActor *target, FAbilityComponentSpawnParameters SpawnParameters,
-                     int impower);
-};
