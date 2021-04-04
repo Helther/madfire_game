@@ -56,19 +56,19 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(Bitmask, BitmaskEnum = "EEffectParameters"), Category = "Effect Parameters")
     int32 EffectParameters;
 
-    UPROPERTY(BlueprintReadWrite, Category = "Effect Paramaeters")
+    UPROPERTY(BlueprintReadWrite, Category = "Effect Parameters")
     ACharacterBase *Causer;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effect Paramaeters")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effect Parameters")
     EEffectType EffectType;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effect Paramaeters")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effect Parameters")
     EMagicSchool MagicSchool;
 
     //UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effect Parameters")
     //int32 EffectID;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effect Parameter")
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effect Parameters")
     FName EffectID;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effect Parameters")
@@ -91,5 +91,11 @@ public:
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effect Parameters")
     FText EffectName;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effect Visual Parameters")
+    UParticleSystem *EffectParticle;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effect Visual Parameters")
+    FName EffectParticleSocket;
 
 };

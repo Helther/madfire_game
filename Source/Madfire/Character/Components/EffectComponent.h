@@ -29,6 +29,9 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Effect Component")
     TArray<UEffectBase*> _effectQueue;
 
+    UPROPERTY(BlueprintReadOnly, Category = "Effect Component")
+    TArray<UEffectBase*> _effectQueue;
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

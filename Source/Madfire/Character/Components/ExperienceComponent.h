@@ -69,6 +69,16 @@ public:
 		float RequiredExperience = 100;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character Attributes")
 		TArray<FLevelInfo> LevelList;
+
+     /*#if WITH_EDITOR
+     void MYClass::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+     {
+         setMyValue(_sensorType, true);
+         // Call the base class version
+         Super::PostEditChangeProperty(PropertyChangedEvent);
+     }
+     #endif*/
+
     // clang-format on
 private:
     bool IsDirty = false;

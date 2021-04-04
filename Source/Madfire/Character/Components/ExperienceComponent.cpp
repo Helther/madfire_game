@@ -1,7 +1,9 @@
 #include "ExperienceComponent.h"
 
 
-FLevelInfo::FLevelInfo() : hpBonus(DefaultHPBonus) {}
+FLevelInfo::FLevelInfo() :
+    hpBonus(DefaultHPBonus)
+{}
 
 
 UExperienceComponent::UExperienceComponent(const class FObjectInitializer &ObjectInitilizer)
