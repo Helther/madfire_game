@@ -61,17 +61,17 @@ enum EClimbTraceResult
     FailAtEnd
 };
 
-UENUM(BlueprintType, meta = (Bitflags))
+UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
 enum EMoveAbilities //!< Флаги возможностей передвижения
 {
-    NoMove   = 0 UMETA(DisplayName = "CanJump"),
-    CanJump  = 1 UMETA(DisplayName = "CanClimb"),
-    CanClimb = 2 UMETA(DisplayName = "CanDodge"),
+    NoMove   = 0,
+    CanJump  = 1 UMETA(DisplayName = "CanJump"),
+    CanClimb = 2 UMETA(DisplayName = "CanClimb"),
+    CanDodge  = 4 UMETA(DisplayName = "CanDodge"),
+    CanSprint = 8 UMETA(DisplayName = "CanSprint"),
+    CanCrouch = 16 UMETA(DisplayName = "CanCrouch")
     //CanLadder = 			UMETA(DisplayName = "CanLadder"),// cut content
     //CanSlide =     		UMETA(DisplayName = "CanSlide"),
-    CanDodge  = 4 UMETA(DisplayName = "CanSprint"),
-    CanSprint = 8 UMETA(DisplayName = "CanCrouch"),
-    CanCrouch = 16
 };
 ENUM_CLASS_FLAGS(EMoveAbilities)
 
@@ -123,11 +123,16 @@ public:
     //базовая скорость полета
     UPROPERTY(EditAnywhere, Category = "Character Default Speeds")
     float MaxFlySpeedDefault{};
+
+    //Walk mode max current speeds
+    float MaxRunSpeed{};
+    float MaxSprintSpeed{};
+    float MaxRunSpeedCrouched{};
+    // blocks max run speed update inside this component
+    bool maxSpeedBlock;
     // для обновления максимальных скоростей
-    void CalculateMaxCombatSpeeds(float SpeedModifier);
     void CalculateMaxSpeeds(float SpeedModifier);
-    void CalculateMaxBlockingSpeed(float SpeedModifier);
-    void CalculateMaxCastingSpeed(float SpeedModifier);
+    float GetSpeedModifier() const;
 
 protected:
     /////////////////////// max ue4 current speeds //////
@@ -137,10 +142,7 @@ protected:
     //MaxFlySpeed
     //MaxCustomMovementSpeed
 
-    //Walk mode max current speeds
-    float MaxRunSpeed{};
-    float MaxSprintSpeed{};
-    float MaxRunSpeedCrouched{};
+
 
     ////////////////=========== Speeds end =========/////////////////
 
@@ -426,6 +428,9 @@ public:
     void UnSetUpdate() { IsDirty = false; }
     UFUNCTION(BlueprintCallable, Category = "Component Update")
     bool IsUpdateNeeded() { return IsDirty; }
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    bool ShowDebugInfo;
 
 protected:
     /// наследованный мусор

@@ -3,7 +3,7 @@
 
 #include "CharacterPlayer.h"
 
-#include "BasePlayerController.h"
+#include "PlayerCharController.h"
 
 ACharacterPlayer::ACharacterPlayer(const FObjectInitializer &ObjectInitializer)
   : Super(ObjectInitializer.SetDefaultSubobjectClass<UBaseMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -119,6 +119,25 @@ void ACharacterPlayer::CCStunEnded(UAnimMontage *animMontage, bool bInterrupted)
 UBaseMovementComponent *ACharacterPlayer::GetMovementComponent() const
 {
     return Cast<UBaseMovementComponent>(ACharacter::GetMovementComponent());
+}
+
+void ACharacterPlayer::Update() 
+{
+    Super::Update();
+    if (GetMovementComponent()->IsUpdateNeeded())
+        GetMovementComponent()->Update();
+}
+
+void ACharacterPlayer::DoLevelUp(const FLevelInfo &levelInfo)
+{
+    Super::DoLevelUp(levelInfo);
+    bool dexChanged = UAttributesHelper::GetAttribute(levelInfo.Attributes, EAttributes::Dex) != 0;
+    bool strChanged = UAttributesHelper::GetAttribute(levelInfo.Attributes, EAttributes::Str) != 0;
+    bool acrobaticsChanged = USkillHelper::GetValue(levelInfo.SkillList, ESkill::Tumble) != 0;
+    if (dexChanged || strChanged || acrobaticsChanged)
+        GetMovementComponent()->SetUpdate();
+    // может что то еще
+    Update();
 }
 
 void ACharacterPlayer::CCKnockDownEnded(UAnimMontage *animMontage, bool bInterrupted)

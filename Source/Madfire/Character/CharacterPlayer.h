@@ -6,7 +6,7 @@
 
 #include "CharacterPlayer.generated.h"
 
-UENUM(BlueprintType, meta = (Bitflags))
+UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
 // Character Control Bit mask with values as priorities (the more the better)
 enum ECCState
 {
@@ -35,18 +35,21 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character Base") // todo debug
     void StartAnimTest(float InPlayRate);
 
+    void DoLevelUp(const FLevelInfo &levelInfo) override;
+
     void StartAnimation(UAnimMontage *AnimMontage, const FOnMontageBlendingOutStarted &EndCallBack, float InPlayRate, FName StartSectionName = NAME_None);
 
     UFUNCTION(BlueprintCallable, Category = "Character Base")
     void InterruptAnimation(ECCState Source, int OldState);
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "ECCState"), Category = "Character Stats")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (Bitmask, BitmaskEnum = "ECCState", Category = "Character Stats"))
     int CurrentCCState;
 
     UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
     UCombatComponent *CombatComponent;
 
     UBaseMovementComponent *GetMovementComponent() const override;
+    void Update() override;
 
 protected:
     // Called to bind functionality to input

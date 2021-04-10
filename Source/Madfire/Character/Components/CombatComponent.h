@@ -62,6 +62,10 @@ public:
     UCombatStance *GetCurrentCombatStance();
 
 protected:
+    void CalculateMaxCombatSpeeds();
+    void CalculateMaxBlockingSpeed(float SpeedModifier);
+    void CalculateMaxCastingSpeed(float SpeedModifier);
+
     UItemWeapon *DefaultWeapon;
     UCombatStance *CurrentCombatStance;
     TSet<AActor *> CharactersHit;

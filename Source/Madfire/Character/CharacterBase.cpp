@@ -83,8 +83,6 @@ void ACharacterBase::Update()
         EquipmentComponent->Update();
     if (InventoryComponent->IsUpdateNeeded())
         InventoryComponent->Update();
-    /*if (GetMovementComponent()->IsUpdateNeeded())
-        GetMovementComponent()->Update();*/
 
     //other calculation
 }
@@ -103,9 +101,6 @@ void ACharacterBase::DoLevelUp(const FLevelInfo &levelInfo)
         InventoryComponent->SetUpdate();
         EquipmentComponent->SetUpdate();
     }
-    /*if (dexChanged || strChanged || acrobaticsChanged)
-        MovementComponent->SetUpdate();*/
-    // может что то еще
     Update();
 }
 

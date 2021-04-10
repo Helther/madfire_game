@@ -19,6 +19,7 @@ UBaseMovementComponent::UBaseMovementComponent(
 {
     bNotifyApex                    = true;
     bCanWalkOffLedgesWhenCrouching = true;
+    maxSpeedBlock                  = false;
     //////////////////////////////////////Debug///////////////////////////
     MaxWalkSpeedDefault         = 250;
     MaxWalkSpeedCrouchedDefault = 150;
@@ -77,6 +78,8 @@ UBaseMovementComponent::UBaseMovementComponent(
     weightMod              = 1.f;
     weightFactorBalanceMod = 10.f;
 
+    ShowDebugInfo = false;
+
 
     //MoveAbilitiesCurent &= ~ (EMoveAbilities::CanCrouch | EMoveAbilities::CanJump);
 
@@ -111,9 +114,7 @@ void UBaseMovementComponent::CalculateMaxSpeeds(float SpeedModifier)
     MaxCustomMovementSpeed = MaxWallClimbSpeedDefault * SpeedModifier;
     MaxSwimSpeed           = MaxSwimSpeedDefault * SpeedModifier;
     MaxFlySpeed            = MaxFlySpeedDefault * SpeedModifier;
-    if (Character->CombatComponent->IsWeaponDrawn)
-        CalculateMaxCombatSpeeds(SpeedModifier);
-    else
+    if (!maxSpeedBlock)
     {
         MaxRunSpeed         = MaxRunSpeedDefault * SpeedModifier;
         MaxSprintSpeed      = MaxSprintSpeedDefault * SpeedModifier;
@@ -121,24 +122,12 @@ void UBaseMovementComponent::CalculateMaxSpeeds(float SpeedModifier)
     }
 }
 
-void UBaseMovementComponent::CalculateMaxCombatSpeeds(float SpeedModifier)
+float UBaseMovementComponent::GetSpeedModifier() const 
 {
-    if (Character->CombatComponent->IsBlocking)
-        CalculateMaxBlockingSpeed(SpeedModifier);
-    else
-        MaxRunSpeed = Character->CombatComponent->GetCurrentCombatStance()->MaxCombatRunSpeed * SpeedModifier;
-    MaxSprintSpeed = Character->CombatComponent->GetCurrentCombatStance()->MaxCombatSprintSpeed * SpeedModifier;
-    MaxRunSpeedCrouched = Character->CombatComponent->GetCurrentCombatStance()->MaxCombatCrouchedSpeed * SpeedModifier;
-}
-
-void UBaseMovementComponent::CalculateMaxBlockingSpeed(float SpeedModifier)
-{
-    MaxRunSpeed = Character->CombatComponent->GetCurrentCombatStance()->MaxBlockSpeed * SpeedModifier;
-}
-
-void UBaseMovementComponent::CalculateMaxCastingSpeed(float SpeedModifier)
-{
-    MaxRunSpeed = Character->CombatComponent->GetCurrentCombatStance()->MaxCastingSpeed * SpeedModifier;
+    const auto dexMod = UAttributesHelper::GetModifier(
+        Character->AttributesComponent->CurrentAttributes, EAttributes::Dex);
+    return GetSigmoidValue(dexMod + weightFactorBalanceMod * (-WeightFactor), weightMod,
+                        1.f - SpeedScale, 1.f + SpeedScale); // нормально
 }
 
 FTraceSpawnParams UBaseMovementComponent::GetTraceSpawnParams(bool IsLow)
@@ -1147,6 +1136,7 @@ void UBaseMovementComponent::BeginPlay()
     Character = Cast<ACharacterPlayer>(PawnOwner);
     check(Character != nullptr && "UBaseMovementComponent error: No pawn");
     params.ActorsToIgnore.Add(CharacterOwner);
+    params.isDebug       = ShowDebugInfo;
     MoveAbilitiesCurrent = MoveAbilitiesDefault;
 }
 
@@ -1166,7 +1156,8 @@ void UBaseMovementComponent::TickComponent(float DeltaTime,
                                            FActorComponentTickFunction *ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-    VisualizeMovement();    // debug
+    if (ShowDebugInfo)
+        VisualizeMovement();
     if (bIsTransitioning)
         TransitionProcess(DeltaTime);
     //UE_LOG(LogTemp, Warning, TEXT("iswalkablefloor %s"), CurrentFloor.IsWalkableFloor() ? TEXT("true") : TEXT("false"));
@@ -1261,10 +1252,7 @@ void UBaseMovementComponent::Update()
 
     //TODO: рассчитать реальный мод скорости с учетом текущих бафов
     //Max Speed update
-    const float speedMod =
-      GetSigmoidValue(dexMod + weightFactorBalanceMod * (-WeightFactor), weightMod,
-                      1.f - SpeedScale, 1.f + SpeedScale);    // нормально
-    CalculateMaxSpeeds(speedMod);
+    CalculateMaxSpeeds(GetSpeedModifier());
 
     // debug log todo
     UE_LOG(LogTemp, Warning, TEXT("MinFallHeightThreshold %f"), MinFallHeightThreshold)

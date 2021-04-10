@@ -75,23 +75,49 @@ void UCombatComponent::On_StanceChanged()
 {
     //todo получить актуальный модификатор скоростей
     if (IsWeaponDrawn)    // заменить на апдейт и поставить флаг
-        Character->GetMovementComponent()->CalculateMaxCombatSpeeds(1);
+        CalculateMaxCombatSpeeds();
 }
 
 void UCombatComponent::On_Weapon_OnOff()
 {
-    //todo получить актуальный модификатор скоростей
-    Character->GetMovementComponent()->CalculateMaxSpeeds(1);
+    if (IsWeaponDrawn)
+    {
+        Character->GetMovementComponent()->maxSpeedBlock = true;
+        CalculateMaxCombatSpeeds();
+    }
+    else
+        Character->GetMovementComponent()->maxSpeedBlock = false;
 }
 
 void UCombatComponent::On_Blocking()
 {
-    //todo получить актуальный модификатор скоростей
-    Character->GetMovementComponent()->CalculateMaxBlockingSpeed(1);
+    //todo учесть выход из состояния
+    CalculateMaxBlockingSpeed(Character->GetMovementComponent()->GetSpeedModifier());
 }
 
 void UCombatComponent::On_Casting()
 {
-    //todo получить актуальный модификатор скоростей
-    Character->GetMovementComponent()->CalculateMaxCastingSpeed(1);
+    //todo учесть выход из состояния
+    CalculateMaxCastingSpeed(Character->GetMovementComponent()->GetSpeedModifier());
+}
+
+
+void UCombatComponent::CalculateMaxCombatSpeeds()
+{
+    float speedMod = Character->GetMovementComponent()->GetSpeedModifier();
+    Character->GetMovementComponent()->MaxRunSpeed =
+        GetCurrentCombatStance()->MaxCombatRunSpeed * speedMod;
+}
+
+void UCombatComponent::CalculateMaxBlockingSpeed(float SpeedModifier)
+{
+    Character->GetMovementComponent()->MaxRunSpeed =
+      Character->CombatComponent->GetCurrentCombatStance()->MaxBlockSpeed * SpeedModifier;
+}
+
+void UCombatComponent::CalculateMaxCastingSpeed(float SpeedModifier)
+{
+    Character->GetMovementComponent()->MaxRunSpeed =
+      Character->CombatComponent->GetCurrentCombatStance()->MaxCastingSpeed
+      * SpeedModifier;
 }
