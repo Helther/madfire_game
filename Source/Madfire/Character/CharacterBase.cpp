@@ -1,6 +1,5 @@
 #include "CharacterBase.h"
-
-#include "Components/CharacterAnimInstance.h"
+#include "CharacterAnimInstance.h"
 
 
 ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) :
@@ -13,6 +12,7 @@ ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) :
     EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
     InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
     EffectComponent = CreateDefaultSubobject<UEffectComponent>("EffectComponent");
+    AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>("AbilitySystemComponent");
     MaxWeightMod   = 10.f;
 }
 

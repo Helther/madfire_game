@@ -22,8 +22,7 @@ public:
     // Это функция проверки Требований
     // Входной параметр - персонаж, которого будет проверять
     // Выходной параметр - подходит персонаж (труъ) или нет (не труъ)
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent,
-              Category = "Requirements Interface")
+    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Requirements Interface")
     bool CheckRequirement(ACharacter *character);
 
     ///TODO: Возможно имеет смысл сделать проверку просто BlueprintCallable

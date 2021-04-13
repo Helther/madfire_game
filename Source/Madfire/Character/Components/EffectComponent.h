@@ -27,10 +27,10 @@ public:
     UEffectBase *Find(FName effectName);
 
     UPROPERTY(BlueprintReadOnly, Category = "Effect Component")
-    TArray<UEffectBase*> _effectQueue;
+    TArray<UEffectBase*> EffectQueue;
 
     UPROPERTY(BlueprintReadOnly, Category = "Effect Component")
-    TArray<UEffectBase*> _effectQueue;
+    TMap<UParticleSystem *,UParticleSystemComponent *> EffectParticles;
 
 protected:
 	// Called when the game starts
@@ -43,5 +43,9 @@ public:
 
 private:
     void Update(float DeltaTime);
+
+
+    void AddParticle(UParticleSystem *particle, FName AttachPoint);
+    void RemoveParticle(UParticleSystem *particle);
 	
 };

@@ -1,17 +1,18 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "BoxTrace.h"
+#include "SphereTrace.h"
 
-#include "AbilitySystemLog.h"
+#include "AbilitySystem/AbilitySystemLog.h"
 
+/*
+ASphereTrace::ASphereTrace() { PrimaryActorTick.bCanEverTick = true; }
 
-ABoxTrace::ABoxTrace() { PrimaryActorTick.bCanEverTick = true; }
+void ASphereTrace::BeginPlay() { Super::BeginPlay(); }
 
-void ABoxTrace::BeginPlay() { Super::BeginPlay(); }
+void ASphereTrace::Tick(float DeltaTime) { Super::Tick(DeltaTime); }
 
-void ABoxTrace::Tick(float DeltaTime) { Super::Tick(DeltaTime); }
-
-bool ABoxTrace::ComponentSetup_Implementation(ACharacter *Parent, int32 ActionParameter)
+bool ASphereTrace::ComponentSetup_Implementation(ACharacter *Parent,
+                                                 int32 ActionParameter)
 {
     check(Parent != nullptr && Parent->GetWorld() != nullptr
           && "Component setup: parent or world is invalid");
@@ -33,17 +34,12 @@ bool ABoxTrace::ComponentSetup_Implementation(ACharacter *Parent, int32 ActionPa
     SpawnParams.End.Z = 0.0f;
     SpawnParams.End += SpawnParams.Start;
 
-    if (!SpawnParams.Rotation.IsNormalized())
-    {
-        SpawnParams.Rotation.Normalize();
-    }
-
     if (!IsMultipleTrace)
     {
         FHitResult HitResult;
-        UTraceManager::BoxTraceSingleByChannel(Parent->GetWorld(), BoxHalfExtent,
-                                               TraceParams, SpawnParams, HitResult,
-                                               CollisionChannel, ReturnPhysMat);
+        UTraceManager::SphereTraceSingleByChannel(Parent->GetWorld(), Radius, TraceParams,
+                                                  SpawnParams, HitResult,
+                                                  CollisionChannel, ReturnPhysMat);
         if (HitResult.GetActor())
         {
             AAbilityComponent::Execute(HitResult.GetActor(), ActionList,
@@ -53,9 +49,9 @@ bool ABoxTrace::ComponentSetup_Implementation(ACharacter *Parent, int32 ActionPa
     else
     {
         TArray<struct FHitResult> HitResults;
-        UTraceManager::BoxTraceMultiByChannel(Parent->GetWorld(), BoxHalfExtent,
-                                              TraceParams, SpawnParams, HitResults,
-                                              CollisionChannel, ReturnPhysMat);
+        UTraceManager::SphereTraceMultiByChannel(Parent->GetWorld(), Radius, TraceParams,
+                                                 SpawnParams, HitResults,
+                                                 CollisionChannel, ReturnPhysMat);
         for (auto &target : HitResults)
         {
             if (target.GetActor())
@@ -68,3 +64,4 @@ bool ABoxTrace::ComponentSetup_Implementation(ACharacter *Parent, int32 ActionPa
 
     return true;
 }
+*/

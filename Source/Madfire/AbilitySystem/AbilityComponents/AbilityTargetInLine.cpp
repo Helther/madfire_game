@@ -1,18 +1,33 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "LineTrace.h"
+#include "AbilityTargetInLine.h"
+#include "AbilitySystem/AbilitySystemLog.h"
 
-#include "AbilitySystemLog.h"
 
-
-ALineTrace::ALineTrace() { PrimaryActorTick.bCanEverTick = true; }
-
-void ALineTrace::BeginPlay() { Super::BeginPlay(); }
-
-void ALineTrace::Tick(float DeltaTime) { Super::Tick(DeltaTime); }
-
-bool ALineTrace::ComponentSetup_Implementation(ACharacter *Parent, int32 ActionParameter)
+UAbilityTargetInLine::UAbilityTargetInLine()
 {
+    //PrimaryActorTick.bCanEverTick = true;
+}
+/*
+void UAbilityTargetInLine::BeginPlay()
+{
+    Super::BeginPlay();
+}
+
+void AAbilityTargetInLine::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+}
+*/
+void UAbilityTargetInLine::Activate_Implementation()
+{
+
+}
+
+bool UAbilityTargetInLine::ComponentSetup_Implementation(UAbilitySystemComponent *Component)
+{
+    Super::ComponentSetup(Component);
+    /*
     check(Parent != nullptr && Parent->GetWorld() != nullptr
           && "Component setup: parent or world is invalid");
 
@@ -54,6 +69,7 @@ bool ALineTrace::ComponentSetup_Implementation(ACharacter *Parent, int32 ActionP
             }
         }
     }
-
+    */
     return true;
 }
+

@@ -1,14 +1,18 @@
 #pragma once
 
-#include "AbilityComponent.h"
+#include "AbilityComponents/AbilityComponent.h"
 #include "AbilitySystemLog.h"
-#include "AbstractRequirement.h"
+#include "Character/AbstractRequirement.h"
+#include "Character/Components/MovementComponentBase.h"
 #include "CoreMinimal.h"
 #include "Engine.h"
 #include "GameFramework/Actor.h"
-
 #include "AbstractAbility.generated.h"
 
+
+class UAbilitySystemComponent;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAbilityEvent, UAbstractAbility*, Ability);
 
 /*
 * Тут я удалил всякие ненужные функции, оставил только интерфейс
@@ -16,88 +20,99 @@
 * Список Экшонов в скиле я заменил на список Компонентов (см. SkillComponent)
 * Также там внизу есть мэнеджер, который может спавнить Скилы и компоненты к ним.
 */
-UCLASS(BlueprintType, Blueprintable, abstract)
-class UAbstractAbility : public UObject
+
+UCLASS(Blueprintable, Abstract)
+class UAbstractAbility : public UObject, public FTickableGameObject
 {
     GENERATED_BODY()
 
 public:
-    //Parameters (Внешние)
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    bool isMovementDisabled = false;    //still needs to implement
+    UAbstractAbility(const FObjectInitializer &);
 
-    //UPROPERTY(EditAnywhere, Instanced, Category = "Skill Config")
-    //TArray<USkillAction *> ActionList;
+    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "AbilitySystem")
+    void Execute(AActor *target);
 
-    UPROPERTY(EditAnywhere, Category = "Skill Parameters")
-    TArray<FAbilityComponentSpawnParameters> SkillComponents;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (Bitmask, BitmaskEnum = "EMoveAbilities"), Category = "AbilitySystem")
+    int32 MoveAbilities = EMoveAbilities::NoMove;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced, Category = "Skill Parameters")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced, Category = "AbilitySystem")
     TArray<UAbilityRequirement *> Requirements;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    float ChargeCDTime = 3;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    TArray<UAbilityComponent *> AbilityComponents;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    int32 MaxCharges = 1;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    float CooldownTime = 3;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    float CastTime = 1;
+    UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
+    float CurrentCooldownTime = 0;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    float GlobalCoolDownTime = 1;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    UTexture2D *SkillIcon;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    UAnimSequence *CastAnimation;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    UAnimSequence *AttackLoop;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    UAnimSequence *EndAnimation;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    FText Description;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    FText SkillName;
-
-public:    //Interface
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Spell System")
-    void OnEventKeyPressed();
-
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Spell System")
-    void OnEventKeyReleased();
-
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Spell System")
-    void InterruptSkill();
-
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Spell System")
-    void StopSkill();
-
-    UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Spell System")
-    bool CheckRequirements();
-    bool CheckRequirements_Implementation(void);
-
-
-    //Internal parameters (Внутренние параметры)
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
-    ACharacter *Caster;
-
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
-    bool onCooldown = false;
-
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
-    bool isCasting = false;
-
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "AbilitySystem")
     int32 CurrentCharges = 1;
 
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
-    int CastState = 0;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    int32 ChargePerCooldown = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    int32 MaxCharges = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    float CastTime = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    UTexture2D *AbilityIcon;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    FText Description;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    FText SkillName;
+
+    UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
+    float GetCooldownTimeRemaining() const;
+
+    UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
+    void ActivateAbility();
+
+    UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
+    void RealeseAbility();
+
+    UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
+    void CancelAbility();
+
+    UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    bool bIsCooldown = false;
+
+    UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "AbilitySystem")
+    FAbilityEvent OnAbilityRelease;
+
+    UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "AbilitySystem")
+    FAbilityEvent OnAbilityInterrupt;
+
+    UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "AbilitySystem")
+    FAbilityEvent OnAbilityCancel;
+
+    UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "AbilitySystem")
+    FAbilityEvent OnAbilityStart;
+
+    UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
+    UAbilitySystemComponent *AbilitySystemComponent;
+
+    void Tick(float DeltaTime) override;
+
+    bool IsTickable() const override;
+
+    bool IsTickableInEditor() const override;
+
+    bool IsTickableWhenPaused() const override;
+
+    TStatId GetStatId() const override;
+
+    UWorld* GetWorld() const override;
+
+    //Called by AbilitySystemComponent when Ability Selected
+    virtual void AbilitySetup(UAbilitySystemComponent *Component);
+
 
 
 protected:
@@ -107,10 +122,26 @@ protected:
     {
         for (auto &Requirment : Requirements)
         {
-            Requirment->Consume(Caster);
+            //Requirment->Consume(Caster);
         }
     }
 
+    void StartCooldown()
+    {
+        bIsCooldown = true;
+        CurrentCooldownTime = 0;
+    }
+
+    virtual void OnActivate() {};
+    virtual void OnRelease() {};
+    virtual void OnCancel() {};
+
+    void AddComponent(UAbilityComponent *Component)
+    {
+        AbilityComponents.Add(Component);
+    }
+
+    /*
     inline bool isValid(void)
     {
         check(Caster != nullptr && "Skill: caster not found");
@@ -138,7 +169,7 @@ protected:
         }
 
         return true;
-    }
+    }*/
 };
 
 

@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "AbstractAbilitySlot.h"
-
+/*
 void UAbstractAbilitySlot::InitSpell(ACharacter *_caster,
                                      TSubclassOf<UAbstractAbility> ability)
 {
@@ -86,3 +86,5 @@ bool UAbstractAbilitySlot::RestoreCharge()
         return true;
     }
 }
+ *
+ */

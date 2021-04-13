@@ -1,24 +1,23 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
-#include "AbilitySystem/AbilityComponent.h"
+#include "AbilitySystem/AbilityComponents/AbilityComponent.h"
 #include "CoreMinimal.h"
 #include "TraceFunctional/TraceFunctional.h"
 
-#include "BoxTrace.generated.h"
+#include "SphereTrace.generated.h"
 
-/*
- * 
- */
 
 UCLASS()
-class ABoxTrace : public AAbilityComponent
+class USphereTrace : public UAbilityComponent
 {
     GENERATED_BODY()
 
 public:
-    ABoxTrace();
+
+    /*
+    ASphereTrace();
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
 
@@ -32,7 +31,7 @@ public:
     TArray<TSubclassOf<UAbilityAction>> ActionList;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FVector BoxHalfExtent;
+    int Radius = 1;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool IsSelfApply = true;
@@ -50,5 +49,6 @@ public:
     TEnumAsByte<ECollisionChannel> CollisionChannel;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool ReturnPhysMat = false;
+    bool ReturnPhysMat = false; */
 };
+

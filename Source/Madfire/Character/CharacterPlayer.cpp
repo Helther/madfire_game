@@ -136,7 +136,7 @@ void ACharacterPlayer::DoLevelUp(const FLevelInfo &levelInfo)
     bool acrobaticsChanged = USkillHelper::GetValue(levelInfo.SkillList, ESkill::Tumble) != 0;
     if (dexChanged || strChanged || acrobaticsChanged)
         GetMovementComponent()->SetUpdate();
-    // может что то еще
+    // todo other stuff
     Update();
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AbilitySystem/AbilityComponents/AbilityTargetSelectionComponent.h"
 #include "AbstractAbility.h"
 #include "CoreMinimal.h"
 
@@ -13,9 +14,46 @@ class UChannelAbility : public UAbstractAbility
     GENERATED_BODY()
 
 public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    float TickTime = 1.0f;
+    UChannelAbility(const FObjectInitializer &f);
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    UAnimMontage *CastAnimMontage;
+
+    void AbilitySetup(UAbilitySystemComponent *Component) override;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    TSubclassOf<UAbilityTargetSelectionComponent> TargetSelectionClass;
+
+    UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
+    UAbilityTargetSelectionComponent *TargetSelection;
+
+    UFUNCTION()
+    void PrecastFinish(UAnimMontage *animMontage, bool bInterrupted);
+    UFUNCTION()
+    void CastFinish(UAnimMontage *animMontage, bool bInterrupted);
+
+    /*
+    void Tick(float DeltaTime) override
+    {
+        Super::Tick(DeltaTime);
+        if(TargetSelection)
+            TargetSelection->ActivateComponent();
+    }*/
+
+    bool bIsActivated = false;
+    const FName PrecastSectionName = "Precast Section";
+    const FName CastLoopSectionName = "Cast Loop Section";
+    const FName AftercastSectionName = "Aftercast Section";
+
+    FOnMontageBlendingOutStarted OnPrecastFinish;
+    FOnMontageBlendingOutStarted OnCastFinish;
+
+protected:
+    void OnActivate() override;
+    void OnRelease() override;
+    void OnCancel() override;
+/*
+public:
     /// dead code - TODO: remove if just works
     //UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
     //void OnEventKeyPressed();
@@ -37,13 +75,14 @@ public:
     void StopSkill_Implementation();
 
 protected:
-    FTimerHandle ChannelTimer;
 
-    void StartCast(void);
+        void StartCast(void);
 
-    void StopCast(void);
+        void StopCast(void);
 
-    void OnSkillNotify(void);
+        void OnSkillNotify(void);
 
-    void OnTick(void);
+        void OnTick(void);*/
+
+    // UAbstractAbility interface
 };

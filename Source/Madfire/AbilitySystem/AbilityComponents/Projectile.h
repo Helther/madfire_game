@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "AbilitySystem/AbilityComponent.h"
+#include "AbilitySystem/AbilityComponents/AbilityComponent.h"
 #include "Classes/Components/CapsuleComponent.h"
 #include "Classes/Components/SphereComponent.h"
 #include "Classes/GameFramework/ProjectileMovementComponent.h"
@@ -10,9 +10,7 @@
 
 #include "Projectile.generated.h"
 
-/**
- * 
- */
+
 
 //IT SHOULD BE UPPERCASE BECAUSE OF TOXA (F)
 UENUM(BlueprintType)
@@ -25,10 +23,12 @@ enum class EProjectileDestroyPolicy : uint8
 ENUM_CLASS_FLAGS(EProjectileDestroyPolicy);
 
 UCLASS()
-class AAbstractProjectile : public AAbilityComponent
+class UAbstractProjectile : public UAbilityComponent
 {
     GENERATED_BODY()
 
+    /**
+ *
 public:
     AAbstractProjectile();
     virtual void BeginPlay() override;
@@ -70,5 +70,5 @@ public:
     void EndOverlap(UPrimitiveComponent *OverlappedComponent,
                     AActor *OtherActor,
                     UPrimitiveComponent *OtherComp,
-                    int32 OtherBodyIndex);
+                    int32 OtherBodyIndex); */
 };

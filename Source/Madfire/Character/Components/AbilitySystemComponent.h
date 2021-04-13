@@ -5,17 +5,30 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "AbilitySystem/AbstractAbility.h"
-#include "AbilityManager.generated.h"
+#include "AbilitySystemComponent.generated.h"
 
 
 UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class MADFIRE_API UAbilityManager : public UActorComponent
+class MADFIRE_API UAbilitySystemComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:	
 	// Sets default values for this component's properties
-	UAbilityManager();
+    UAbilitySystemComponent();
+
+
+    UFUNCTION(BlueprintCallable, Category = "Character Ability")
+    void SetCurrentAbility(UAbstractAbility *Ability);
+
+    UFUNCTION(BlueprintCallable, Category = "Character Ability")
+    void ActivateAbility();
+
+    UFUNCTION(BlueprintCallable, Category = "Character Ability")
+    void ReleaseAbility();
+
+    UPROPERTY(BlueprintReadOnly, Category = "Character Ability")
+    UAbstractAbility *CurrentAbility;
 
 protected:
 	// Called when the game starts
@@ -23,12 +36,11 @@ protected:
 
 public:	
 	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	
+    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 
-
-
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
+    float GlobalCoolDownTime = 1;
 };
 
 

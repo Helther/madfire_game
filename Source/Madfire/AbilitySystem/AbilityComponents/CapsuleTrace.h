@@ -2,23 +2,23 @@
 
 #pragma once
 
-#include "AbilitySystem/AbilityComponent.h"
+#include "AbilitySystem/AbilityComponents/AbilityComponent.h"
 #include "CoreMinimal.h"
 #include "TraceFunctional/TraceFunctional.h"
 
-#include "LineTrace.generated.h"
+#include "CapsuleTrace.generated.h"
 
-/*
- *
- */
+
+
 
 UCLASS()
-class ALineTrace : public AAbilityComponent
+class UCapsuleTrace : public UAbilityComponent
 {
     GENERATED_BODY()
-
+    /*
+ *
 public:
-    ALineTrace();
+    ACapsuleTrace();
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
 
@@ -31,8 +31,11 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<TSubclassOf<UAbilityAction>> ActionList;
 
-    /*UPROPERTY(EditAnywhere, BlueprintReadWrite)
-			int Radius = 1;*/
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float CapsuleRadius = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float CapsuleHalfHeight = 1;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool IsSelfApply = true;
@@ -50,5 +53,6 @@ public:
     TEnumAsByte<ECollisionChannel> CollisionChannel;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool ReturnPhysMat = false;
+    bool ReturnPhysMat = false; */
 };
+

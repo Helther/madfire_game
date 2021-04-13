@@ -2,6 +2,7 @@
 
 
 #include "Character/Components/EffectComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Character/CharacterBase.h"
 
 
@@ -31,10 +32,13 @@ void UEffectComponent::Append(UEffectBase *effect)
 
     if(containedEffect)
     {
+        RemoveParticle(containedEffect->EffectParticle);
         containedEffect->Combine(effect);
+        AddParticle(containedEffect->EffectParticle, containedEffect->EffectParticleSocket);
     }
 
-    _effectQueue.AddUnique(effect);
+    EffectQueue.AddUnique(effect);
+    AddParticle(effect->EffectParticle, containedEffect->EffectParticleSocket);
     effect->OnApplying(owner);
 }
 
@@ -51,12 +55,12 @@ void UEffectComponent::Remove(UEffectBase *effect)
     effect->OnEnding(owner);
     effect->ConditionalBeginDestroy();
     effect = nullptr;
-    _effectQueue.Remove(effect);
+    EffectQueue.Remove(effect);
 }
 
 UEffectBase *UEffectComponent::Find(FName effectName)
 {
-    for(auto &effect : _effectQueue)
+    for(auto &effect : EffectQueue)
     {
         if(effect->EffectID == effectName)
             return effect;
@@ -94,7 +98,7 @@ void UEffectComponent::Update(float DeltaTime)
     }
 
 
-    for(auto &effect : _effectQueue)
+    for(auto &effect : EffectQueue)
     {
         verify(effect != nullptr && "effect is nullptr, How this is happen?");
 
@@ -108,6 +112,35 @@ void UEffectComponent::Update(float DeltaTime)
         }
     }
 
-    _effectQueue.RemoveAll([](UEffectBase* effect) -> bool {return effect == nullptr;});
+    EffectQueue.RemoveAll([](UEffectBase* effect) -> bool {return effect == nullptr;});
+}
+
+void UEffectComponent::AddParticle(UParticleSystem *particle, FName AttachPoint)
+{
+    ACharacterBase *owner = Cast<ACharacterBase>(GetOwner());
+
+    //Get Mesh of Characeter
+    auto mesh = owner->GetMesh();
+
+    verify(mesh != nullptr && "Character doesn't have a mesh, How this is happen?");
+
+    auto ParComp = UGameplayStatics::SpawnEmitterAttached(particle,
+                                                           mesh,
+                                                           AttachPoint,
+                                                           FVector(),
+                                                           FRotator(),
+                                                           FVector(),
+                                                           EAttachLocation::SnapToTargetIncludingScale,
+                                                           true,
+                                                           EPSCPoolMethod::AutoRelease,
+                                                           true);
+    EffectParticles.Emplace(particle, ParComp);
+
+}
+
+void UEffectComponent::RemoveParticle(UParticleSystem *particle)
+{
+    EffectParticles[particle]->Deactivate();
+    EffectParticles.Remove(particle);
 }
 

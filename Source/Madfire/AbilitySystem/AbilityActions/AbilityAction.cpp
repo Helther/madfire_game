@@ -1,9 +1,11 @@
 #include "AbilityAction.h"
 
-#include "AbilitySystemLog.h"
+#include "AbilitySystem/AbilitySystemLog.h"
 
+/*
 bool UAbilityActionCollection::Execute_Implementation(AActor *Target, int32 Empowerment)
 {
+
     check(Target != nullptr && "Action collection: target not found");
 
     for (auto action : ActionList)
@@ -17,4 +19,4 @@ bool UAbilityActionCollection::Execute_Implementation(AActor *Target, int32 Empo
 
     UE_LOG(AbilitySystemLog, Warning, TEXT("Action collection: all actions is done"));
     return true;
-}
+}*/

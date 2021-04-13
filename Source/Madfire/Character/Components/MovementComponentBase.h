@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CharacterAnimInstance.h"
+#include "Character/CharacterAnimInstance.h"
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TraceFunctional/TraceFunctional.h"

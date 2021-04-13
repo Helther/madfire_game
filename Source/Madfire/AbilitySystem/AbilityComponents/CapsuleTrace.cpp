@@ -1,18 +1,18 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "SphereTrace.h"
+#include "CapsuleTrace.h"
 
-#include "AbilitySystemLog.h"
+#include "AbilitySystem/AbilitySystemLog.h"
 
+/*
+ACapsuleTrace::ACapsuleTrace() { PrimaryActorTick.bCanEverTick = true; }
 
-ASphereTrace::ASphereTrace() { PrimaryActorTick.bCanEverTick = true; }
+void ACapsuleTrace::BeginPlay() { Super::BeginPlay(); }
 
-void ASphereTrace::BeginPlay() { Super::BeginPlay(); }
+void ACapsuleTrace::Tick(float DeltaTime) { Super::Tick(DeltaTime); }
 
-void ASphereTrace::Tick(float DeltaTime) { Super::Tick(DeltaTime); }
-
-bool ASphereTrace::ComponentSetup_Implementation(ACharacter *Parent,
-                                                 int32 ActionParameter)
+bool ACapsuleTrace::ComponentSetup_Implementation(ACharacter *Parent,
+                                                  int32 ActionParameter)
 {
     check(Parent != nullptr && Parent->GetWorld() != nullptr
           && "Component setup: parent or world is invalid");
@@ -34,12 +34,17 @@ bool ASphereTrace::ComponentSetup_Implementation(ACharacter *Parent,
     SpawnParams.End.Z = 0.0f;
     SpawnParams.End += SpawnParams.Start;
 
+    if (!SpawnParams.Rotation.IsNormalized())
+    {
+        SpawnParams.Rotation.Normalize();
+    }
+
     if (!IsMultipleTrace)
     {
         FHitResult HitResult;
-        UTraceManager::SphereTraceSingleByChannel(Parent->GetWorld(), Radius, TraceParams,
-                                                  SpawnParams, HitResult,
-                                                  CollisionChannel, ReturnPhysMat);
+        UTraceManager::CapsuleTraceSingleByChannel(
+          Parent->GetWorld(), CapsuleRadius, CapsuleHalfHeight, TraceParams, SpawnParams,
+          HitResult, CollisionChannel, ReturnPhysMat);
         if (HitResult.GetActor())
         {
             AAbilityComponent::Execute(HitResult.GetActor(), ActionList,
@@ -49,9 +54,9 @@ bool ASphereTrace::ComponentSetup_Implementation(ACharacter *Parent,
     else
     {
         TArray<struct FHitResult> HitResults;
-        UTraceManager::SphereTraceMultiByChannel(Parent->GetWorld(), Radius, TraceParams,
-                                                 SpawnParams, HitResults,
-                                                 CollisionChannel, ReturnPhysMat);
+        UTraceManager::CapsuleTraceMultiByChannel(
+          Parent->GetWorld(), CapsuleRadius, CapsuleHalfHeight, TraceParams, SpawnParams,
+          HitResults, CollisionChannel, ReturnPhysMat);
         for (auto &target : HitResults)
         {
             if (target.GetActor())
@@ -64,3 +69,4 @@ bool ASphereTrace::ComponentSetup_Implementation(ACharacter *Parent,
 
     return true;
 }
+*/

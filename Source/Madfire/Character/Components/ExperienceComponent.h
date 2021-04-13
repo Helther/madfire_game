@@ -70,7 +70,20 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character Attributes")
 		TArray<FLevelInfo> LevelList;
 
-     /*#if WITH_EDITOR
+#if WITH_EDITOR
+    void PostEditChangeProperty(struct FPropertyChangedEvent &e)
+    {
+        Super::PostEditChangeProperty(e);
+
+        FName PropertyName = (e.Property != nullptr) ? e.Property->GetFName() : NAME_None;
+        if(PropertyName == GET_MEMBER_NAME_CHECKED(UExperienceComponent, LevelList))
+        {
+            Update();
+        }
+
+    }
+#endif
+     /*
      void MYClass::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
      {
          setMyValue(_sensorType, true);

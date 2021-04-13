@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Character/Components/AbilityManager.h"
+#include "Character/Components/AbilitySystemComponent.h"
 
 
 // Sets default values for this component's properties
-UAbilityManager::UAbilityManager()
+UAbilitySystemComponent::UAbilitySystemComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
@@ -14,19 +14,43 @@ UAbilityManager::UAbilityManager()
 	// ...
 }
 
+void UAbilitySystemComponent::ActivateAbility()
+{
+    if(CurrentAbility)
+    {
+        CurrentAbility->ActivateAbility();
+    }
+}
+
+void UAbilitySystemComponent::ReleaseAbility()
+{
+    if(CurrentAbility)
+    {
+        CurrentAbility->RealeseAbility();
+    }
+}
 
 // Called when the game starts
-void UAbilityManager::BeginPlay()
+void UAbilitySystemComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
-	
+	// ...	
 }
 
+void UAbilitySystemComponent::SetCurrentAbility(UAbstractAbility *Ability)
+{
+    CurrentAbility = Ability;
+    if(CurrentAbility)
+        CurrentAbility->AbilitySetup(this);
+    else
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("AbilitySystem Component: Ability Is Null"));
+    }
+}
 
 // Called every frame
-void UAbilityManager::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UAbilitySystemComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 

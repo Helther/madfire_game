@@ -1,6 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "StandaloneAbility.h"
+
+/*
 void UStandaloneAbility::OnEventKeyPressed_Implementation() { StartCast(); }
 
 void UStandaloneAbility::OnEventKeyReleased_Implementation()
@@ -83,4 +85,4 @@ void UStandaloneAbility::StopCast(void)
 {
     isCasting  = false;
     onCooldown = true;
-}
+}*/

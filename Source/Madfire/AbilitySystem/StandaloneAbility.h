@@ -7,14 +7,14 @@
 
 #include "StandaloneAbility.generated.h"
 
-/**
- * 
- */
+
+
 UCLASS(Blueprintable, BlueprintType, abstract)
 class UStandaloneAbility : public UAbstractAbility
 {
     GENERATED_BODY()
-
+    /**
+ *
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
     bool isImpowerable = false;
@@ -52,5 +52,6 @@ protected:
 
     void OnSkillNotify(void);
 
-    void OnTick(void);
+    void OnTick(void); */
 };
+

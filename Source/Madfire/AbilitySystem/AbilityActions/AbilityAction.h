@@ -2,9 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Templates/SubclassOf.h"
+#include "GameplayTask.h"
 #include "UObject/NoExportTypes.h"
 
 #include "AbilityAction.generated.h"
+
+
+class UAbilitySystemComponent;
+class UAbstractAbility;
 
 /*
  * Тут пока всё нориально. В интерфейс экшона добавим параметр
@@ -17,6 +23,14 @@ class UAbilityAction : public UObject
     GENERATED_BODY()
 
 public:
+    UPROPERTY()
+    UAbstractAbility *Ability;
+
+    UPROPERTY()
+    UAbilitySystemComponent *AbilitySystemComponent;
+
+
+    /*
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Skill System")
     bool Execute(AActor *Target,
                  int32 Empowerment = 0);    //Empowerment намного лучше, я считаю
@@ -25,11 +39,11 @@ public:
     ACharacter *Caster = nullptr;    //тот, кто скастовал заклинание
 
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
-    AActor *Causer =
-      nullptr;    //То, что является причиной этого действия - то есть проджектайл, или область, или ещё что в таком же духе
+    AActor *Causer =    nullptr;    //То, что является причиной этого действия - то есть проджектайл, или область, или ещё что в таком же духе
+    */
 };
 
-
+/*
 UCLASS(Blueprintable, HideDropdown)
 class UAbilityActionCollection : public UAbilityAction
 {
@@ -43,4 +57,4 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<TSubclassOf<UAbilityAction>> ActionList;
-};
+};*/

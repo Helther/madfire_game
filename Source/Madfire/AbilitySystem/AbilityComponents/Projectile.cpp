@@ -2,8 +2,8 @@
 
 #include "Projectile.h"
 
-#include "AbilitySystemLog.h"
-
+#include "AbilitySystem/AbilitySystemLog.h"
+/*
 AAbstractProjectile::AAbstractProjectile()
 {
     PrimaryActorTick.bCanEverTick = true;
@@ -74,4 +74,4 @@ void AAbstractProjectile::EndOverlap(UPrimitiveComponent *OverlappedComponent,
                                      int32 OtherBodyIndex)
 {
     UE_LOG(LogTemp, Warning, TEXT("EndOverlap( )"));
-}
+}*/

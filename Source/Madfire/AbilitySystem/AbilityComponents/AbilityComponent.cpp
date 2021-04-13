@@ -1,8 +1,10 @@
 #include "AbilityComponent.h"
 
-#include "AbilitySystemLog.h"
+#include "AbilitySystem/AbilitySystemLog.h"
 #include "Classes/Engine/World.h"
 
+
+/*
 bool AAbilityComponent::Execute(AActor *Target,
                                 const TArray<TSubclassOf<UAbilityAction>> &List,
                                 int Empowerment, ACharacter *Caster, AActor *Causer)
@@ -20,8 +22,8 @@ bool AAbilityComponent::Execute(AActor *Target,
     }
     return true;
 }
-
-
+*/
+/*
 bool USpawnAction::Execute_Implementation(AActor *Target, int32 Empowerment)
 {
     check(SkillComponent != nullptr && "Spawn actor: invalid actor");
@@ -44,9 +46,9 @@ bool USpawnAction::Execute_Implementation(AActor *Target, int32 Empowerment)
     check(SklCmpt != nullptr && "Spawn actor: invalid skill component");
     SklCmpt->ComponentSetup(character, Empowerment);
     return true;
-}
+}*/
 
-
+/*
 AAbilityComponent *FAbilityComponentSpawnParameters::Spawn(AActor *Caster, int param)
 {
     check(SkillComponent != nullptr && "Spawn actor: invalid actor");
@@ -80,6 +82,21 @@ AAbilityComponent *FAbilityComponentSpawnParameters::Spawn(AActor *Caster, int p
       SkillComponent, Location, Roatation, SpawnInfo);
     check(SklCmpt != nullptr && "Spawn actor: invalid skill component");
 
-    SklCmpt->ComponentSetup(character, param);    // ���� �� ��������, �� ��� ����� ������
+    SklCmpt->ComponentSetup(character, param);
     return SklCmpt;
+}*/
+
+UAbilityComponent::UAbilityComponent(const FObjectInitializer &f) :
+    Super(f)
+{
+    UE_LOG(AbilitySystemLog, Error, TEXT("AbilityComponent: Construction"));
+}
+
+
+bool UAbilityComponent::ComponentSetup_Implementation(UAbilitySystemComponent *Component)
+{
+    UE_LOG(AbilitySystemLog, Error, TEXT("AbilityComponent: Setup"));
+
+    AbilitySystemComponent = Component;
+    return true;
 }

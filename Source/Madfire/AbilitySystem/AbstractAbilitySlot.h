@@ -10,14 +10,13 @@
 
 #include "AbstractAbilitySlot.generated.h"
 
-/**
- * 
- */
-UCLASS(BlueprintType, Blueprintable, abstract)
+
+
+UCLASS(BlueprintType, Blueprintable, Abstract)
 class UAbstractAbilitySlot : public UObject
 {
     GENERATED_BODY()
-
+/**
 public:
     UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Slot")
     ACharacter *Caster;
@@ -43,4 +42,6 @@ protected:
 
     UFUNCTION(BlueprintCallable, Meta = (BlueprintProtected = "true"), Category = "Slot")
     bool RestoreCharge();
+ *
+ */
 };

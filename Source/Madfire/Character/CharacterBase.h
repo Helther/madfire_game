@@ -10,6 +10,7 @@
 #include "Components/MovementComponentBase.h"
 #include "Components/ExperienceComponent.h"
 #include "Components/EffectComponent.h"
+#include "Components/AbilitySystemComponent.h"
 
 
 #include "CharacterBase.generated.h"
@@ -31,7 +32,7 @@ public:
     virtual void Update();
 
     UFUNCTION(BlueprintCallable, Category = "Character Base")
-    void OnUpdate(); //!< Blueprint interface  for Blueprints    
+    void OnUpdate(); //!< Blueprint interface  for Blueprints
 
     UFUNCTION(BlueprintCallable, Category = "Character Base")
     virtual void DoLevelUp(const FLevelInfo &levelInfo);
@@ -54,6 +55,9 @@ public:
     UInventoryComponent *InventoryComponent;
     UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
     UEffectComponent *EffectComponent;
+    UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
+    UAbilitySystemComponent *AbilitySystemComponent;
+
 
 protected:
     // Called when the game starts or when spawned
