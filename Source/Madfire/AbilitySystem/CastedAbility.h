@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "AbilitySystem/AbstractAbility.h"
 #include "CastedAbility.generated.h"

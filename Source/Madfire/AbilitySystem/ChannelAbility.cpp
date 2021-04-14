@@ -1,4 +1,4 @@
-#include "ChannelAbility.h"
+﻿#include "ChannelAbility.h"
 #include "Character/CharacterBase.h"
 #include "AbilitySystemLog.h"
 
@@ -59,14 +59,18 @@ void UChannelAbility::PrecastFinish(UAnimMontage *animMontage, bool bInterrupted
 void UChannelAbility::CastFinish(UAnimMontage *animMontage, bool bInterrupted)
 {
     TargetSelection->DeactivateComponent();
-
-    if(!bInterrupted)
+    auto Owner = Cast<ACharacterBase>(AbilitySystemComponent->GetOwner());
+    if (Owner)
     {
-        //PlayAftercast
-    }
-    else
-    {
-        //Interrupt
+        if (!bInterrupted)
+        {
+            //PlayAftercast
+            // Note loop section is always interrupted
+        }
+        else
+        {
+            // Interrupt
+        }
     }
 }
 
@@ -113,6 +117,8 @@ void UChannelAbility::OnRelease()
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: No Target Selection Algorithm"));
     }
+    auto Owner = Cast<ACharacterBase>(AbilitySystemComponent->GetOwner());
+    Owner->PlayAnimMontage(CastAnimMontage, 1.f, AftercastSectionName);
     OnCancel();
 }
 

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "AbilitySystem/AbilityComponents/AbilityComponent.h"
 #include "AbilityAimComponent.generated.h"

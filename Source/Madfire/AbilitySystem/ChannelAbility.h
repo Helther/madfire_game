@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "AbilitySystem/AbilityComponents/AbilityTargetSelectionComponent.h"
 #include "AbstractAbility.h"

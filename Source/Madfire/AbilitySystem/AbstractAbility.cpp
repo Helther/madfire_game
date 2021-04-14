@@ -1,4 +1,4 @@
-#include "AbstractAbility.h"
+﻿#include "AbstractAbility.h"
 
 UAbstractAbility::UAbstractAbility(const FObjectInitializer &f) :
     Super(f)

@@ -1,4 +1,4 @@
-#include "ConsumableAttributes.h"
+﻿#include "ConsumableAttributes.h"
 #include "Character/Components/AttributesComponent.h"
 
 UConsumableAttribute::UConsumableAttribute()
