@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "CharacterPlayer.h"
 
 #include "PlayerCharController.generated.h"
 
@@ -15,6 +16,7 @@ struct FInputKeyNames
     static const FName Sprint;
     static const FName Crouch;
     static const FName Jump;
+    static const FName Dodge;
     static const FName CameraPitch;
     static const FName CameraYaw;
     static const FName ClimbDownTest;
@@ -38,13 +40,10 @@ enum class EPawnGameplayState
  * 
  */
 UCLASS()
-class MADFIRE_API ABasePlayerController : public APlayerController
+class MADFIRE_API APlayerCharController : public APlayerController
 {
     GENERATED_BODY()
-public:
-    bool IsActionKeyPressed(const FName &ActionKey);
 
-private:
     // текущий режим контроллера чарактера
     EPawnGameplayState CurrentGameplayState;
     /*
@@ -88,10 +87,18 @@ private:
     // нажатие кнопки взаимодействия
     void InteractAction();
 
-    class ACharacterPlayer *Player;
+    ACharacterPlayer *Player;
+
+public:
+    bool IsActionKeyPressed(const FName &ActionKey);
+
+    // temp value for min input amount to register
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+        float MovementDeadZone{};
 
 protected:
-    ABasePlayerController();
+    APlayerCharController();
+    EControlDirections GetInputDirection();
 
     virtual void SetupInputComponent() override;
     virtual void BeginPlay() override;

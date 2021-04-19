@@ -7,17 +7,18 @@
 
 #include "MovementComponentBase.generated.h"
 
-
-enum EControlDirections
+// values represent degrees of rotation relative to forward direction
+enum class EControlDirections : int
 {
+    Default = -1,
     ForwardD = 0,
-    BackD,
-    RightD,
-    LeftD,
-    FLeftD,
-    FRightD,
-    BLeftD,
-    BRightD
+    FRightD = 45,
+    RightD = 90,
+    BRightD = 135,
+    BackD = 180,
+    BLeftD = 225,
+    LeftD = 270,
+    FLeftD = 315,
 };
 
 struct FTransitionSectionNames
@@ -39,6 +40,8 @@ struct FMoveStaminaCosts
     float Climb = -20;
     UPROPERTY(EditAnywhere)
     float Vault = -15;
+    UPROPERTY(EditAnywhere)
+    float Dodge = -20;
 };
 
 UENUM(BlueprintType)
@@ -296,9 +299,34 @@ private:
     ////Slide
 
 
-    ////Dodge
+    //////////////////////////////////////Dodge///////////////////////////////////////
+public:
+    void DoDodge(const EControlDirections &Direction);
+    // dodge anim with high item load
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodging")
+    UAnimMontage *SlowDodgeMontage;
+    // dodge anim with medium item load
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodging")
+    UAnimMontage *NormalDodgeMontage;
+    // dodge anim with low item load
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodging")
+    UAnimMontage *FastDodgeMontage;
+    // dodge curve time axis should start form zero
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodging")
+    UCurveVector* SlowDodgeCurve;
+    // dodge curve time axis should start form zero
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodging")
+    UCurveVector* NormalDodgeCurve;
+    // dodge curve time axis should start form zero
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodging")
+    UCurveVector* FastDodgeCurve;
+    // dodge distance dexterity modifier
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dodging")
+    float DodgeAbilityMod{};
 
-
+private: 
+    UCurveVector *CurrentDodgeCurve;
+    UAnimMontage *CurrentDodgeMontage;
     ////Ladder Climb
 
     ////////////////////===========Parkour shit END============/////////////////////////
@@ -477,12 +505,16 @@ public:
                          const FRotator &EndRot,
                          UAnimMontage *AnimToPlay,
                          AnimTypes Type,
-                         ECustomMovementMode InMode);
+                         ECustomMovementMode InMode,
+                         EMovementMode OutMode);
     // todo
-    void TransitionStart(const UCurveFloat &Curve,
+    void TransitionStart(UCurveVector *Curve,
+                         const EControlDirections &Direction,
                          UAnimMontage *AnimToPlay,
                          AnimTypes Type,
-                         ECustomMovementMode InMode);
+                         ECustomMovementMode InMode,
+                         EMovementMode OutMode
+        );
     UFUNCTION(BlueprintCallable, Category = "Animation")
     void TransitionInterrupt();
     UFUNCTION(BlueprintCallable, Category = "Animation")
@@ -498,6 +530,12 @@ protected:
     // is currently moving
     bool bIsTransitioning{ false };
     AnimTypes animType;
+
+    float TotalCurveTime{};
+    float CurrentCurveTime{};
+    UCurveVector* TransitionCurve = nullptr;
+    TUniquePtr<FVector> TransitionDirection = nullptr;
+    FVector TransitionStartPos;
 
     void TransitionProcess(float deltaTime);
     void On_TransitionFinished();
