@@ -2,7 +2,7 @@
 
 #include "PlayerCharController.h"
 
-#include "CharacterPlayer.h"
+
 #include "GameFramework/PlayerInput.h"
 #include "Kismet/KismetMathLibrary.h"
 
@@ -12,20 +12,64 @@ const FName FInputKeyNames::Run           = "Run";
 const FName FInputKeyNames::Sprint        = "Sprint";
 const FName FInputKeyNames::Crouch        = "Crouch";
 const FName FInputKeyNames::Jump          = "Jump";
+const FName FInputKeyNames::Dodge         = "Dodge";
 const FName FInputKeyNames::CameraPitch   = "CameraPitch";
 const FName FInputKeyNames::CameraYaw     = "CameraYaw";
 const FName FInputKeyNames::ClimbDownTest = "ClimbDownTest";
 
-ABasePlayerController::ABasePlayerController() {}
+APlayerCharController::APlayerCharController() {}
 
-void ABasePlayerController::BeginPlay()
+EControlDirections APlayerCharController::GetInputDirection()
+{
+    const auto fwd = InputComponent->GetAxisValue(FInputKeyNames::MoveForward);
+    const auto rght = InputComponent->GetAxisValue(FInputKeyNames::MoveRight);
+    if (fwd > MovementDeadZone)
+    {
+        if (rght > MovementDeadZone)
+            return EControlDirections::FRightD;
+        else if  (rght < MovementDeadZone)
+            return EControlDirections::FLeftD;
+        else
+            return EControlDirections::ForwardD;
+    }
+    else if (fwd < -MovementDeadZone)
+    {
+        if (rght > MovementDeadZone)
+            return EControlDirections::BRightD;
+        else if  (rght < MovementDeadZone)
+            return EControlDirections::BLeftD;
+        else
+            return EControlDirections::BackD;
+    }
+    else if (rght > MovementDeadZone)
+    {
+        if (fwd > MovementDeadZone)
+            return EControlDirections::FRightD;
+        else if  (fwd < MovementDeadZone)
+            return EControlDirections::BRightD;
+        else
+            return EControlDirections::RightD;
+    }
+    else if (rght < -MovementDeadZone)
+    {
+        if (fwd > MovementDeadZone)
+            return EControlDirections::FLeftD;
+        else if  (fwd < MovementDeadZone)
+            return EControlDirections::BLeftD;
+        else
+            return EControlDirections::LeftD;
+    }
+    return EControlDirections::Default;
+}
+
+void APlayerCharController::BeginPlay()
 {
     Super::BeginPlay();
     Player = Cast<ACharacterPlayer>(GetPawn());
-    check(Player != nullptr && "ABasePlayerController: No pawn");
+    check(Player != nullptr && "APlayerCharController: No pawn");
     CurrentGameplayState = EPawnGameplayState::InWorld;    // debug
 }
-void ABasePlayerController::Tick(float DeltaTime)
+void APlayerCharController::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
     if (CurrentGameplayState == EPawnGameplayState::InWorld
@@ -35,37 +79,39 @@ void ABasePlayerController::Tick(float DeltaTime)
 
 //////////////======================Input========//////////////////////
 
-void ABasePlayerController::SetupInputComponent()
+void APlayerCharController::SetupInputComponent()
 {
     Super::SetupInputComponent();
     if (InputComponent)
     {
         InputComponent->BindAction(
-          FInputKeyNames::Run, IE_Pressed, this, &ABasePlayerController::RunAction);
+          FInputKeyNames::Run, IE_Pressed, this, &APlayerCharController::RunAction);
         InputComponent->BindAction(
-          FInputKeyNames::Sprint, IE_Pressed, this, &ABasePlayerController::SprintAction);
+          FInputKeyNames::Sprint, IE_Pressed, this, &APlayerCharController::SprintAction);
         InputComponent->BindAction(FInputKeyNames::Sprint,
                                    IE_Released,
                                    this,
-                                   &ABasePlayerController::UnSprintAction);
+                                   &APlayerCharController::UnSprintAction);
         InputComponent->BindAction(
-          FInputKeyNames::Crouch, IE_Pressed, this, &ABasePlayerController::CrouchAction);
+          FInputKeyNames::Crouch, IE_Pressed, this, &APlayerCharController::CrouchAction);
         InputComponent->BindAction(
-          FInputKeyNames::Jump, IE_Pressed, this, &ABasePlayerController::JumpAction);
+          FInputKeyNames::Jump, IE_Pressed, this, &APlayerCharController::JumpAction);
         InputComponent->BindAction(
-          FInputKeyNames::Jump, IE_Released, this, &ABasePlayerController::UnJumpAction);
+          FInputKeyNames::Jump, IE_Released, this, &APlayerCharController::UnJumpAction);
+        InputComponent->BindAction(
+          FInputKeyNames::Dodge, IE_Pressed, this, &APlayerCharController::DodgeAction);
         InputComponent->BindAxis(
-          FInputKeyNames::MoveForward, this, &ABasePlayerController::MoveForward);
+          FInputKeyNames::MoveForward, this, &APlayerCharController::MoveForward);
         InputComponent->BindAxis(
-          FInputKeyNames::MoveRight, this, &ABasePlayerController::MoveRight);
+          FInputKeyNames::MoveRight, this, &APlayerCharController::MoveRight);
         InputComponent->BindAxis(
-          FInputKeyNames::CameraPitch, this, &ABasePlayerController::CameraPitch);
+          FInputKeyNames::CameraPitch, this, &APlayerCharController::CameraPitch);
         InputComponent->BindAxis(
-          FInputKeyNames::CameraYaw, this, &ABasePlayerController::CameraYaw);
+          FInputKeyNames::CameraYaw, this, &APlayerCharController::CameraYaw);
     }
 }
 
-bool ABasePlayerController::IsActionKeyPressed(const FName &ActionKey)
+bool APlayerCharController::IsActionKeyPressed(const FName &ActionKey)
 {
     TArray<FInputActionKeyMapping> KeyListTest = PlayerInput->GetKeysForAction(ActionKey);
     if (KeyListTest.Num() == 0)
@@ -85,9 +131,9 @@ bool ABasePlayerController::IsActionKeyPressed(const FName &ActionKey)
     return false;
 }
 
-void ABasePlayerController::MoveForward(float AxisValue)
+void APlayerCharController::MoveForward(float AxisValue)
 {
-    check(Player != nullptr && "ABasePlayerController: No pawn");
+    check(Player != nullptr && "APlayerCharController: No pawn");
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
@@ -132,9 +178,9 @@ void ABasePlayerController::MoveForward(float AxisValue)
     }
 }
 
-void ABasePlayerController::MoveRight(float AxisValue)
+void APlayerCharController::MoveRight(float AxisValue)
 {
-    check(Player != nullptr && "ABasePlayerController: No pawn");
+    check(Player != nullptr && "APlayerCharController: No pawn");
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
@@ -170,7 +216,7 @@ void ABasePlayerController::MoveRight(float AxisValue)
     }
 }
 
-void ABasePlayerController::CameraPitch(float AxisValue)
+void APlayerCharController::CameraPitch(float AxisValue)
 {
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
@@ -183,7 +229,7 @@ void ABasePlayerController::CameraPitch(float AxisValue)
     }
 }
 
-void ABasePlayerController::CameraYaw(float AxisValue)
+void APlayerCharController::CameraYaw(float AxisValue)
 {
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
@@ -196,9 +242,9 @@ void ABasePlayerController::CameraYaw(float AxisValue)
     }
 }
 
-void ABasePlayerController::RunAction()
+void APlayerCharController::RunAction()
 {
-    check(Player != nullptr && "ABasePlayerController: No pawn");
+    check(Player != nullptr && "APlayerCharController: No pawn");
 
     switch (CurrentGameplayState)
     {
@@ -214,9 +260,9 @@ void ABasePlayerController::RunAction()
     }
 }
 
-void ABasePlayerController::SprintAction()    ///add equipment weight check
+void APlayerCharController::SprintAction()    ///add equipment weight check
 {
-    check(Player != nullptr && "ABasePlayerController: No pawn");
+    check(Player != nullptr && "APlayerCharController: No pawn");
 
     switch (CurrentGameplayState)
     {
@@ -238,9 +284,9 @@ void ABasePlayerController::SprintAction()    ///add equipment weight check
     }
 }
 
-void ABasePlayerController::UnSprintAction()
+void APlayerCharController::UnSprintAction()
 {
-    check(Player != nullptr && "ABasePlayerController: No pawn");
+    check(Player != nullptr && "APlayerCharController: No pawn");
 
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
@@ -255,9 +301,9 @@ void ABasePlayerController::UnSprintAction()
     }
 }
 
-void ABasePlayerController::CrouchAction()
+void APlayerCharController::CrouchAction()
 {
-    check(Player != nullptr && "ABasePlayerController: No pawn");
+    check(Player != nullptr && "APlayerCharController: No pawn");
     Player->GetMovementComponent()->SetMovementMode(
       EMovementMode::MOVE_Walking);    // todo temp
     switch (CurrentGameplayState)
@@ -301,9 +347,9 @@ void ABasePlayerController::CrouchAction()
     }
 }
 
-void ABasePlayerController::JumpAction()
+void APlayerCharController::JumpAction()
 {
-    check(Player != nullptr && "ABasePlayerController: No pawn");
+    check(Player != nullptr && "APlayerCharController: No pawn");
 
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
@@ -378,9 +424,9 @@ void ABasePlayerController::JumpAction()
             return;
     }
 }
-void ABasePlayerController::UnJumpAction() { Player->StopJumping(); }
+void APlayerCharController::UnJumpAction() { Player->StopJumping(); }
 
-void ABasePlayerController::JumpRepAction()
+void APlayerCharController::JumpRepAction()
 {
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
@@ -394,6 +440,22 @@ void ABasePlayerController::JumpRepAction()
                     if (Player->GetMovementComponent()->CheckCanHangAgain())
                         Player->GetMovementComponent()->HangOnFall();
                 }
+            }
+            break;
+        }
+    }
+}
+
+void APlayerCharController::DodgeAction()
+{
+        switch (CurrentGameplayState)    //todo учесть другие состояния
+    {
+        case (EPawnGameplayState::InWorld): {
+            if (Player->CurrentCCState == ECCState::NoCC
+                && !Player->GetMovementComponent()->IsRootOrTeleport()) // todo учесть комбат
+            {
+                if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
+                    Player->GetMovementComponent()->DoDodge(GetInputDirection());
             }
             break;
         }

@@ -77,6 +77,7 @@ UBaseMovementComponent::UBaseMovementComponent(
     skillMod               = 1.f;
     weightMod              = 1.f;
     weightFactorBalanceMod = 10.f;
+    DodgeAbilityMod = 10.f;
 
     ShowDebugInfo = false;
 
@@ -231,11 +232,11 @@ bool UBaseMovementComponent::DoVault(const StartClimbData &LocationData, bool Is
             //todo сделать на время выполнения анимации капсуле размер капсулы в присяде
             TransitionStart(VaultAnimationStartLocation, LocationData.Rotation,
                             VaultMontageLow, AnimTypes::Parkour,
-                            ECustomMovementMode::ClimbingLedge);
+                            ECustomMovementMode::ClimbingLedge, MovementMode);
         else
             TransitionStart(VaultAnimationStartLocation, LocationData.Rotation,
                             VaultMontageHigh, AnimTypes::Parkour,
-                            ECustomMovementMode::ClimbingLedge);
+                            ECustomMovementMode::ClimbingLedge, MovementMode);
         return true;
     }
     return false;
@@ -283,11 +284,11 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData &LocationData, bo
             if (IsLow)
                 TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
                                 ClimbLedgeMontageLow, AnimTypes::Parkour,
-                                ECustomMovementMode::ClimbingLedge);
+                                ECustomMovementMode::ClimbingLedge, MovementMode);
             else
                 TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
                                 ClimbLedgeMontageHigh, AnimTypes::Parkour,
-                                ECustomMovementMode::ClimbingLedge);
+                                ECustomMovementMode::ClimbingLedge, MovementMode);
             return true;
         }
         case EClimbTraceResult::SuccessCrouch:
@@ -299,11 +300,11 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData &LocationData, bo
             if (IsLow)
                 TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
                                 ClimbLedgeCrouchedMontageLow, AnimTypes::Parkour,
-                                ECustomMovementMode::ClimbingLedge);
+                                ECustomMovementMode::ClimbingLedge, MovementMode);
             else
                 TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
                                 ClimbLedgeCrouchedMontageHigh, AnimTypes::Parkour,
-                                ECustomMovementMode::ClimbingLedge);
+                                ECustomMovementMode::ClimbingLedge, MovementMode);
             return true;
         }
         default:
@@ -636,10 +637,10 @@ void UBaseMovementComponent::HangOnWall(TSharedPtr<StartClimbData> HangData,
         {
             if (ClimbDown)
                 TransitionStart(climbDownStartLocation, wallNormalDir, ClimbDownMontage,
-                                AnimTypes::Parkour, ECustomMovementMode::ClimbingWall);
+                                AnimTypes::Parkour, ECustomMovementMode::ClimbingWall, EMovementMode::MOVE_Custom);
             else
                 TransitionStart(hangLocation, HangData.Get()->Rotation, HangMontage,
-                                AnimTypes::Parkour, ECustomMovementMode::ClimbingWall);
+                                AnimTypes::Parkour, ECustomMovementMode::ClimbingWall, EMovementMode::MOVE_Custom);
         }
     }
 }
@@ -676,6 +677,25 @@ bool UBaseMovementComponent::CheckWallGeometry(const StartClimbData &Data)
         return false;
     }
     return true;
+}
+
+void UBaseMovementComponent::DoDodge(const EControlDirections& Direction)
+{
+    if (Character->AttributesComponent->Stamina->CurrentVal <= 0)
+        return;
+    if (IsCrouching())
+    {
+        bWantsToCrouch = false;
+        UnCrouch();
+    }
+    Character->AttributesComponent->Stamina->Consume(StaminaCostValues.Dodge);
+    Character->AttributesComponent->Stamina->BlockRegen();
+    EControlDirections dir = Direction;
+    if(Direction == EControlDirections::Default)
+        dir = EControlDirections::BackD;
+    TransitionStart(CurrentDodgeCurve, dir,
+                    CurrentDodgeMontage, AnimTypes::Dodge,
+                    ECustomMovementMode::Dodge, MovementMode);
 }
 
 void UBaseMovementComponent::ClimbWall()
@@ -847,6 +867,11 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
             Character->AttributesComponent->Stamina->UnblockRegen();
             bIsSprinting = false;
         }
+    }
+    if (prevMode == MOVE_Custom)
+    {
+        if(prevCustomMode == static_cast<int>(ECustomMovementMode::Dodge))
+            Character->AttributesComponent->Stamina->UnblockRegen();  
     }
     Super::OnMovementModeChanged(prevMode, prevCustomMode);
 }
@@ -1021,17 +1046,18 @@ bool UBaseMovementComponent::FallDamageCheck()
 
 void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
 {
+    check(MinFallHeightThreshold && "ApplyFallDamage: div by zero")
     float damage = Character->AttributesComponent->Health->CurrentMaxVal;
     if (FallDistance < MaxfallHeightThreshold)
-        damage *= (FallDistance - MinFallHeightThreshold)
-          / MinFallHeightThreshold;    // NOT NULL!
+        damage *= (FallDistance - MinFallHeightThreshold) / MinFallHeightThreshold;
 }
 
 void UBaseMovementComponent::TransitionStart(const FVector &EndLoc,
                                              const FRotator &EndRot,
                                              UAnimMontage *AnimToPlay,
                                              AnimTypes Type,
-                                             ECustomMovementMode InMode)
+                                             ECustomMovementMode InMode,
+                                             EMovementMode OutMode)
 {
     if (bIsTransitioning)
     {
@@ -1041,18 +1067,12 @@ void UBaseMovementComponent::TransitionStart(const FVector &EndLoc,
     if (AnimToPlay == nullptr
         || !AnimToPlay->IsValidSectionName(FTransitionSectionNames::End))
     {
-        UE_LOG(
-          LogTemp, Warning,
-          TEXT(
-            "TransitionStart error: bad animation to play"))    // todo add return after anims addition
+        UE_LOG( LogTemp, Warning, TEXT("TransitionStart error: bad animation to play"))
         return;
     }
     bIsTransitioning = true;
-    // if none then return to normal movement when finished
-    if (InMode == ECustomMovementMode::NoParkour)
-        TransitionFinishMode = MovementMode;
-    else
-        TransitionFinishMode = EMovementMode::MOVE_Custom;
+
+    TransitionFinishMode = OutMode;
     SetMovementMode(EMovementMode::MOVE_Custom, InMode);
     TransitionLocEnd      = MakeUnique<FVector>(EndLoc);
     TransitionRotEnd      = MakeUnique<FRotator>(EndRot);
@@ -1069,11 +1089,39 @@ void UBaseMovementComponent::TransitionStart(const FVector &EndLoc,
         UE_LOG(LogTemp, Warning, TEXT("TransitionStart info: no anim start section"))
 }
 
-void UBaseMovementComponent::TransitionStart(const UCurveFloat &Curve,
+void UBaseMovementComponent::TransitionStart(UCurveVector *Curve, const EControlDirections &Direction,
                                              UAnimMontage *AnimToPlay, AnimTypes Type,
-                                             ECustomMovementMode InMode)
+                                             ECustomMovementMode InMode, EMovementMode OutMode)
 {
-    // todo
+    if (bIsTransitioning)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("TransitionStart error: already transitioning"))
+        return;
+    }
+    if (AnimToPlay == nullptr || 
+        !AnimToPlay->IsValidSectionName(FTransitionSectionNames::Start) ||
+        !AnimToPlay->IsValidSectionName(FTransitionSectionNames::End))
+    {
+        UE_LOG( LogTemp, Warning, TEXT("TransitionStart error: bad animation to play"))
+        return;
+    }
+    bIsTransitioning = true;
+
+    TransitionFinishMode = OutMode;
+    SetMovementMode(EMovementMode::MOVE_Custom, InMode);
+    TransitionCurve = Curve;
+    TransitionCurve->GetTimeRange(CurrentCurveTime, TotalCurveTime);
+    check(TotalCurveTime > CurrentCurveTime && "TransitionStart: invalid time range");
+    // get direction of movement by rotating character
+    const auto direction = FQuat(FRotator(0, Character->GetActorRotation().Yaw, 0)) * FQuat(FRotator(0, static_cast<float>(Direction), 0));
+    TransitionDirection = MakeUnique<FVector>(direction.Rotator().Vector());
+    TransitionStartPos =  Character->GetActorLocation();
+    CurrentTransitionAnim = AnimToPlay;
+    animType = Type;
+    FOnMontageBlendingOutStarted callBack;
+    callBack.BindUObject(this, AnimDelegates[static_cast<AnimTypes>(animType)]);
+    Character->StartAnimation(CurrentTransitionAnim, callBack, AnimPlayRate,
+                                FTransitionSectionNames::Start);
 }
 
 void UBaseMovementComponent::On_TransitionFinished()
@@ -1089,23 +1137,45 @@ void UBaseMovementComponent::On_TransitionFinished()
 
 void UBaseMovementComponent::TransitionProcess(float deltaTime)
 {
-    // todo add cancel if can't reach the end
-    if (TransitionLocEnd.Get()->Equals(Character->GetActorLocation(), 1)
-        && TransitionRotEnd.Get()->Equals(Character->GetActorRotation(), 1))
-        On_TransitionFinished();
-    else
+    if (TransitionDirection.Get() == nullptr)
     {
-        const bool locSweep = Character->SetActorLocation(
-          FMath::Lerp(Character->GetActorLocation(), *TransitionLocEnd.Get(),
-                      TransitionMoveSpeed * deltaTime),
-          true);
-        const bool rotSweep = Character->SetActorRotation(
-          FMath::Lerp(Character->GetActorRotation(), *TransitionRotEnd.Get(),
-                      TransitionRotationSpeed * deltaTime));
-        if (!locSweep || !rotSweep)
+        // todo add cancel if can't reach the end
+        if (TransitionLocEnd.Get()->Equals(Character->GetActorLocation(), 1)
+            && TransitionRotEnd.Get()->Equals(Character->GetActorRotation(), 1))
+            On_TransitionFinished();
+        else
         {
-            TransitionInterrupt();
-            UE_LOG(LogTemp, Warning, TEXT("TransitionProcess error: collision hit!!"))
+            const bool locSweep = Character->SetActorLocation(
+                FMath::Lerp(Character->GetActorLocation(), *TransitionLocEnd.Get(),
+                    TransitionMoveSpeed * deltaTime), true);
+            const bool rotSweep = Character->SetActorRotation(
+                FMath::Lerp(Character->GetActorRotation(), *TransitionRotEnd.Get(),
+                    TransitionRotationSpeed * deltaTime));
+            if (!locSweep || !rotSweep)
+            {
+                TransitionInterrupt();
+                UE_LOG(LogTemp, Warning, TEXT("TransitionProcess error: collision hit!!"))
+            }
+        }
+    }
+    else // curve transition
+    {
+        if(CurrentCurveTime >= TotalCurveTime)
+            On_TransitionFinished();
+        else
+        {
+            CurrentCurveTime += deltaTime;
+            const auto dexMod = UAttributesHelper::GetModifier(
+            Character->AttributesComponent->CurrentAttributes, EAttributes::Dex);
+            const FVector posDelta = TransitionCurve->GetVectorValue(CurrentCurveTime);
+            const bool locSweep = Character->SetActorLocation(TransitionStartPos + 
+                *TransitionDirection * (posDelta.X + dexMod * DodgeAbilityMod * CurrentCurveTime) + 
+                FVector::UpVector * posDelta.Z, true);
+            if (!locSweep)
+            {
+                TransitionInterrupt();
+                UE_LOG(LogTemp, Warning, TEXT("TransitionProcess error: collision hit!!"))
+            }
         }
     }
 }
@@ -1122,11 +1192,12 @@ void UBaseMovementComponent::TransitionCleanUp()
 {
     check(bIsTransitioning && "Transition: can't' cancel");
     bIsTransitioning = false;
-    if (MovementMode != EMovementMode::MOVE_Custom)
+    if(TransitionFinishMode != EMovementMode::MOVE_Custom)
         SetMovementMode(TransitionFinishMode);
     CurrentTransitionAnim = nullptr;
     TransitionLocEnd.Release();
     TransitionRotEnd.Release();
+    TransitionDirection.Release();
 }
 
 void UBaseMovementComponent::BeginPlay()
@@ -1176,49 +1247,45 @@ void UBaseMovementComponent::Update()
 {
     //const auto dex = UAttributesHelper::GetAttribute(Character->AttributesComponent->CurrentAttributes, EAttributes::Dex);
     const auto tumble = USkillHelper::GetValue(
-      Character->AttributesComponent->CurrentSkills, ESkill::Tumble);
+        Character->AttributesComponent->CurrentSkills, ESkill::Tumble);
     const auto dexMod = UAttributesHelper::GetModifier(
-      Character->AttributesComponent->CurrentAttributes, EAttributes::Dex);
+        Character->AttributesComponent->CurrentAttributes, EAttributes::Dex);
+    // более verbose способ получения модификатора
     const auto tumbleMod = UAttributesHelper::GetModifier(
-      Character->AttributesComponent->CurrentAttributes,
-      FSkillList::ModifierMap[(
-        int)ESkill::Tumble]);    // более verbose способ получения модификатора
+        Character->AttributesComponent->CurrentAttributes, FSkillList::ModifierMap[(int)ESkill::Tumble]);
 
     UE_LOG(LogTemp, Warning, TEXT("skill val %d"),
-           USkillHelper::GetValue(Character->AttributesComponent->CurrentSkills,
-                                  ESkill::Tumble))
-    UE_LOG(LogTemp, Warning, TEXT("skill mod %d"),
-           UAttributesHelper::GetModifier(
-             Character->AttributesComponent->CurrentAttributes,
-             FSkillList::ModifierMap[(int)ESkill::Tumble]))
-    // ловкость
+        USkillHelper::GetValue(Character->AttributesComponent->CurrentSkills, ESkill::Tumble))
+        UE_LOG(LogTemp, Warning, TEXT("skill mod %d"),
+            UAttributesHelper::GetModifier(Character->AttributesComponent->CurrentAttributes, FSkillList::ModifierMap[(int)ESkill::Tumble]))
+        // ловкость
 
-    MinFallHeightThreshold = GetSigmoidValue(
-      dexMod, abilityMod, MinFallHeightThresholdBase * (1.f - FallDamageScale),
-      MinFallHeightThresholdBase * (1.f + FallDamageScale));
+        MinFallHeightThreshold = GetSigmoidValue(
+            dexMod, abilityMod, MinFallHeightThresholdBase * (1.f - FallDamageScale),
+            MinFallHeightThresholdBase * (1.f + FallDamageScale));
     MaxfallHeightThreshold = GetSigmoidValue(
-      dexMod, abilityMod, MaxfallHeightThresholdBase * (1.f - FallDamageScale),
-      MaxfallHeightThresholdBase * (1.f + FallDamageScale));
+        dexMod, abilityMod, MaxfallHeightThresholdBase * (1.f - FallDamageScale),
+        MaxfallHeightThresholdBase * (1.f + FallDamageScale));
 
     JumpWallZVelocity =
-      GetSigmoidValue(dexMod, abilityMod, JumpWallZVelocityBase * (1.f - SpeedScale),
-                      JumpWallZVelocityBase * (1.f + SpeedScale));
+        GetSigmoidValue(dexMod, abilityMod, JumpWallZVelocityBase * (1.f - SpeedScale),
+            JumpWallZVelocityBase * (1.f + SpeedScale));
     JumpWallXYVelocity =
-      GetSigmoidValue(dexMod, abilityMod, JumpWallXYVelocityBase * (1.f - SpeedScale),
-                      JumpWallXYVelocityBase * (1.f + SpeedScale));
+        GetSigmoidValue(dexMod, abilityMod, JumpWallXYVelocityBase * (1.f - SpeedScale),
+            JumpWallXYVelocityBase * (1.f + SpeedScale));
     JumpZVelocity =
-      GetSigmoidValue(dexMod, abilityMod, JumpZVelocityBase * (1.f - SpeedScale),
-                      JumpZVelocityBase * (1.f + SpeedScale));
+        GetSigmoidValue(dexMod, abilityMod, JumpZVelocityBase * (1.f - SpeedScale),
+            JumpZVelocityBase * (1.f + SpeedScale));
     AnimPlayRate =
-      GetSigmoidValue(dexMod, abilityMod, AnimPlayRateBase * (1.f - AnimPlayRateScale),
-                      AnimPlayRateBase * (1.f + AnimPlayRateScale));
+        GetSigmoidValue(dexMod, abilityMod, AnimPlayRateBase * (1.f - AnimPlayRateScale),
+            AnimPlayRateBase * (1.f + AnimPlayRateScale));
     MaxOverweightMoveFactor = GetSigmoidValue(
-      dexMod, abilityMod, 1.f, MaxOverweightMoveFactorBase * 1.2f);    // temp
+        dexMod, abilityMod, 1.f, MaxOverweightMoveFactorBase * 1.2f);    // temp
 
-    // акробатика
+      // акробатика
 
     AirControl =
-      GetSigmoidValue(tumble + tumbleMod, skillMod, -1.f + AirControlBase, 1.f);
+        GetSigmoidValue(tumble + tumbleMod, skillMod, -1.f + AirControlBase, 1.f);
     if (AirControl < 0)
         AirControl = 0.f;
 
@@ -1229,14 +1296,30 @@ void UBaseMovementComponent::Update()
     //FallingLateralFriction = GetSigmoidValue(tumble, skillMod, FallingLateralFrictionBase * (1.f - FrictionScale), FallingLateralFrictionBase * (1.f + FrictionScale));
 
     Character->JumpMaxHoldTime =
-      GetSigmoidValue(tumble + tumbleMod, skillMod, -JumpMaxHoldTimeBase,
-                      JumpMaxHoldTimeBase);    // ue4 имплементация (поэтому в персе)
+        GetSigmoidValue(tumble + tumbleMod, skillMod, -JumpMaxHoldTimeBase,
+            JumpMaxHoldTimeBase);    // ue4 имплементация (поэтому в персе)
     if (Character->JumpMaxHoldTime < 0)
         Character->JumpMaxHoldTime = 0.f;
 
     // нагрузка
-    // todo разделить на категории загруженности как в дарк соулс
     WeightFactor = GetWeightFactor();
+    // three weight levels
+    if (WeightFactor < 0.33f)
+    {
+        CurrentDodgeCurve = SlowDodgeCurve;
+        CurrentDodgeMontage = SlowDodgeMontage;
+    }
+    else if (WeightFactor < 0.66f)
+    {
+        CurrentDodgeCurve = NormalDodgeCurve;
+        CurrentDodgeMontage = NormalDodgeMontage;
+    }
+    else
+    {
+        CurrentDodgeCurve = FastDodgeCurve;
+        CurrentDodgeMontage = FastDodgeMontage;
+    }
+
     MaxAcceleration =
       GetSigmoidValue(dexMod + weightFactorBalanceMod * (-WeightFactor), weightMod,
                       MaxAccelerationBase * (1.f - AccelerationScale),
@@ -1321,6 +1404,7 @@ bool UBaseMovementComponent::CanMove() const
 float UBaseMovementComponent::GetWeightFactor() const
 {
     const float maxWeight = Character->MaxWeight;
+    check(maxWeight > 0 && "GetWeightFactor: max weight is invalid");
     const float epsilon   = 0.001f;
     const float invMod    = 0.5f;
     const float eqMod     = 1.f;

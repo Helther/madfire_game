@@ -36,8 +36,8 @@ void ACharacterPlayer::OnWalkingOffLedge_Implementation(
   float TimeDelta)
 {
     UE_LOG(LogTemp, Warning, TEXT("OnWalkingOffLedge"));
-    ABasePlayerController *PlayerController =
-      Cast<ABasePlayerController>(GetController());
+    APlayerCharController *PlayerController =
+      Cast<APlayerCharController>(GetController());
     if (PlayerController->IsActionKeyPressed(FInputKeyNames::ClimbDownTest))
     {
         UE_LOG(LogTemp, Warning, TEXT("climb down"));
@@ -130,14 +130,13 @@ void ACharacterPlayer::Update()
 
 void ACharacterPlayer::DoLevelUp(const FLevelInfo &levelInfo)
 {
-    Super::DoLevelUp(levelInfo);
     bool dexChanged = UAttributesHelper::GetAttribute(levelInfo.Attributes, EAttributes::Dex) != 0;
     bool strChanged = UAttributesHelper::GetAttribute(levelInfo.Attributes, EAttributes::Str) != 0;
     bool acrobaticsChanged = USkillHelper::GetValue(levelInfo.SkillList, ESkill::Tumble) != 0;
     if (dexChanged || strChanged || acrobaticsChanged)
         GetMovementComponent()->SetUpdate();
+    Super::DoLevelUp(levelInfo);
     // todo other stuff
-    Update();
 }
 
 void ACharacterPlayer::CCKnockDownEnded(UAnimMontage *animMontage, bool bInterrupted)
