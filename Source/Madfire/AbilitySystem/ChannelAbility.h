@@ -16,6 +16,8 @@ class UChannelAbility : public UAbstractAbility
 public:
     UChannelAbility(const FObjectInitializer &f);
 
+    void AbilityInit() override;
+
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
     UAnimMontage *CastAnimMontage;
 
@@ -27,31 +29,39 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
     UAbilityTargetSelectionComponent *TargetSelection;
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AbilitySystem")
+    float CastRate = 0.5f;
+
+    UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AbilitySystem")
+    void ChannelUpdate();
+    void ChannelUpdate_Implementation();
+
     UFUNCTION()
     void PrecastFinish(UAnimMontage *animMontage, bool bInterrupted);
     UFUNCTION()
     void CastFinish(UAnimMontage *animMontage, bool bInterrupted);
 
-    /*
-    void Tick(float DeltaTime) override
-    {
-        Super::Tick(DeltaTime);
-        if(TargetSelection)
-            TargetSelection->ActivateComponent();
-    }*/
-
     bool bIsActivated = false;
+
     const FName PrecastSectionName = "Precast Section";
     const FName CastLoopSectionName = "Cast Loop Section";
     const FName AftercastSectionName = "Aftercast Section";
 
     FOnMontageBlendingOutStarted OnPrecastFinish;
     FOnMontageBlendingOutStarted OnCastFinish;
+    FOnMontageBlendingOutStarted OnReleaseFinish;
+
+    FTimerHandle FuzeTimerHandle;
+
 
 protected:
     void OnActivate() override;
     void OnRelease() override;
     void OnCancel() override;
+
+
+    bool StartAnimation(FName SectionName, FOnMontageBlendingOutStarted Delegate);
+
 /*
 public:
     /// dead code - TODO: remove if just works

@@ -53,7 +53,7 @@ TScriptInterface<IInteractableInterface> UPlayerInteractComponent::GetInteractab
     FVector startTrace = Owner->GetActorLocation();
     startTrace.Z += 50;
     FVector direction = cameraRotation.Vector();
-    FVector endTrace  = cameraLocation + (direction * MaxInteractionDistance);
+    FVector endTrace  = startTrace + (direction * MaxInteractionDistance);
 
     FTraceParams traceParams;
     traceParams.isDebug = drawTrace;

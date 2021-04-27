@@ -4,6 +4,7 @@
 #include "AbilitySystemLog.h"
 #include "Character/AbstractRequirement.h"
 #include "Character/Components/MovementComponentBase.h"
+#include "Engine/Classes/Components/AudioComponent.h"
 #include "CoreMinimal.h"
 #include "Engine.h"
 #include "GameFramework/Actor.h"
@@ -21,7 +22,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAbilityEvent, UAbstractAbility*, Ab
 * Также там внизу есть мэнеджер, который может спавнить Скилы и компоненты к ним.
 */
 
-UCLASS(Blueprintable, Abstract)
+UCLASS(BlueprintType, Blueprintable, Abstract)
 class UAbstractAbility : public UObject, public FTickableGameObject
 {
     GENERATED_BODY()
@@ -29,8 +30,13 @@ class UAbstractAbility : public UObject, public FTickableGameObject
 public:
     UAbstractAbility(const FObjectInitializer &);
 
+    virtual void AbilityInit() {};
+
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "AbilitySystem")
     void Execute(AActor *target);
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    USoundCue* AbilitySound;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (Bitmask, BitmaskEnum = "EMoveAbilities"), Category = "AbilitySystem")
     int32 MoveAbilities = EMoveAbilities::NoMove;
@@ -47,6 +53,9 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
     float CurrentCooldownTime = 0;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    float CastTime = 1;
+
     UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "AbilitySystem")
     int32 CurrentCharges = 1;
 
@@ -55,9 +64,6 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
     int32 MaxCharges = 1;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
-    float CastTime = 1;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
     UTexture2D *AbilityIcon;
@@ -115,6 +121,7 @@ public:
 
 
 
+
 protected:
     FTimerHandle CastTimer;
 
@@ -124,6 +131,12 @@ protected:
         {
             //Requirment->Consume(Caster);
         }
+    }
+
+    void StopCooldown()
+    {
+        bIsCooldown = false;
+        CurrentCooldownTime = 0;
     }
 
     void StartCooldown()

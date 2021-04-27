@@ -5,17 +5,19 @@
 
 UChannelAbility::UChannelAbility(const FObjectInitializer &f) :
     Super(f)
-{    
+{
+
 }
 
-void UChannelAbility::AbilitySetup(UAbilitySystemComponent *Component)
+void UChannelAbility::AbilityInit()
 {
-    UE_LOG(AbilitySystemLog, Warning, TEXT("Channel Ability: Setup"));
-
+    CurrentCharges = MaxCharges;
     TargetSelection = NewObject<UAbilityTargetSelectionComponent>(this,TargetSelectionClass, "TargetSelectionComponent");
-    AddComponent(TargetSelection);
+    if(TargetSelection)
+        AddComponent(TargetSelection);
 
-    Super::AbilitySetup(Component);
+    OnPrecastFinish.BindUObject(this,&UChannelAbility::PrecastFinish);
+    OnCastFinish.BindUObject(this,&UChannelAbility::CastFinish);
 
     if(TargetSelection)
     {
@@ -25,34 +27,57 @@ void UChannelAbility::AbilitySetup(UAbilitySystemComponent *Component)
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: Can't create Target Selection Algorithm"));
     }
+}
 
-    OnPrecastFinish.BindUObject(this,&UChannelAbility::PrecastFinish);
-    OnCastFinish.BindUObject(this,&UChannelAbility::CastFinish);
+void UChannelAbility::AbilitySetup(UAbilitySystemComponent *Component)
+{
+    Super::AbilitySetup(Component);
+}
+
+bool UChannelAbility::StartAnimation(FName SectionName, FOnMontageBlendingOutStarted Delegate)
+{
+    if(CastAnimMontage)
+    {
+        if(AbilitySystemComponent && AbilitySystemComponent->GetOwner())
+        {
+            auto Owner = Cast<ACharacterBase>(AbilitySystemComponent->GetOwner());
+            if(Owner)
+            {
+                Owner->PlayAnimMontage(CastAnimMontage,1.f,SectionName);//PrecastSectionName);
+
+                auto animInstance    = Owner->GetMesh()->GetAnimInstance();
+                auto montageInstance = animInstance->GetActiveInstanceForMontage(CastAnimMontage);
+                montageInstance->OnMontageBlendingOutStarted = Delegate;//OnPrecastFinish;
+
+                return true;
+            }
+            else
+            {
+                UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: Owner is not CharacterBase"));
+            }
+        }
+        else
+        {
+            UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: AbilitySystemComponent is not set"));
+        }
+    }
+    return false;
 }
 
 void UChannelAbility::PrecastFinish(UAnimMontage *animMontage, bool bInterrupted)
 {
     if(!bInterrupted)
     {
-        //PlayAnimation;
-        if(AbilitySystemComponent && AbilitySystemComponent->GetOwner())
-        {
-            auto Owner = Cast<ACharacterBase>(AbilitySystemComponent->GetOwner());
-            if(Owner)
-            {
-                Owner->PlayAnimMontage(CastAnimMontage,1.f,CastLoopSectionName);
-
-                auto animInstance    = Owner->GetMesh()->GetAnimInstance();
-                auto montageInstance = animInstance->GetActiveInstanceForMontage(CastAnimMontage);
-                montageInstance->OnMontageBlendingOutStarted = OnCastFinish;
-            }
-        }
-
         TargetSelection->ActivateComponent();
+        StartAnimation(CastLoopSectionName,OnCastFinish);
+        GetWorld()->GetTimerManager().SetTimer(FuzeTimerHandle,this,&UChannelAbility::ChannelUpdate, CastRate, true);
     }
     else
     {
-        UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: Interrupted"));
+        AbilitySystemComponent->SetSound(AbilitySound,false);
+        Cast<ACharacter>(AbilitySystemComponent->GetOwner())->StopAnimMontage(CastAnimMontage);
+
+        UE_LOG(AbilitySystemLog, Warning, TEXT("Channel Ability: Interrupted"));
     }
 }
 
@@ -63,42 +88,44 @@ void UChannelAbility::CastFinish(UAnimMontage *animMontage, bool bInterrupted)
     if (Owner)
     {
         if (!bInterrupted)
-        {
-            //PlayAftercast
+        {            
+            // PlayAftercast
             // Note loop section is always interrupted
         }
         else
         {
-            // Interrupt
+            UE_LOG(AbilitySystemLog, Warning, TEXT("Channel Ability: Interrupted"));
         }
     }
 }
 
+void UChannelAbility::ChannelUpdate_Implementation()
+{
+    TargetSelection->UpdateComponent();
+    if(CurrentCharges < 1)
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("Not enough Charges"));
+        StartCooldown();
+        OnRelease();
+    }
+    else
+        --CurrentCharges;
+}
+
 void UChannelAbility::OnActivate()
 {
-    if(CastAnimMontage)
-    {
-        if(AbilitySystemComponent && AbilitySystemComponent->GetOwner())
-        {
-            auto Owner = Cast<ACharacterBase>(AbilitySystemComponent->GetOwner());
-            if(Owner)
-            {
-                Owner->PlayAnimMontage(CastAnimMontage,1.f,PrecastSectionName);
+    StopCooldown();
 
-                auto animInstance    = Owner->GetMesh()->GetAnimInstance();
-                auto montageInstance = animInstance->GetActiveInstanceForMontage(CastAnimMontage);
-                montageInstance->OnMontageBlendingOutStarted = OnPrecastFinish;
-            }
-            else
-            {
-                UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: Owner is not CharacterBase"));
-            }
-        }
+    if(AbilitySound)
+    {
+        AbilitySystemComponent->SetSound(AbilitySound,true);
     }
-    else if(TargetSelection)
+
+    if(!StartAnimation(PrecastSectionName,OnPrecastFinish))
     {
         UE_LOG(AbilitySystemLog, Warning, TEXT("Channel Ability: OnActivate No Cast Montage"));
-        TargetSelection->ActivateComponent();
+
+        GetWorld()->GetTimerManager().SetTimer(FuzeTimerHandle,this,&UChannelAbility::ChannelUpdate,CastRate,true);
     }
     else
     {
@@ -117,15 +144,28 @@ void UChannelAbility::OnRelease()
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: No Target Selection Algorithm"));
     }
+
     auto Owner = Cast<ACharacterBase>(AbilitySystemComponent->GetOwner());
     Owner->PlayAnimMontage(CastAnimMontage, 1.f, AftercastSectionName);
+
     OnCancel();
 }
 
 void UChannelAbility::OnCancel()
 {
+    if(AbilitySound && AbilitySystemComponent)
+    {
+        AbilitySystemComponent->SetSound(AbilitySound,false);
+    }
+
+    GetWorld()->GetTimerManager().ClearTimer(FuzeTimerHandle);
+    StartCooldown();
     bIsActivated = false;
 }
+
+
+
+
 
 
 /*

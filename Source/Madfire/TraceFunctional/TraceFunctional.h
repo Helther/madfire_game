@@ -96,8 +96,7 @@ public:
     ///***COMPLETED***///
     //Line Traces
     UFUNCTION(BlueprintPure, Category = "Trace")
-    static FORCEINLINE bool
-      LineTraceSingleByChannel(UWorld *World,
+    static FORCEINLINE bool   LineTraceSingleByChannel(UWorld *World,
                                const FTraceParams &TraceParams,
                                const FTraceSpawnParams &TraceSpawnParams,
                                FHitResult &HitOut,
@@ -117,7 +116,7 @@ public:
 
         if (TraceParams.isDebug)
         {
-            World->DebugDrawTraceTag = Params.TraceTag;
+            //World->DebugDrawTraceTag = Params.TraceTag;
         }
 
         bool isHit = World->LineTraceSingleByChannel(
@@ -180,7 +179,7 @@ public:
 
         if (TraceParams.isDebug)
         {
-            World->DebugDrawTraceTag = Params.TraceTag;
+            //World->DebugDrawTraceTag = Params.TraceTag;
         }
 
         bool isHit = World->LineTraceMultiByChannel(
@@ -222,7 +221,7 @@ public:
 
         if (TraceParams.isDebug)
         {
-            World->DebugDrawTraceTag = Params.TraceTag;
+            //World->DebugDrawTraceTag = Params.TraceTag;
         }
 
         bool isHit = World->SweepSingleByChannel(
@@ -263,7 +262,7 @@ public:
 
         if (TraceParams.isDebug)
         {
-            World->DebugDrawTraceTag = Params.TraceTag;
+            //World->DebugDrawTraceTag = Params.TraceTag;
         }
 
         bool isHit = World->SweepMultiByChannel(
@@ -308,7 +307,7 @@ public:
 
         if (TraceParams.isDebug)
         {
-            World->DebugDrawTraceTag = Params.TraceTag;
+            //World->DebugDrawTraceTag = Params.TraceTag;
         }
 
         auto Rotation = TraceSpawnParams.Rotation;
@@ -356,7 +355,7 @@ public:
 
         if (TraceParams.isDebug)
         {
-            World->DebugDrawTraceTag = Params.TraceTag;
+            //World->DebugDrawTraceTag = Params.TraceTag;
         }
 
         auto Rotation = TraceSpawnParams.Rotation;
@@ -409,7 +408,7 @@ public:
 
         if (TraceParams.isDebug)
         {
-            World->DebugDrawTraceTag = Params.TraceTag;
+            //World->DebugDrawTraceTag = Params.TraceTag;
         }
 
         auto Rotation = TraceSpawnParams.Rotation;
@@ -459,7 +458,7 @@ public:
 
         if (TraceParams.isDebug)
         {
-            World->DebugDrawTraceTag = Params.TraceTag;
+            //World->DebugDrawTraceTag = Params.TraceTag;
         }
 
         auto Rotation = TraceSpawnParams.Rotation;

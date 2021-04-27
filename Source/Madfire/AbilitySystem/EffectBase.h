@@ -98,4 +98,7 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effect Visual Parameters")
     FName EffectParticleSocket;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect Parameters")
+    bool bShownInWidget;
+
 };

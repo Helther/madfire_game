@@ -1,10 +1,14 @@
 ﻿#include "AbstractAbility.h"
+#include "AbilitySystemLog.h"
+
 
 UAbstractAbility::UAbstractAbility(const FObjectInitializer &f) :
     Super(f)
 {
 
 }
+
+
 
 /*
 bool UAbstractAbility::CheckRequirements_Implementation(void)
@@ -37,6 +41,11 @@ void UAbstractAbility::AbilitySetup(UAbilitySystemComponent *Component)
 
 void UAbstractAbility::ActivateAbility()
 {
+    if(CurrentCharges <= 0)
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("Ability: Cooldown"));
+        return;
+    }
     OnActivate();
     OnAbilityStart.Broadcast(this);
 }
@@ -44,8 +53,6 @@ void UAbstractAbility::ActivateAbility()
 void UAbstractAbility::RealeseAbility()
 {
     OnRelease();
-    ConsumeRequirements();
-    StartCooldown();
     OnAbilityRelease.Broadcast(this);
 }
 

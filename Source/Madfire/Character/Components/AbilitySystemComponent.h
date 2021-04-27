@@ -17,7 +17,6 @@ public:
 	// Sets default values for this component's properties
     UAbilitySystemComponent();
 
-
     UFUNCTION(BlueprintCallable, Category = "Character Ability")
     void SetCurrentAbility(UAbstractAbility *Ability);
 
@@ -29,6 +28,10 @@ public:
 
     UPROPERTY(BlueprintReadOnly, Category = "Character Ability")
     UAbstractAbility *CurrentAbility;
+
+    bool SetSound(USoundCue *SoundCue, bool IsActive);
+
+    UAudioComponent* AudioComponent;
 
 protected:
 	// Called when the game starts

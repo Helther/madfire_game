@@ -29,6 +29,9 @@ public:
     void ActivateComponent();
 
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "AbilitySystem")
+    void UpdateComponent();
+
+    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "AbilitySystem")
     void DeactivateComponent();
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AbilitySystem")

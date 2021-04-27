@@ -4,7 +4,7 @@
 #include "AbilityAimComponent.generated.h"
 
 
-UCLASS()
+UCLASS(Abstract, Blueprintable, BlueprintType)
 class UAbilityAimComponent : public UAbilityComponent
 {
     GENERATED_BODY()
