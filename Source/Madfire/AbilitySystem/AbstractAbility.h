@@ -81,7 +81,7 @@ public:
     void ActivateAbility();
 
     UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
-    void RealeseAbility();
+    void ReleaseAbility();
 
     UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
     void CancelAbility();

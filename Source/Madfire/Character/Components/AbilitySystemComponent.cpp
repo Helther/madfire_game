@@ -26,7 +26,7 @@ void UAbilitySystemComponent::ReleaseAbility()
 {
     if(CurrentAbility)
     {
-        CurrentAbility->RealeseAbility();
+        CurrentAbility->ReleaseAbility();
     }
 }
 

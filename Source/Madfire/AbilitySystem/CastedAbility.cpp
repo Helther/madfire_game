@@ -24,6 +24,7 @@ void UCastedAbility::AbilityInit()
 
     OnPrecastFinish.BindUObject(this,&UCastedAbility::PrecastFinish);
     OnCastFinish.BindUObject(this,&UCastedAbility::CastFinish);
+    OnCastReadyFinish.BindUObject(this,&UCastedAbility::CastReadyFinish);
     OnReleaseFinish.BindUObject(this,&UCastedAbility::ReleaseFinish);
 
     if(TargetSelectionComp)
@@ -37,15 +38,22 @@ void UCastedAbility::AbilitySetup(UAbilitySystemComponent *Component)
 
 void UCastedAbility::Tick(float DeltaTime)
 {
+    Super::Tick(DeltaTime);
     if(bIsCasted)
     {
         CurrentCastTime += DeltaTime;
+        if(CurrentCastTime >= CastTime && !bCastReady)
+        {
+            bCastReady = true;
+            StartAnimation(CastReadySectionName,OnCastReadyFinish);
+        }
     }
 }
 
 void UCastedAbility::PrecastFinish(UAnimMontage *animMontage, bool bInterrupted)
 {
     CurrentCastTime = 0;
+    bIsCasted = true;
 
     if(!bInterrupted)
     {
@@ -63,8 +71,14 @@ void UCastedAbility::PrecastFinish(UAnimMontage *animMontage, bool bInterrupted)
 
 void UCastedAbility::CastFinish(UAnimMontage *animMontage, bool bInterrupted)
 {
+    // todo think of a way to separate interrupt from cast ready progress and call cancel when interrupt
+}
+
+void UCastedAbility::CastReadyFinish(UAnimMontage* animMontage, bool bInterrupted)
+{
     if(AimComp)
         AimComp->DeactivateComponent();
+    bCastReady = false;
 }
 
 void UCastedAbility::ReleaseFinish(UAnimMontage *animMontage, bool bInterrupted)
@@ -81,8 +95,6 @@ void UCastedAbility::ReleaseFinish(UAnimMontage *animMontage, bool bInterrupted)
 void UCastedAbility::OnActivate()
 {
     StopCooldown();
-    CurrentCastTime = 0;
-    bIsCasted = true;
 
     if(AbilitySound && AbilitySystemComponent)
     {

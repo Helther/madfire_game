@@ -44,16 +44,20 @@ public:
     UFUNCTION()
     void PrecastFinish(UAnimMontage *animMontage, bool bInterrupted);
     UFUNCTION()
-    void CastFinish(UAnimMontage *animMontage, bool bInterrupted);    
+    void CastFinish(UAnimMontage *animMontage, bool bInterrupted);   
+    UFUNCTION()
+    void CastReadyFinish(UAnimMontage *animMontage, bool bInterrupted);
     UFUNCTION()
     void ReleaseFinish(UAnimMontage *animMontage, bool bInterrupted);
 
     const FName PrecastSectionName = "Precast Section";
     const FName CastLoopSectionName = "Cast Loop Section";
+    const FName CastReadySectionName = "Cast Ready Section";
     const FName AftercastSectionName = "Release Section";
 
     FOnMontageBlendingOutStarted OnPrecastFinish;
     FOnMontageBlendingOutStarted OnCastFinish;
+    FOnMontageBlendingOutStarted OnCastReadyFinish;
     FOnMontageBlendingOutStarted OnReleaseFinish;
 
 
@@ -69,6 +73,7 @@ protected:
 
     bool StartAnimation(FName SectionName, FOnMontageBlendingOutStarted Delegate);
 
+    bool bCastReady = false;
 };
 
 

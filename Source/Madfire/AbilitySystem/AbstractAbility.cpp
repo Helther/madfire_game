@@ -50,7 +50,7 @@ void UAbstractAbility::ActivateAbility()
     OnAbilityStart.Broadcast(this);
 }
 
-void UAbstractAbility::RealeseAbility()
+void UAbstractAbility::ReleaseAbility()
 {
     OnRelease();
     OnAbilityRelease.Broadcast(this);
@@ -72,6 +72,8 @@ void UAbstractAbility::Tick(float DeltaTime)
             if(CurrentCooldownTime >= CooldownTime)
             {
                 CurrentCharges+=ChargePerCooldown;
+                if(CurrentCharges > MaxCharges)
+                    CurrentCharges = MaxCharges;
             }
         }
         else
