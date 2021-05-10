@@ -12,23 +12,11 @@ UCastedAbility::UCastedAbility(const FObjectInitializer &f) :
 void UCastedAbility::AbilityInit()
 {
     CurrentCharges = MaxCharges;
-    if(TargetSelectionClass)
-        TargetSelectionComp = NewObject<UAbilityTargetSelectionComponent>(this,TargetSelectionClass, "TargetSelectionComponent");
-    if(AimAlgorithmClass)
-        AimComp = NewObject<UAbilityAimComponent>(this, AimAlgorithmClass, "AimComponent");
-
-    if(TargetSelectionComp)
-        AddComponent(TargetSelectionComp);
-    if(AimComp)
-        AddComponent(AimComp);
 
     OnPrecastFinish.BindUObject(this,&UCastedAbility::PrecastFinish);
     OnCastFinish.BindUObject(this,&UCastedAbility::CastFinish);
     OnCastReadyFinish.BindUObject(this,&UCastedAbility::CastReadyFinish);
     OnReleaseFinish.BindUObject(this,&UCastedAbility::ReleaseFinish);
-
-    if(TargetSelectionComp)
-        TargetSelectionComp->OnTargetChoosed.AddDynamic(this, &UCastedAbility::Execute);
 }
 
 void UCastedAbility::AbilitySetup(UAbilitySystemComponent *Component)
@@ -52,19 +40,16 @@ void UCastedAbility::Tick(float DeltaTime)
 
 void UCastedAbility::PrecastFinish(UAnimMontage *animMontage, bool bInterrupted)
 {
-    CurrentCastTime = 0;
-    bIsCasted = true;
-
     if(!bInterrupted)
     {
-        if(AimComp)
-            AimComp->ActivateComponent();
+        CurrentCastTime = 0;
+        bIsCasted = true;
+        CastNotify();
         StartAnimation(CastLoopSectionName,OnCastFinish);
     }
     else
     {
-        AbilitySystemComponent->SetSound(AbilitySound,false);
-        Cast<ACharacter>(AbilitySystemComponent->GetOwner())->StopAnimMontage(CastAnimMontage);
+        Interrupt();
         UE_LOG(AbilitySystemLog, Warning, TEXT("Casted Ability: Interrupted"));
     }
 }
@@ -76,93 +61,86 @@ void UCastedAbility::CastFinish(UAnimMontage *animMontage, bool bInterrupted)
 
 void UCastedAbility::CastReadyFinish(UAnimMontage* animMontage, bool bInterrupted)
 {
-    if(AimComp)
-        AimComp->DeactivateComponent();
     bCastReady = false;
+    AbilityReady();
 }
 
 void UCastedAbility::ReleaseFinish(UAnimMontage *animMontage, bool bInterrupted)
 {
     if(!bInterrupted)
-        TargetSelectionComp->ActivateComponent();
-    else
     {
-        UE_LOG(AbilitySystemLog, Warning, TEXT("Casted Ability: interrupted"));
-        OnCancel();
-    }
-}
-
-void UCastedAbility::OnActivate()
-{
-    StopCooldown();
-
-    if(AbilitySound && AbilitySystemComponent)
-    {
-        AbilitySystemComponent->SetSound(AbilitySound,true);
-    }
-
-    if(!StartAnimation(PrecastSectionName,OnPrecastFinish))
-    {
-        UE_LOG(AbilitySystemLog, Warning, TEXT("Casted Ability: OnActivate No Cast Montage"));
-    }
-}
-
-void UCastedAbility::OnRelease()
-{
-    bIsCasted = false;
-    if(CurrentCastTime <= CastTime)
-    {
-        OnCancel();
-        return;
-    }
-
-    StartAnimation(AftercastSectionName,OnReleaseFinish);
-
-    if(CurrentCharges < 1)
-    {
-        UE_LOG(AbilitySystemLog, Error, TEXT("Not enough Charges"));
+        ReleaseNotify();
         StartCooldown();
     }
     else
-        --CurrentCharges;
+    {
+        UE_LOG(AbilitySystemLog, Warning, TEXT("Casted Ability: interrupted"));
+        Interrupt();
+    }
 }
 
-void UCastedAbility::OnCancel()
+void UCastedAbility::Activate()
 {
+    if(StartAnimation(PrecastSectionName,OnPrecastFinish))
+    {
+        StopCooldown();
+        //StartCooldown();
+    }
+    else
+    {
+        UE_LOG(AbilitySystemLog, Warning, TEXT("Casted Ability: OnActivate No Cast Montage"));
+        return;
+    }
+    Super::Activate();
+}
+
+void UCastedAbility::Release()
+{
+    if((!bIsCasted) || (CurrentCastTime <= CastTime))
+    {
+        Cancel();
+        return;
+    }
+
     bIsCasted = false;
-    AbilitySystemComponent->SetSound(AbilitySound,false);
-    Cast<ACharacter>(AbilitySystemComponent->GetOwner())->StopAnimMontage(CastAnimMontage);
+
+    StartAnimation(AftercastSectionName,OnReleaseFinish);
+
+    --CurrentCharges;
+}
+
+void UCastedAbility::Cancel()
+{
+    Super::Cancel();
+    bIsCasted = false;
+    StopAnimation();
     StartCooldown();
 }
 
-bool UCastedAbility::StartAnimation(FName SectionName, FOnMontageBlendingOutStarted Delegate)
+void UCastedAbility::Interrupt()
 {
-    if(CastAnimMontage)
-    {
-        if(AbilitySystemComponent && AbilitySystemComponent->GetOwner())
-        {
-            auto Owner = Cast<ACharacterBase>(AbilitySystemComponent->GetOwner());
-            if(Owner)
-            {
-                Owner->PlayAnimMontage(CastAnimMontage,1.f,SectionName);//PrecastSectionName);
-
-                auto animInstance    = Owner->GetMesh()->GetAnimInstance();
-                auto montageInstance = animInstance->GetActiveInstanceForMontage(CastAnimMontage);
-                montageInstance->OnMontageBlendingOutStarted = Delegate;//OnPrecastFinish;
-
-                return true;
-            }
-            else
-            {
-                UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: Owner is not CharacterBase"));
-            }
-        }
-        else
-        {
-            UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: AbilitySystemComponent is not set"));
-        }
-    }
-    return false;
+    Super::Interrupt();
+    bIsCasted = false;
+    StopAnimation();
+    StartCooldown();
 }
+
+void UCastedAbility::CastNotify()
+{
+    OnCastNotify();
+}
+
+void UCastedAbility::ReleaseNotify()
+{
+    OnReleaseNotify();
+}
+
+void UCastedAbility::AbilityReady()
+{
+    OnAbilityReady();
+}
+
+
+
 
 

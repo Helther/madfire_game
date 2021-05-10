@@ -6,7 +6,7 @@
 #include "CastedAbility.generated.h"
 
 
-UCLASS(Blueprintable, BlueprintType, Abstract)
+UCLASS(Blueprintable, Abstract)
 class UCastedAbility : public UAbstractAbility
 {
     GENERATED_BODY()
@@ -16,22 +16,7 @@ public:
 
     void AbilityInit() override;
 
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
-    UAnimMontage *CastAnimMontage;
-
     void AbilitySetup(UAbilitySystemComponent *Component) override;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
-    TSubclassOf<UAbilityTargetSelectionComponent> TargetSelectionClass;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
-    TSubclassOf<UAbilityAimComponent> AimAlgorithmClass;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
-    UAbilityTargetSelectionComponent *TargetSelectionComp;
-
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
-    UAbilityComponent *AimComp;
 
     UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
     float CurrentCastTime;
@@ -50,6 +35,14 @@ public:
     UFUNCTION()
     void ReleaseFinish(UAnimMontage *animMontage, bool bInterrupted);
 
+    UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
+    void OnCastNotify();
+    UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
+    void OnReleaseNotify();
+    UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
+    void OnAbilityReady();
+
+
     const FName PrecastSectionName = "Precast Section";
     const FName CastLoopSectionName = "Cast Loop Section";
     const FName CastReadySectionName = "Cast Ready Section";
@@ -60,18 +53,15 @@ public:
     FOnMontageBlendingOutStarted OnCastReadyFinish;
     FOnMontageBlendingOutStarted OnReleaseFinish;
 
-
-
-
-private:
-
-
 protected:
-    void OnActivate() override;
-    void OnRelease() override;
-    void OnCancel() override;
+    void Activate() override;
+    void Release() override;
+    void Cancel() override;
+    void Interrupt() override;
 
-    bool StartAnimation(FName SectionName, FOnMontageBlendingOutStarted Delegate);
+    virtual void CastNotify();
+    virtual void AbilityReady();
+    virtual void ReleaseNotify();
 
     bool bCastReady = false;
 };

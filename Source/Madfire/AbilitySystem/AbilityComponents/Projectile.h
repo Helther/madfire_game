@@ -3,7 +3,8 @@
 #pragma once
 
 #include "AbilitySystem/AbilityComponents/AbilityComponent.h"
-#include "AbilitySystem/AbilityComponents/AbilityTargetSelectionComponent.h"
+#include "AbilitySystem/AbilityComponents/AbilityActorSelectionComponent.h"
+#include "AbilitySystem/AbilityComponents/AbilityLocationSelectionComponent.h"
 #include "Classes/Components/CapsuleComponent.h"
 #include "Classes/Components/SphereComponent.h"
 #include "Classes/GameFramework/ProjectileMovementComponent.h"

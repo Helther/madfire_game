@@ -33,8 +33,7 @@ void UPlayerInteractComponent::OnComponentCreated()
 
 
 // Called every frame
-void UPlayerInteractComponent::TickComponent(
-  float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
+void UPlayerInteractComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
@@ -78,8 +77,7 @@ TScriptInterface<IInteractableInterface> UPlayerInteractComponent::GetInteractab
 
     if (actor != nullptr)
     {
-        const bool isInteractable = hit.GetActor()->GetClass()->ImplementsInterface(
-          UInteractableInterface::StaticClass());
+        const bool isInteractable = hit.GetActor()->GetClass()->ImplementsInterface(UInteractableInterface::StaticClass());
         if (isInteractable)
         {
             result.SetInterface(actor);
@@ -110,8 +108,7 @@ void UPlayerInteractComponent::CheckForInteractable()
 
     if (interactable && HasNewFocus)
     {
-        interactable->Execute_OnBeginFocus(
-          Cast<UObject>(FocusedInteractable.GetObject()));
+        interactable->Execute_OnBeginFocus(Cast<UObject>(FocusedInteractable.GetObject()));
 
         HasNewFocus = true;
     }

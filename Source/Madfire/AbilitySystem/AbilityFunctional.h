@@ -1,9 +1,10 @@
 ﻿#pragma once
 
 #include "AbilitySystem/AbstractAbility.h"
+#include "AbilitySystem/AbilityComponents/AbilityLocationSelectionComponent.h"
+#include "AbilitySystem/AbilityComponents/AbilityAimComponent.h"
+#include "AbilitySystem/AbilityComponents/AbilityActorSelectionComponent.h"
 #include "GameFramework/Actor.h"
-
-
 #include "AbilityFunctional.generated.h"
 
 USTRUCT(BlueprintType)
@@ -22,15 +23,18 @@ struct FAbilityActorSpawnParameters
 };
 
 
-UCLASS(MinimalAPI)
-class UAbilityFunctional : public UObject
+UCLASS(MinimalAPI, Abstract)
+class UAbilityFunctional : public UBlueprintFunctionLibrary
 {
     GENERATED_BODY()
 
 public:
-    UFUNCTION(BlueprintCallable, Meta=(DefaultToSelf="Parent"), Category = "AbilitySystem")
+    UFUNCTION(BlueprintCallable, Meta=(DefaultToSelf="Parent", DeterminesOutputType="AbilityClass"), Category = "AbilitySystem")
     static UAbstractAbility *SpawnAbility(UObject *Parent, TSubclassOf<UAbstractAbility> AbilityClass, FName Name = NAME_None);
 
-    UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
+    UFUNCTION(BlueprintCallable, Meta=(DefaultToSelf="Parent", DeterminesOutputType= "TargetSelectionClass"), Category = "AbilitySystem")
+    static UAbilityComponent *CreateComponent(UAbstractAbility *Parent, TSubclassOf<UAbilityComponent> ComponentClass, FName Name = NAME_None);
+
+    UFUNCTION(BlueprintCallable, meta = (DeterminesOutputType = "ActorClass"), Category = "AbilitySystem")
     static AActor *SpawnAbilityActor(AActor *Owner, TSubclassOf<AActor> ActorClass, FAbilityActorSpawnParameters param, FName Name = NAME_None);
 };

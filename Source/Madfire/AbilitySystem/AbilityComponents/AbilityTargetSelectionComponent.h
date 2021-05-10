@@ -7,15 +7,15 @@
 #include "AbilityTargetSelectionComponent.generated.h"
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FTargetChoosed, AActor *, Actor);
-
-
-UCLASS(Blueprintable, BlueprintType)
-class UAbilityTargetSelectionComponent : public UAbilityComponent
+UCLASS(EditInlineNew, Blueprintable, BlueprintType)
+class UAbilityTargetSelection : public UAbilityComponent
 {
     GENERATED_BODY()
 
 public:
-    UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "AbilitySystem")
-    FTargetChoosed OnTargetChoosed;
+    // UAbilityComponent interface
+public:
+    void ComponentInit(UAbstractAbility *parent) override;
+    bool ComponentSetup(UAbilitySystemComponent *Component) override;
+
 };

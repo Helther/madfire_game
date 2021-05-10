@@ -16,7 +16,7 @@ UAbilitySystemComponent::UAbilitySystemComponent()
 
 void UAbilitySystemComponent::ActivateAbility()
 {
-    if(CurrentAbility)
+    if(CurrentAbility->IsValidLowLevelFast())
     {
         CurrentAbility->ActivateAbility();
     }
@@ -24,38 +24,13 @@ void UAbilitySystemComponent::ActivateAbility()
 
 void UAbilitySystemComponent::ReleaseAbility()
 {
-    if(CurrentAbility)
+    if(CurrentAbility->IsValidLowLevelFast())
     {
         CurrentAbility->ReleaseAbility();
     }
 }
 
-bool UAbilitySystemComponent::SetSound(USoundCue* SoundCue, bool IsActive)
-{
-    if(!IsActive)
-    {
-        if(!AudioComponent)
-            return false;
-        else
-        {
-            AudioComponent->SetActive(false);
-            return true;
-        }
-    }
 
-    auto Owner = GetOwner();
-
-    auto Location = Owner->GetActorLocation();
-    auto VolumeMultiplier = 1.f;
-    auto PitchAmount = 1.f;
-
-    AudioComponent = UGameplayStatics::SpawnSoundAtLocation(this, SoundCue, Location, FRotator::ZeroRotator, VolumeMultiplier, PitchAmount, 0.0f, nullptr, nullptr, true);
-    if(!AudioComponent)
-        return false;
-
-    AudioComponent->SetActive(true);
-    return true;
-}
 
 // Called when the game starts
 void UAbilitySystemComponent::BeginPlay()

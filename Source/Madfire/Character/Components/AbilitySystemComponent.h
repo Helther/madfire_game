@@ -8,7 +8,7 @@
 #include "AbilitySystemComponent.generated.h"
 
 
-UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class MADFIRE_API UAbilitySystemComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -29,9 +29,9 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Character Ability")
     UAbstractAbility *CurrentAbility;
 
-    bool SetSound(USoundCue *SoundCue, bool IsActive);
+    UPROPERTY(BlueprintReadWrite, Category = "Character Ability")
+    TArray<UAbstractAbility*> AbilityList;
 
-    UAudioComponent* AudioComponent;
 
 protected:
 	// Called when the game starts
@@ -43,7 +43,7 @@ public:
 
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
-    float GlobalCoolDownTime = 1;
+    float GlobalCooldownTime = 1;
 };
 
 

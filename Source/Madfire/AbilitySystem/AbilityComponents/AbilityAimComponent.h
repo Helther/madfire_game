@@ -10,4 +10,10 @@ class UAbilityAimComponent : public UAbilityComponent
     GENERATED_BODY()
 
 public:
+
+    // UAbilityComponent interface
+public:
+    void ComponentInit(UAbstractAbility *parent) override;
+    bool ComponentSetup(UAbilitySystemComponent *Component) override;
+
 };

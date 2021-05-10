@@ -5,28 +5,15 @@
 
 UChannelAbility::UChannelAbility(const FObjectInitializer &f) :
     Super(f)
-{
-
-}
+{}
 
 void UChannelAbility::AbilityInit()
 {
     CurrentCharges = MaxCharges;
-    TargetSelection = NewObject<UAbilityTargetSelectionComponent>(this,TargetSelectionClass, "TargetSelectionComponent");
-    if(TargetSelection)
-        AddComponent(TargetSelection);
 
     OnPrecastFinish.BindUObject(this,&UChannelAbility::PrecastFinish);
     OnCastFinish.BindUObject(this,&UChannelAbility::CastFinish);
-
-    if(TargetSelection)
-    {
-        TargetSelection->OnTargetChoosed.AddDynamic(this, &UChannelAbility::Execute);
-    }
-    else
-    {
-        UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: Can't create Target Selection Algorithm"));
-    }
+    Super::AbilityInit();
 }
 
 void UChannelAbility::AbilitySetup(UAbilitySystemComponent *Component)
@@ -34,139 +21,94 @@ void UChannelAbility::AbilitySetup(UAbilitySystemComponent *Component)
     Super::AbilitySetup(Component);
 }
 
-bool UChannelAbility::StartAnimation(FName SectionName, FOnMontageBlendingOutStarted Delegate)
-{
-    if(CastAnimMontage)
-    {
-        if(AbilitySystemComponent && AbilitySystemComponent->GetOwner())
-        {
-            auto Owner = Cast<ACharacterBase>(AbilitySystemComponent->GetOwner());
-            if(Owner)
-            {
-                Owner->PlayAnimMontage(CastAnimMontage,1.f,SectionName);//PrecastSectionName);
-
-                auto animInstance    = Owner->GetMesh()->GetAnimInstance();
-                auto montageInstance = animInstance->GetActiveInstanceForMontage(CastAnimMontage);
-                montageInstance->OnMontageBlendingOutStarted = Delegate;//OnPrecastFinish;
-
-                return true;
-            }
-            else
-            {
-                UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: Owner is not CharacterBase"));
-            }
-        }
-        else
-        {
-            UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: AbilitySystemComponent is not set"));
-        }
-    }
-    return false;
-}
-
 void UChannelAbility::PrecastFinish(UAnimMontage *animMontage, bool bInterrupted)
 {
     if(!bInterrupted)
     {
-        TargetSelection->ActivateComponent();
+        CastNotify();
         StartAnimation(CastLoopSectionName,OnCastFinish);
         GetWorld()->GetTimerManager().SetTimer(FuzeTimerHandle,this,&UChannelAbility::ChannelUpdate, CastRate, true);
     }
     else
     {
-        AbilitySystemComponent->SetSound(AbilitySound,false);
-        Cast<ACharacter>(AbilitySystemComponent->GetOwner())->StopAnimMontage(CastAnimMontage);
-
-        UE_LOG(AbilitySystemLog, Warning, TEXT("Channel Ability: Interrupted"));
+        StopAnimation();
+        StartCooldown();
+        Interrupt();
     }
 }
 
 void UChannelAbility::CastFinish(UAnimMontage *animMontage, bool bInterrupted)
 {
-    TargetSelection->DeactivateComponent();
-    auto Owner = Cast<ACharacterBase>(AbilitySystemComponent->GetOwner());
-    if (Owner)
+    if (!bInterrupted)
     {
-        if (!bInterrupted)
-        {            
-            // PlayAftercast
-            // Note loop section is always interrupted
-        }
-        else
-        {
-            UE_LOG(AbilitySystemLog, Warning, TEXT("Channel Ability: Interrupted"));
-        }
+        // PlayAftercast
+        // Note loop section is always interrupted
+    }
+    else
+    {
+
     }
 }
 
-void UChannelAbility::ChannelUpdate_Implementation()
+void UChannelAbility::ChannelUpdate()
 {
-    TargetSelection->UpdateComponent();
+    OnChannelUpdate();
     if(CurrentCharges < 1)
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("Not enough Charges"));
         StartCooldown();
-        OnRelease();
+        Release();
     }
     else
-        --CurrentCharges;
+        --CurrentCharges;    
 }
 
-void UChannelAbility::OnActivate()
-{
-    StopCooldown();
-
-    if(AbilitySound)
+void UChannelAbility::Activate()
+{    
+    if(StartAnimation(PrecastSectionName,OnPrecastFinish))
     {
-        AbilitySystemComponent->SetSound(AbilitySound,true);
-    }
-
-    if(!StartAnimation(PrecastSectionName,OnPrecastFinish))
-    {
-        UE_LOG(AbilitySystemLog, Warning, TEXT("Channel Ability: OnActivate No Cast Montage"));
-
+        StopCooldown();
         GetWorld()->GetTimerManager().SetTimer(FuzeTimerHandle,this,&UChannelAbility::ChannelUpdate,CastRate,true);
     }
     else
     {
-        UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: No Target Selection Algorithm"));
+        UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: Can't start the animation"));
+        return;
     }
+    Super::Activate();
 }
 
-void UChannelAbility::OnRelease()
+void UChannelAbility::Release()
 {
-    if(TargetSelection)
-    {
-        UE_LOG(AbilitySystemLog, Warning, TEXT("Channel Ability: OnDeactivate"));
-        TargetSelection->DeactivateComponent();
-    }
-    else
-    {
-        UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: No Target Selection Algorithm"));
-    }
-
-    auto Owner = Cast<ACharacterBase>(AbilitySystemComponent->GetOwner());
-    Owner->PlayAnimMontage(CastAnimMontage, 1.f, AftercastSectionName);
-
-    OnCancel();
+    StartAnimation(AftercastSectionName,OnReleaseFinish);
+    AbilityEnd();
+    Super::Release();
 }
 
-void UChannelAbility::OnCancel()
+void UChannelAbility::Cancel()
 {
-    if(AbilitySound && AbilitySystemComponent)
-    {
-        AbilitySystemComponent->SetSound(AbilitySound,false);
-    }
+    AbilityEnd();
+    Super::Cancel();
+}
 
+void UChannelAbility::Interrupt()
+{
+    AbilityEnd();
+    Super::Interrupt();
+}
+
+void UChannelAbility::AbilityEnd()
+{
     GetWorld()->GetTimerManager().ClearTimer(FuzeTimerHandle);
+    StopAnimation();
     StartCooldown();
     bIsActivated = false;
 }
 
-
-
-
-
+void UChannelAbility::CastNotify()
+{
+    OnCastNotify();
+}
 
 /*
 void UChannelAbility::OnEventKeyPressed_Implementation() { StartCast(); }

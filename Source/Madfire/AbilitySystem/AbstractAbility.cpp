@@ -1,34 +1,12 @@
 ﻿#include "AbstractAbility.h"
 #include "AbilitySystemLog.h"
-
+#include "Character/Components/AbilitySystemComponent.h"
 
 UAbstractAbility::UAbstractAbility(const FObjectInitializer &f) :
     Super(f)
 {
 
 }
-
-
-
-/*
-bool UAbstractAbility::CheckRequirements_Implementation(void)
-{
-    if (Requirements.Num() == 0)
-    {
-        UE_LOG(AbilitySystemLog, Warning, TEXT("Requirements: is not set up"));
-        return true;
-    }
-
-    for (auto req : Requirements)
-    {
-        if (!req->CheckRequirement(Caster))
-        {
-            return false;
-        }
-    }
-
-    return true;
-}*/
 
 void UAbstractAbility::AbilitySetup(UAbilitySystemComponent *Component)
 {
@@ -46,20 +24,22 @@ void UAbstractAbility::ActivateAbility()
         UE_LOG(AbilitySystemLog, Error, TEXT("Ability: Cooldown"));
         return;
     }
-    OnActivate();
-    OnAbilityStart.Broadcast(this);
+    Activate();
 }
 
 void UAbstractAbility::ReleaseAbility()
 {
-    OnRelease();
-    OnAbilityRelease.Broadcast(this);
+    if(CurrentCharges <= 0)
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("Ability: Cooldown"));
+        return;
+    }
+    Release();
 }
 
 void UAbstractAbility::CancelAbility()
 {
-    OnCancel();
-    OnAbilityCancel.Broadcast(this);
+    Cancel();
 }
 
 void UAbstractAbility::Tick(float DeltaTime)
@@ -112,3 +92,81 @@ UWorld* UAbstractAbility::GetWorld() const
 {
     return GetOuter()->GetWorld();
 }
+
+void UAbstractAbility::AbilityInit()
+{
+    OnAbilityInit();
+}
+
+void UAbstractAbility::Activate()
+{
+    OnAbilityStart();
+}
+
+void UAbstractAbility::Release()
+{
+    OnAbilityEnd();
+}
+
+void UAbstractAbility::Cancel()
+{
+    OnAbilityCancel();
+}
+
+void UAbstractAbility::Interrupt()
+{
+    OnAbilityInterrupt();
+}
+
+bool UAbstractAbility::StopAnimation()
+{
+    if(!AbilitySystemComponent)
+        return false;
+
+    auto Owner = Cast<ACharacter>(AbilitySystemComponent->GetOwner());
+    if(!Owner)
+        return false;
+
+    Owner->StopAnimMontage(CastAnimMontage);
+    return true;
+}
+
+bool UAbstractAbility::StartAnimation(FName SectionName, FOnMontageBlendingOutStarted Delegate)
+{
+    if(!CastAnimMontage)
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("Ability: No CastAnimMontage is not set"));
+        return false;
+    }
+
+    if(!AbilitySystemComponent)
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("Ability: AbilitySystemComponent is not set"));
+        return false;
+    }
+
+    if(!AbilitySystemComponent->GetOwner())
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("Ability: AbilitySystemComponent Owner is not set"));
+        return false;
+    }
+
+
+    auto Owner = Cast<ACharacter>(AbilitySystemComponent->GetOwner());
+
+    if(!Owner)
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("Ability: Owner is not CharacterBase"));
+        return false;
+    }
+
+    Owner->PlayAnimMontage(CastAnimMontage,1.f,SectionName);//PrecastSectionName);
+
+    auto animInstance    = Owner->GetMesh()->GetAnimInstance();
+    auto montageInstance = animInstance->GetActiveInstanceForMontage(CastAnimMontage);
+    montageInstance->OnMontageBlendingOutStarted = Delegate;//OnPrecastFinish;
+
+    return true;
+}
+
+

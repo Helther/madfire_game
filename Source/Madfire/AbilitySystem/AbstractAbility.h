@@ -4,7 +4,6 @@
 #include "AbilitySystemLog.h"
 #include "Character/AbstractRequirement.h"
 #include "Character/Components/MovementComponentBase.h"
-#include "Engine/Classes/Components/AudioComponent.h"
 #include "CoreMinimal.h"
 #include "Engine.h"
 #include "GameFramework/Actor.h"
@@ -25,18 +24,15 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAbilityEvent, UAbstractAbility*, Ab
 UCLASS(BlueprintType, Blueprintable, Abstract)
 class UAbstractAbility : public UObject, public FTickableGameObject
 {
+    friend class UAbilityComponent;
+
     GENERATED_BODY()
 
 public:
     UAbstractAbility(const FObjectInitializer &);
 
-    virtual void AbilityInit() {};
-
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "AbilitySystem")
-    void Execute(AActor *target);
-
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
-    USoundCue* AbilitySound;
+    UAnimMontage *CastAnimMontage;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (Bitmask, BitmaskEnum = "EMoveAbilities"), Category = "AbilitySystem")
     int32 MoveAbilities = EMoveAbilities::NoMove;
@@ -89,20 +85,14 @@ public:
     UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AbilitySystem")
     bool bIsCooldown = false;
 
-    UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "AbilitySystem")
-    FAbilityEvent OnAbilityRelease;
-
-    UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "AbilitySystem")
-    FAbilityEvent OnAbilityInterrupt;
-
-    UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "AbilitySystem")
-    FAbilityEvent OnAbilityCancel;
-
-    UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "AbilitySystem")
-    FAbilityEvent OnAbilityStart;
-
     UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
     UAbilitySystemComponent *AbilitySystemComponent;
+
+    //Interface
+    virtual void AbilityInit();
+
+    //Called by AbilitySystemComponent when Ability Selected
+    virtual void AbilitySetup(UAbilitySystemComponent *Component);
 
     void Tick(float DeltaTime) override;
 
@@ -116,11 +106,27 @@ public:
 
     UWorld* GetWorld() const override;
 
-    //Called by AbilitySystemComponent when Ability Selected
-    virtual void AbilitySetup(UAbilitySystemComponent *Component);
+    //Blueprint Inteface
+    UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
+    void OnAbilityInit();
 
+    UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
+    void OnAbilityInterrupt();
 
+    UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
+    void OnAbilityStart();
 
+    UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
+    void OnAbilityEnd();
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
+    void OnAbilityCancel();
+
+    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "AbilitySystem")
+    void OnTargetExecute(AActor *target);
+
+    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "AbilitySystem")
+    void OnLocationExecute(FVector Location);
 
 protected:
     FTimerHandle CastTimer;
@@ -145,14 +151,19 @@ protected:
         CurrentCooldownTime = 0;
     }
 
-    virtual void OnActivate() {};
-    virtual void OnRelease() {};
-    virtual void OnCancel() {};
+    virtual void Activate();
+    virtual void Release();
+    virtual void Cancel();
+    virtual void Interrupt();
 
     void AddComponent(UAbilityComponent *Component)
     {
+        check(Component != nullptr);
         AbilityComponents.Add(Component);
     }
+
+    bool StartAnimation(FName SectionName, FOnMontageBlendingOutStarted Delegate);
+    bool StopAnimation();
 
     /*
     inline bool isValid(void)

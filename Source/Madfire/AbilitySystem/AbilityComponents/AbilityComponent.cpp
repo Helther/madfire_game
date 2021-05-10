@@ -1,6 +1,7 @@
 ﻿#include "AbilityComponent.h"
 
 #include "AbilitySystem/AbilitySystemLog.h"
+#include "AbilitySystem/AbstractAbility.h"
 #include "Classes/Engine/World.h"
 
 
@@ -92,11 +93,18 @@ UAbilityComponent::UAbilityComponent(const FObjectInitializer &f) :
     UE_LOG(AbilitySystemLog, Error, TEXT("AbilityComponent: Construction"));
 }
 
+void UAbilityComponent::ComponentInit(UAbstractAbility *parent)
+{
+    parent->AddComponent(this);
+    OnComponentInit();
+}
 
-bool UAbilityComponent::ComponentSetup_Implementation(UAbilitySystemComponent *Component)
+
+bool UAbilityComponent::ComponentSetup(UAbilitySystemComponent *Component)
 {
     UE_LOG(AbilitySystemLog, Error, TEXT("AbilityComponent: Setup"));
 
     AbilitySystemComponent = Component;
+    OnComponentSetup();
     return true;
 }

@@ -14,6 +14,7 @@
 // У Требований будут два параметра
 // 1) Сами требования (Подходит ли перрсонаж под них или нет)
 // 2) Описание Требований
+// TODO: наследовать от UObject
 UCLASS(EditInlineNew, abstract, Blueprintable)
 class UAbstractRequirement : public UDataAsset
 {
