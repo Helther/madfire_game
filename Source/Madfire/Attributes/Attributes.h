@@ -13,54 +13,51 @@
 
 
 USTRUCT(BlueprintType)
-struct FAttributes
+struct FAttributeSet
 {
     GENERATED_BODY()
 
-    FAttributes();
+    FAttributeSet();
 
-    FORCEINLINE FAttributes &operator+=(const FAttributes &attributes)
+    FORCEINLINE FAttributeSet &operator+=(const FAttributeSet &attributes)
     {
         for (auto i = 0; i < (int32)EAttributes::Max; ++i)
             AttributeMap[i] += attributes.AttributeMap[i];
         return *this;
     }
 
-    friend FORCEINLINE FAttributes operator+(const FAttributes &lhs,
-                                             const FAttributes &rhs)
+    friend FORCEINLINE FAttributeSet operator+(const FAttributeSet &lhs, const FAttributeSet &rhs)
     {
-        FAttributes result = lhs;
+        FAttributeSet result = lhs;
         result += rhs;
         return result;
     }
 
 
-    UPROPERTY(EditAnywhere, Category = Impact)
+    UPROPERTY(SaveGame, EditAnywhere, Category = Impact)
     uint8 AttributeMap[(int32)EAttributes::Max];
 };
 
-UCLASS()
-class UAttributesHelper : public UObject
+UCLASS(MinimalAPI, Abstract)
+class UAttributeSetHelper : public UBlueprintFunctionLibrary
 {
     GENERATED_BODY()
 
 public:
     UFUNCTION(BlueprintPure, Category = "Attributes")
-    static FORCEINLINE int32 GetAttribute(const FAttributes &attr,
-                                          EAttributes AttributeName)
+    static FORCEINLINE int32 GetAttribute(const FAttributeSet &attr, EAttributes AttributeName)
     {
         return attr.AttributeMap[(int32)AttributeName];
     }
 
     UFUNCTION(BlueprintPure, Category = "Attributes")
-    static FORCEINLINE int32 GetModifier(const FAttributes &attr,
-                                         EAttributes AttributeName)
+    static FORCEINLINE int32 GetModifier(const FAttributeSet &attr, EAttributes AttributeName)
     {
         return (attr.AttributeMap[(int32)AttributeName] - 10) / 2;
     }
 
     UFUNCTION(BlueprintCallable, Category = "Attributes")
-    static void SetAttribute(FAttributes &attr, EAttributes AttributeName, int32 Value)
+    static void SetAttribute(FAttributeSet &attr, EAttributes AttributeName, int32 Value)
     {
         attr.AttributeMap[(int32)AttributeName] = (uint8)Value;
     }

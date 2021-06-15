@@ -6,6 +6,7 @@
 
 #include "CharacterPlayer.generated.h"
 
+
 UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
 // Character Control Bit mask with values as priorities (the more the better)
 enum ECCState
@@ -35,7 +36,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character Base") // todo debug
     void StartAnimTest(float InPlayRate);
 
-    void DoLevelUp(const FLevelInfo &levelInfo) override;
+    void DoLevelUp(const FCharacterLevelInfo &levelInfo);
 
     void StartAnimation(UAnimMontage *AnimMontage, const FOnMontageBlendingOutStarted &EndCallBack, float InPlayRate, FName StartSectionName = NAME_None);
 

@@ -4,14 +4,15 @@
 
 #include "../Rules/GameRules.h"
 #include "Attributes/Damage.h"
+#include "Attributes/DamageMap.h"
 #include "CoreMinimal.h"
 #include "ItemBase.h"
 #include "UObject/NoExportTypes.h"
 
 #include "ItemWeapon.generated.h"
 
-UCLASS(config = Game, EditInlineNew, BlueprintType, Blueprintable)
-class UItemWeapon : public UItemBase
+UCLASS(config = Game, BlueprintType, Blueprintable)
+class UItemWeapon : public UItem
 {
     GENERATED_BODY()
 
@@ -29,4 +30,11 @@ public:
 
     UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Weapon Stats")
     TSubclassOf<UPhysicDamage> DamageType;
+
+    //For Shields
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Weapon Stats")
+    FDamageAbsorb DamageLimit;
+
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Weapon Stats")
+    FDamageResistance DamageResistance;
 };

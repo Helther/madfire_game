@@ -4,14 +4,16 @@
 
 #include "../Rules/GameRules.h"
 #include "Attributes/DamageMap.h"
+#include "AbilitySystem/EffectBase.h"
+#include "AbilitySystem/AbstractAbility.h"
 #include "CoreMinimal.h"
 #include "ItemBase.h"
 #include "UObject/NoExportTypes.h"
 
 #include "ItemArmor.generated.h"
 
-UCLASS(config = Game, EditInlineNew, BlueprintType, Blueprintable)
-class UItemArmor : public UItemBase
+UCLASS(config = Game, BlueprintType, Blueprintable)
+class UItemArmor : public UItem
 {
     GENERATED_BODY()
 

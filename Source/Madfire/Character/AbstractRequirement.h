@@ -51,12 +51,6 @@ protected:    //Кометарий о том, что нужно объявлен
 };
 
 
-//UCLASS()
-//class ULTRATRUESKILLCPPV23_API UBPRequirement : public UAbstractRequirement
-//{
-
-//};
-
 //Коментарий о том, что из-за коментариев код выглядит сложнее чем он есть
 
 
@@ -117,8 +111,7 @@ class UAbilityRequirement : public UAbstractRequirement
     GENERATED_BODY()    //Непонятный макрос Анриала, который генерирует over 9000 ненужных строчек кода
 public:
     // В этой функции будет происходить поглощение (вычитание) необходимых статов
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent,
-              Category = "Requirements Interface")
+    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Requirements Interface")
     bool Consume(ACharacter *character);
 };
 

@@ -10,8 +10,7 @@
 // по умолчанию обычная сигмоида с y= от 0 до 1
 // todo добавить расчет смещения нуля функции
 // todo упростить задание пределов и точки y при х == 0
-static float GetSigmoidValue(float x, float mod = 1, float lowerBound = 0,
-                             float upperBound = 1)
+static float GetSigmoidValue(float x, float mod = 1, float lowerBound = 0, float upperBound = 1)
 {
     const float epsilon = 0.001f;
     check(upperBound - lowerBound > epsilon && "Bad Arguments");

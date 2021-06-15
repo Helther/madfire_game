@@ -3,25 +3,23 @@
 #include "ItemBase.h"
 
 
-UItemBase::UItemBase(const class FObjectInitializer &ObjectInititalizer)
+UItem::UItem(const class FObjectInitializer &ObjectInititalizer)
   : Super(ObjectInititalizer)
 {}
 
-void UItemBase::TakeDamage(float, const struct FDamageEvent &,
-                           class AActor *EventInstigator)
+void UItem::TakeDamage(float, const struct FDamageEvent &, class AActor *EventInstigator)
 {}
 
-bool UItemBase::OnInteract_Implementation(EInteractType EInteractType,
-                                          ACharacter *controller)
+bool UItem::OnInteract_Implementation(EInteractType EInteractType, ACharacter *controller)
 {
     return true;
 }
 
-uint8 UItemBase::GetInteractableFlags_Implementation() const { return InteractFlags; }
+uint8 UItem::GetInteractableFlags_Implementation() const { return InteractFlags; }
 
-bool UItemBase::OnBeginFocus_Implementation() { return true; }
+bool UItem::OnBeginFocus_Implementation() { return true; }
 
-bool UItemBase::OnEndFocus_Implementation() { return true; }
+bool UItem::OnEndFocus_Implementation() { return true; }
 
 
 // Sets default values
@@ -54,8 +52,7 @@ void AItemActor::OnConstruction(const FTransform &Transform)
             ItemMesh->SetSkeletalMesh(ItemBase->ItemMesh);
 }
 
-bool AItemActor::OnInteract_Implementation(EInteractType EInteractType,
-                                           ACharacter *controller)
+bool AItemActor::OnInteract_Implementation(EInteractType EInteractType, ACharacter *controller)
 {
     return true;
 }
@@ -63,9 +60,7 @@ bool AItemActor::OnInteract_Implementation(EInteractType EInteractType,
 uint8 AItemActor::GetInteractableFlags_Implementation() const
 {
     if (IsValid(ItemBase))
-        return ItemBase->GetInteractableFlags_Implementation()
-          | (uint8)EInteractType::Pickup;
-
+        return ItemBase->GetInteractableFlags_Implementation() | (uint8)EInteractType::Pickup;
     return 0;
 }
 

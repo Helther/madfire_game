@@ -8,29 +8,46 @@
 
 #include "Damage.generated.h"
 
+//TODO: Heal type and Mechanix
+
 /**
  * 
  */
 
-UCLASS(BlueprintType, Blueprintable)
-class UPhysicDamage : public UDamageType
+UCLASS(BlueprintType)
+class UDamageBase : public UDamageType
 {
     GENERATED_BODY()
 public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float Force;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite)
     EDamageType Type;
 };
 
 
-UCLASS(BlueprintType, Blueprintable)
-class UMagicDamage : public UDamageType
+UCLASS(BlueprintType)
+class UAbsoluteDamage : public UDamageBase
 {
     GENERATED_BODY()
 public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    EDamageType Type;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+
+};
+
+
+UCLASS(BlueprintType, Blueprintable)
+class UPhysicDamage : public UDamageBase
+{
+    GENERATED_BODY()
+public:
+    UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite)
+    float Force;
+};
+
+
+UCLASS(BlueprintType, Blueprintable)
+class UMagicDamage : public UDamageBase
+{
+    GENERATED_BODY()
+public:
+    UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite)
     EMagicSchool MagicSchool;
 };

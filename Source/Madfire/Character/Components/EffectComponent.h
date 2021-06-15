@@ -32,6 +32,10 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Effect Component")
     TMap<UParticleSystem *,UParticleSystemComponent *> EffectParticles;
 
+    //TODO: Proxt Parameters for Effects
+    //Proxy Parameters
+
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

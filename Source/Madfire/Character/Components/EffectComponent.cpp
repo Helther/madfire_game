@@ -18,6 +18,8 @@ UEffectComponent::UEffectComponent()
 
 void UEffectComponent::Append(UEffectBase *effect)
 {
+    check(this != nullptr && "Effect Component is Invalid");
+
     ACharacterBase *owner = Cast<ACharacterBase>(GetOwner());
 
     if(!owner)
@@ -26,19 +28,23 @@ void UEffectComponent::Append(UEffectBase *effect)
         return;
     }
 
-    verify(effect != nullptr && "Effect is not Valid");
+    check(effect != nullptr && "UEffectComponent: Effect is INVALID");
 
     auto containedEffect = Find(effect->EffectID);
 
     if(containedEffect)
     {
-        RemoveParticle(containedEffect->EffectParticle);
+        if(containedEffect->EffectParticle)
+            RemoveParticle(containedEffect->EffectParticle);
         containedEffect->Combine(effect);
-        AddParticle(containedEffect->EffectParticle, containedEffect->EffectParticleSocket);
+        if(containedEffect->EffectParticle)
+            AddParticle(containedEffect->EffectParticle, containedEffect->EffectParticleSocket);
+        return;
     }
 
     EffectQueue.AddUnique(effect);
-    AddParticle(effect->EffectParticle, containedEffect->EffectParticleSocket);
+    if(effect->EffectParticle)
+        AddParticle(effect->EffectParticle, effect->EffectParticleSocket);
     effect->OnApplying(owner);
 }
 
@@ -123,6 +129,7 @@ void UEffectComponent::AddParticle(UParticleSystem *particle, FName AttachPoint)
     auto mesh = owner->GetMesh();
 
     verify(mesh != nullptr && "Character doesn't have a mesh, How this is happen?");
+    check(particle != nullptr && "Effect doesn't have particle");
 
     auto ParComp = UGameplayStatics::SpawnEmitterAttached(particle,
                                                            mesh,

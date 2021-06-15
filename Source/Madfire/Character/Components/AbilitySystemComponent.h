@@ -9,7 +9,7 @@
 
 
 UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class MADFIRE_API UAbilitySystemComponent : public UActorComponent
+class UAbilitySystemComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
@@ -26,12 +26,20 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character Ability")
     void ReleaseAbility();
 
+    UFUNCTION(BlueprintCallable, Category = "Character Ability")
+    void AddAbility(UAbstractAbility *Ability);
+
+    UFUNCTION(BlueprintCallable, Category = "Character Ability")
+    void RemoveAbility(UAbstractAbility *Ability);
+
     UPROPERTY(BlueprintReadOnly, Category = "Character Ability")
     UAbstractAbility *CurrentAbility;
 
-    UPROPERTY(BlueprintReadWrite, Category = "Character Ability")
-    TArray<UAbstractAbility*> AbilityList;
+    UPROPERTY(BlueprintReadOnly, Category = "Character Ability")
+    TSet<UAbstractAbility*> AbilityList;
 
+    UFUNCTION(BlueprintCallable, Category = "Characeter Ability")
+    void StateChanged(/*TChange*/);
 
 protected:
 	// Called when the game starts
@@ -41,33 +49,25 @@ public:
 	// Called every frame
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Parameters")
     float GlobalCooldownTime = 1;
+
+private:
+    bool CheckState();
 };
 
 
 
 /*
- *
  * Вот небольшой манагер для скилов
 UCLASS()
 class UAbilityManager : public UActorComponent
 {
     GENERATED_BODY()
 public:
-    UFUNCTION(BlueprintPure,
-              meta     = (DisplayName      = "Create Skill From Class",
-                      CompactNodeTitle = "Create Skill", Keywords = "new create skill"),
-              Category = "Spell System")
-    static UAbstractAbility *CreateSkill(ACharacter *caster,
-                                         TSubclassOf<UAbstractAbility> SkillClass);
+    UFUNCTION(BlueprintPure, meta = (DisplayName = "Create Skill From Class", CompactNodeTitle = "Create Skill", Keywords = "new create skill"), Category = "Spell System")
+    static UAbstractAbility *CreateSkill(ACharacter *caster, TSubclassOf<UAbstractAbility> SkillClass);
 
-    UFUNCTION(BlueprintPure,
-              meta     = (DisplayName      = "Create Skill From Class",
-                      CompactNodeTitle = "Create Skill", Keywords = "new create skill"),
-              Category = "Spell System")
-    static AAbilityComponent *
-      SpawnComponent(AActor *target, FAbilityComponentSpawnParameters SpawnParameters,
-                     int impower);
+    UFUNCTION(BlueprintPure, meta = (DisplayName = "Create Skill From Class", CompactNodeTitle = "Create Skill", Keywords = "new create skill"), Category = "Spell System")
+    static AAbilityComponent *SpawnComponent(AActor *target, FAbilityComponentSpawnParameters SpawnParameters, int impower);
 };*/

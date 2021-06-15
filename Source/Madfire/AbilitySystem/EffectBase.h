@@ -11,20 +11,20 @@
 UENUM()
 enum class EEffectType
 {
-    Undefinded		UMETA(DisplayName = "Undefinded"),
-    Physical		UMETA(DisplayName = "Physical"),
-    Magic           UMETA(DisplayName = "Magic"),
-    Poison  		UMETA(DisplayName = "Poison"),
-    Disease 		UMETA(DisplayName = "Disease"),
-    Curse   		UMETA(DisplayName = "Curse"),
+    Undefinded,
+    Physical,
+    Magic,
+    Poison,
+    Disease,
+    Curse,
 };
 
 
 UENUM(Meta = (Bitflags))
 enum class EEffectParameters
 {
-    Infinity    UMETA(DisplayName = "Infinity"),
-    Negative    UMETA(DisplayName = "Negative"),
+    Infinity,
+    Negative,
 };
 ENUM_CLASS_FLAGS(EEffectParameters);
 /**
@@ -100,5 +100,4 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect Parameters")
     bool bShownInWidget;
-
 };

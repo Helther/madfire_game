@@ -23,14 +23,14 @@ struct FSkillList
     FSkillList &operator+=(const FSkillList &rhs);
     FSkillList operator+(const FSkillList &rhs);
 
-    UPROPERTY(EditAnywhere, Category = "Skill")
+    UPROPERTY(SaveGame, EditAnywhere, Category = "Skill")
     int8 SkillMap[(int32)ESkill::Max];
 
     static const EAttributes ModifierMap[(int32)ESkill::Max];
 };
 
-UCLASS()
-class USkillHelper : public UObject
+UCLASS(MinimalAPI, Abstract)
+class USkillHelper : public UBlueprintFunctionLibrary
 {
     GENERATED_BODY()
 

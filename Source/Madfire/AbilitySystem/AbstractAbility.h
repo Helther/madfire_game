@@ -15,10 +15,8 @@ class UAbilitySystemComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAbilityEvent, UAbstractAbility*, Ability);
 
 /*
-* Тут я удалил всякие ненужные функции, оставил только интерфейс
-* Интерфейс я тоже немного поменял - Убрал эти пустые реализации. Должно сработать
-* Список Экшонов в скиле я заменил на список Компонентов (см. SkillComponent)
-* Также там внизу есть мэнеджер, который может спавнить Скилы и компоненты к ним.
+* Тут я удалил всякие ненужные функции
+* Интерфейс я тоже много поменял Должно сработать
 */
 
 UCLASS(BlueprintType, Blueprintable, Abstract)
@@ -48,6 +46,9 @@ public:
 
     UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
     float CurrentCooldownTime = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    float StaminaCost = 0;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
     float CastTime = 1;

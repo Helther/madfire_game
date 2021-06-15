@@ -59,26 +59,29 @@
 	UENUM(BlueprintType)
 	enum class ESkill : uint8   //Название Скилов (Модификатор)
 	{
-		Appraise = 0		UMETA(DisplayName = "Appraise"),		//Оценка (Int)
-		Bluff	 = 1		UMETA(DisplayName = "Bluff"),			//Блеф (Cha)
-		Intimidate = 2		UMETA(DisplayName = "Intimidate"),		//Угроза (Cha)
-		Diplomacy = 3		UMETA(DisplayName = "Diplomacy"),		//Дипломатия (Cha)
+        Appraise = 0		UMETA(DisplayName = "Appraise"),		//Оценка (Int)
+        Knowledge = 8		UMETA(DisplayName = "Knowledge"),		//Знание (Int)
+        Alchemy = 17		UMETA(DisplayName = "Alchemy"),			//Алхимия (Int)
+        Enchantment = 18	UMETA(DisplayName = "Enchantment"),		//Зачарование предметов (Int)
+
+		Speechcraft = 1		UMETA(DisplayName = "Speechcraft"),		//Красноречие  (Cha)
 		Perform	= 4 		UMETA(DisplayName = "Perform"),			//Представление (Cha)
+        HandleAnimal = 19	UMETA(DisplayName = "HandleAnimal"),	//Сочуствие животным (Cha)
+
 		Perception = 5		UMETA(DisplayName = "Perception"),		//Восприятие (Wis)
+		Listen = 11			UMETA(DisplayName = "Listen"),			//Слух (Wis)
+		Survival = 15		UMETA(DisplayName = "Survival"),		//Выживание (Wis)
+
 		SleightOfHand = 6	UMETA(DisplayName = "SleightOfHand"),	//Ловкость рук (Dex)
 		OpenLock = 7		UMETA(DisplayName = "OpenLock"),		//Взлом замков (Dex)
-		Knowledge = 8		UMETA(DisplayName = "Knowledge"),		//Знание (Int)
 		Sneakiness = 9		UMETA(DisplayName = "Sneakiness"),		//Скрытность (Dex)
 		MoveSilently = 10	UMETA(DisplayName = "MoveSilently"),	//Скрытное перемещение (Dex)
-		Listen = 11			UMETA(DisplayName = "Listen"),			//Слух (Wis)
 		Balance	= 12		UMETA(DisplayName = "Balance"),			//Баланс (Dex)
-		Concentration = 13	UMETA(DisplayName = "Concentration"),	//Концентрация (Con)
 		Tumble = 14			UMETA(DisplayName = "Tumble"),			//Акробатика (Dex)
-		Survival = 15		UMETA(DisplayName = "Survival"),		//Выживание (Wis)
+
+		Concentration = 13	UMETA(DisplayName = "Concentration"),	//Концентрация (Con)
 		Blacksmithing = 16	UMETA(DisplayName = "Blacksmithing"),	//Кузнечество (Str)
-		Alchemy = 17		UMETA(DisplayName = "Alchemy"),			//Алхимия (Int)
-		Enchantment = 18	UMETA(DisplayName = "Enchantment"),		//Зачарование предметов (Int)		
-		HandleAnimal = 19	UMETA(DisplayName = "HandleAnimal"),	//Сочуствие животным (Cha)
+	
 		Max					UMETA(Hidden)
 	};
 
@@ -206,4 +209,20 @@
 		
 		Max					UMETA(Hidden)
 	};
+
+
+    UENUM(BlueprintType, meta = (Bitflags))
+    enum class EItemFlags : uint8    //!< Флаги предметов.
+    {
+        NONE        = 0,
+        Usable      = 1 UMETA(DisplayName = "Usable"),
+        Consumable  = 2 UMETA(DisplayName = "Consumable"),
+        Magical     = 4 UMETA(DisplayName = "Magical"),
+        Cursed      = 8 UMETA(DisplayName = "Cursed"),
+        Stolen      = 16 UMETA(DisplayName = "Stolen"),
+        Unbreakable = 32 UMETA(DisplayName = "Unbreakable"),
+        Unsellable  = 64 UMETA(DisplayName = "Unsellable"),
+        Unstealable = 128 UMETA(DisplayName = "Unstealable")
+    };
+    ENUM_CLASS_FLAGS(EItemFlags)
 // clang-format on

@@ -15,7 +15,6 @@
 
 #include "CharacterBase.generated.h"
 
-
 /**
  * Obvious Class Decription
  */
@@ -34,9 +33,6 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character Base")
     void OnUpdate(); //!< Blueprint interface  for Blueprints
 
-    UFUNCTION(BlueprintCallable, Category = "Character Base")
-    virtual void DoLevelUp(const FLevelInfo &levelInfo);
-
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats",
               meta = (ClampMin = "0.0", UIMin = "0.0"))
     float MaxWeightMod;
@@ -44,11 +40,12 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Stats")
     float MaxWeight;
 
-
     UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
-    UAttributesComponent *AttributesComponent;
-    UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
-    UExperienceComponent *ExperienceComponent;
+    UAttributeComponent *AttributeComponent;
+    //UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
+    //UAttributesComponent *AttributesComponent;
+    //UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
+    //UExperienceComponent *ExperienceComponent;
     UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
     UEquipmentComponent *EquipmentComponent;
     UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)

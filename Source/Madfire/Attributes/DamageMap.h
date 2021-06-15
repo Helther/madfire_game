@@ -18,7 +18,7 @@ struct FDamageResistance
     FDamageResistance &operator+=(const FDamageResistance &resistance);
     FDamageResistance operator+(const FDamageResistance &resistance);
 
-    UPROPERTY(EditAnywhere, Category = Impact)
+    UPROPERTY(SaveGame, EditAnywhere, Category = Impact)
     uint16 DamageMap[(int32)EDamageType::Max];
 };
 
@@ -30,13 +30,13 @@ struct FDamageAbsorb
     FDamageAbsorb &operator+=(const FDamageAbsorb &resistance);
     FDamageAbsorb operator+(const FDamageAbsorb &resistance);
 
-    UPROPERTY(EditAnywhere, Category = Impact)
+    UPROPERTY(SaveGame, EditAnywhere, Category = Impact)
     int8 DamageMap[(int32)EDamageType::Max];
 };
 
 
-UCLASS()
-class UDamageMapHelper : public UObject
+UCLASS(MinimalAPI, Abstract)
+class UDamageMapHelper : public UBlueprintFunctionLibrary
 {
     GENERATED_BODY()
 

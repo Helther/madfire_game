@@ -226,7 +226,7 @@ bool UInventoryComponent::SwapStacks(int32 indexA, int32 indexB)
 }
 
 
-bool UInventoryComponent::AddToInventory(UItemBase *Item, int32 amount, bool addNewStack)
+bool UInventoryComponent::AddToInventory(UItem *Item, int32 amount, bool addNewStack)
 {
     bool result;
     int32 foundStack = -1;

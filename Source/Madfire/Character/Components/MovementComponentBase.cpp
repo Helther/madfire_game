@@ -125,8 +125,7 @@ void UBaseMovementComponent::CalculateMaxSpeeds(float SpeedModifier)
 
 float UBaseMovementComponent::GetSpeedModifier() const 
 {
-    const auto dexMod = UAttributesHelper::GetModifier(
-        Character->AttributesComponent->CurrentAttributes, EAttributes::Dex);
+    const auto dexMod = UAttributeSetHelper::GetModifier(Character->AttributeComponent->Attributes, EAttributes::Dex);
     return GetSigmoidValue(dexMod + weightFactorBalanceMod * (-WeightFactor), weightMod,
                         1.f - SpeedScale, 1.f + SpeedScale); // нормально
 }
@@ -225,9 +224,9 @@ bool UBaseMovementComponent::DoVault(const StartClimbData &LocationData, bool Is
            + LocationHorizOffset + MaxVaultLedgeSize);    // todo temp
 
     if (IsEnoughSpace(VaultAnimationStartLocation) == EClimbTraceResult::SuccessStand
-        && Character->AttributesComponent->Stamina->CurrentVal > 0)
+        && Character->AttributeComponent->Stamina->CurrentValue > 0)
     {
-        Character->AttributesComponent->Stamina->Consume(StaminaCostValues.Vault);
+        Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Vault);
         if (IsLow)
             //todo сделать на время выполнения анимации капсуле размер капсулы в присяде
             TransitionStart(VaultAnimationStartLocation, LocationData.Rotation,
@@ -274,13 +273,13 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData &LocationData, bo
           -Character->GetDefaultHalfHeight() + CrouchedHalfHeight;
 
     // check for available space at the start position before anim
-    if (Character->AttributesComponent->Stamina->CurrentVal <= 0)
+    if (Character->AttributeComponent->Stamina->CurrentValue <= 0)
         return false;
     switch (IsEnoughSpace(ClimbledgeAnimationStartLocation, ClimbledgeAnimationEndLocation))
     {
         case EClimbTraceResult::SuccessStand:
         {
-            Character->AttributesComponent->Stamina->Consume(StaminaCostValues.Climb);
+            Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Climb);
             if (IsLow)
                 TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
                                 ClimbLedgeMontageLow, AnimTypes::Parkour,
@@ -293,8 +292,7 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData &LocationData, bo
         }
         case EClimbTraceResult::SuccessCrouch:
         {
-            Character->AttributesComponent->Stamina->Consume(
-              StaminaCostValues.Climb);
+            Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Climb);
             //if(!IsCrouching())
             //bWantsToCrouch = true; // todo temp
             if (IsLow)
@@ -681,15 +679,15 @@ bool UBaseMovementComponent::CheckWallGeometry(const StartClimbData &Data)
 
 void UBaseMovementComponent::DoDodge(const EControlDirections& Direction)
 {
-    if (Character->AttributesComponent->Stamina->CurrentVal <= 0)
+    if (Character->AttributeComponent->Stamina->CurrentValue <= 0)
         return;
     if (IsCrouching())
     {
         bWantsToCrouch = false;
         UnCrouch();
     }
-    Character->AttributesComponent->Stamina->Consume(StaminaCostValues.Dodge);
-    Character->AttributesComponent->Stamina->BlockRegen();
+    Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Dodge);
+    Character->AttributeComponent->Stamina->BlockRegen();
     EControlDirections dir = Direction;
     if(Direction == EControlDirections::Default)
         dir = EControlDirections::BackD;
@@ -830,7 +828,7 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
                 bOrientRotationToMovement = true;
         }
         if (bWasJustJumping)
-            Character->AttributesComponent->Stamina->UnblockRegen();
+            Character->AttributeComponent->Stamina->UnblockRegen();
         bWasJustJumping = false;
     }
     if (MovementMode == MOVE_Walking)
@@ -849,7 +847,7 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
                 bOrientRotationToMovement = true;
         }
         if (bWasJustJumping)
-            Character->AttributesComponent->Stamina->UnblockRegen();
+            Character->AttributeComponent->Stamina->UnblockRegen();
         bWasJustJumping = false;
     }
     if (prevMode == MOVE_Falling && MovementMode == MOVE_Walking)
@@ -864,14 +862,14 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
         {
             if (GetWorld()->GetTimerManager().IsTimerActive(SprintConsumeTimer))
                 GetWorld()->GetTimerManager().ClearTimer(SprintConsumeTimer);
-            Character->AttributesComponent->Stamina->UnblockRegen();
+            Character->AttributeComponent->Stamina->UnblockRegen();
             bIsSprinting = false;
         }
     }
     if (prevMode == MOVE_Custom)
     {
         if(prevCustomMode == static_cast<int>(ECustomMovementMode::Dodge))
-            Character->AttributesComponent->Stamina->UnblockRegen();  
+            Character->AttributeComponent->Stamina->UnblockRegen();
     }
     Super::OnMovementModeChanged(prevMode, prevCustomMode);
 }
@@ -891,7 +889,7 @@ float UBaseMovementComponent::GetMaxSpeed() const
             else if (!bWantToSprint && bIsRunning && WeightFactor <= 1)
                 return MaxRunSpeed;
             else if (bWantToSprint
-                     && Character->AttributesComponent->Stamina->CurrentVal > 0
+                     && Character->AttributeComponent->Stamina->CurrentValue > 0
                      && WeightFactor <= 1)
                 return MaxSprintSpeed;
             else if (WeightFactor <= 1)
@@ -918,7 +916,7 @@ void UBaseMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
     Super::PhysWalking(deltaTime, Iterations);
 
     if (bWantToSprint && Velocity.Size() > MaxWalkSpeedCrouched - 1.f && !IsCrouching()
-        && Character->AttributesComponent->Stamina->CurrentVal > 0
+        && Character->AttributeComponent->Stamina->CurrentValue > 0
         && WeightFactor <= 1)
     {
         if (!bIsSprinting)
@@ -928,7 +926,7 @@ void UBaseMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
                 GetWorld()->GetTimerManager().SetTimer(
                   SprintConsumeTimer, this, &UBaseMovementComponent::OnSprintConsume,
                   SprintConsumeTime, true);
-            Character->AttributesComponent->Stamina->BlockRegen();
+            Character->AttributeComponent->Stamina->BlockRegen();
             bIsSprinting = true;
         }
     }
@@ -938,7 +936,7 @@ void UBaseMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
         {
             if (GetWorld()->GetTimerManager().IsTimerActive(SprintConsumeTimer))
                 GetWorld()->GetTimerManager().ClearTimer(SprintConsumeTimer);
-            Character->AttributesComponent->Stamina->UnblockRegen();
+            Character->AttributeComponent->Stamina->UnblockRegen();
             bIsSprinting = false;
         }
     }
@@ -1047,7 +1045,7 @@ bool UBaseMovementComponent::FallDamageCheck()
 void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
 {
     check(MinFallHeightThreshold && "ApplyFallDamage: div by zero")
-    float damage = Character->AttributesComponent->Health->CurrentMaxVal;
+    float damage = Character->AttributeComponent->Health->GetMaxValue();
     if (FallDistance < MaxfallHeightThreshold)
         damage *= (FallDistance - MinFallHeightThreshold) / MinFallHeightThreshold;
 }
@@ -1120,8 +1118,7 @@ void UBaseMovementComponent::TransitionStart(UCurveVector *Curve, const EControl
     animType = Type;
     FOnMontageBlendingOutStarted callBack;
     callBack.BindUObject(this, AnimDelegates[static_cast<AnimTypes>(animType)]);
-    Character->StartAnimation(CurrentTransitionAnim, callBack, AnimPlayRate,
-                                FTransitionSectionNames::Start);
+    Character->StartAnimation(CurrentTransitionAnim, callBack, AnimPlayRate, FTransitionSectionNames::Start);
 }
 
 void UBaseMovementComponent::On_TransitionFinished()
@@ -1129,8 +1126,7 @@ void UBaseMovementComponent::On_TransitionFinished()
     check(CurrentTransitionAnim != nullptr && "Transition: no anim!");
     FOnMontageBlendingOutStarted callBack;
     callBack.BindUObject(this, AnimDelegates[static_cast<AnimTypes>(animType)]);
-    Character->StartAnimation(CurrentTransitionAnim, callBack, AnimPlayRate,
-                              FTransitionSectionNames::End);
+    Character->StartAnimation(CurrentTransitionAnim, callBack, AnimPlayRate, FTransitionSectionNames::End);
     TransitionCleanUp();
     UE_LOG(LogTemp, Warning, TEXT("TransitionFinished!"))
 }
@@ -1165,8 +1161,7 @@ void UBaseMovementComponent::TransitionProcess(float deltaTime)
         else
         {
             CurrentCurveTime += deltaTime;
-            const auto dexMod = UAttributesHelper::GetModifier(
-            Character->AttributesComponent->CurrentAttributes, EAttributes::Dex);
+            const auto dexMod = UAttributeSetHelper::GetModifier(Character->AttributeComponent->Attributes, EAttributes::Dex);
             const FVector posDelta = TransitionCurve->GetVectorValue(CurrentCurveTime);
             const bool locSweep = Character->SetActorLocation(TransitionStartPos + 
                 *TransitionDirection * (posDelta.X + dexMod * DodgeAbilityMod * CurrentCurveTime) + 
@@ -1222,8 +1217,7 @@ void UBaseMovementComponent::NotifyJumpApex()
     */
 }
 
-void UBaseMovementComponent::TickComponent(float DeltaTime,
-                                           enum ELevelTick TickType,
+void UBaseMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
                                            FActorComponentTickFunction *ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -1237,7 +1231,7 @@ void UBaseMovementComponent::TickComponent(float DeltaTime,
 
 void UBaseMovementComponent::OnSprintConsume()
 {
-    if (Character->AttributesComponent->Stamina->Consume(StaminaCostValues.Sprint))
+    if (Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Sprint))
         GetWorld()->GetTimerManager().SetTimer(SprintConsumeTimer, this,
                                                &UBaseMovementComponent::OnSprintConsume,
                                                SprintConsumeTime, true);
@@ -1247,17 +1241,17 @@ void UBaseMovementComponent::Update()
 {
     //const auto dex = UAttributesHelper::GetAttribute(Character->AttributesComponent->CurrentAttributes, EAttributes::Dex);
     const auto tumble = USkillHelper::GetValue(
-        Character->AttributesComponent->CurrentSkills, ESkill::Tumble);
-    const auto dexMod = UAttributesHelper::GetModifier(
-        Character->AttributesComponent->CurrentAttributes, EAttributes::Dex);
+        Character->AttributeComponent->Skills, ESkill::Tumble);
+    const auto dexMod = UAttributeSetHelper::GetModifier(
+        Character->AttributeComponent->Attributes, EAttributes::Dex);
     // более verbose способ получения модификатора
-    const auto tumbleMod = UAttributesHelper::GetModifier(
-        Character->AttributesComponent->CurrentAttributes, FSkillList::ModifierMap[(int)ESkill::Tumble]);
+    const auto tumbleMod = UAttributeSetHelper::GetModifier(
+        Character->AttributeComponent->Attributes, FSkillList::ModifierMap[(int)ESkill::Tumble]);
 
     UE_LOG(LogTemp, Warning, TEXT("skill val %d"),
-        USkillHelper::GetValue(Character->AttributesComponent->CurrentSkills, ESkill::Tumble))
+        USkillHelper::GetValue(Character->AttributeComponent->Skills, ESkill::Tumble))
         UE_LOG(LogTemp, Warning, TEXT("skill mod %d"),
-            UAttributesHelper::GetModifier(Character->AttributesComponent->CurrentAttributes, FSkillList::ModifierMap[(int)ESkill::Tumble]))
+            UAttributeSetHelper::GetModifier(Character->AttributeComponent->Attributes, FSkillList::ModifierMap[(int)ESkill::Tumble]))
         // ловкость
 
         MinFallHeightThreshold = GetSigmoidValue(
@@ -1377,12 +1371,12 @@ bool UBaseMovementComponent::DoJump(bool bReplayingMoves)
         UE_LOG(LogTemp, Warning, TEXT("blocked jump"));
         return false;
     }
-    if (Character->AttributesComponent->Stamina->CurrentVal <= 0)
+    if (Character->AttributeComponent->Stamina->CurrentValue <= 0)
         return false;
     if (!Character->bWasJumping)
-        Character->AttributesComponent->Stamina->Consume(StaminaCostValues.Jump);
+        Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Jump);
     if (MovementMode != EMovementMode::MOVE_Falling)
-        Character->AttributesComponent->Stamina->BlockRegen();
+        Character->AttributeComponent->Stamina->BlockRegen();
     if (bWasJumpingOff)
     {
         if (bOrientRotationToMovement)

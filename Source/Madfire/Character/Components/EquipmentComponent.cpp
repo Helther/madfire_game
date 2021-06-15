@@ -19,6 +19,11 @@ void UEquipmentComponent::Update()
     UnSetUpdate();
 }
 
+UEquipmentComponent::UEquipmentComponent(const FObjectInitializer &ObjectInitializer)
+{
+
+}
+
 void UEquipmentComponent::OnComponentCreated()
 {
     Super::OnComponentCreated();
@@ -31,10 +36,27 @@ void UEquipmentComponent::OnComponentCreated()
 
         for (auto &comp : SkeletalMeshComponents)
         {
-
             //TODO: Add others
         }
     }
+}
+
+UItem *UEquipmentComponent::Equip(UItem *Item)
+{
+    //Try to deduce item place
+    return nullptr;
+}
+
+UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
+{
+    auto tmp = Slot[(int32)SlotName].Item;
+    Slot[(int32)SlotName].Item = Item;
+    return tmp;
+}
+
+void UEquipmentComponent::SwapWeapons()
+{
+    //
 }
 
 bool UEquipmentComponent::EquipHeadItem(UItemArmor *item)
@@ -49,7 +71,7 @@ void UEquipmentComponent::CalculateWeight()
     CurrentWeight = 0;
     for (int i = 0; i < int(EItemSlot::Max) - 1; ++i)
     {
-        const UItemArmor *currentItem = Slot[i].Item;
+        const UItem *currentItem = Slot[i].Item;
         if (currentItem != nullptr)
             CurrentWeight += currentItem->Weight;
     }

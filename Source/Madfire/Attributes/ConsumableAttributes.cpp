@@ -1,5 +1,19 @@
 ﻿#include "ConsumableAttributes.h"
 #include "Character/Components/AttributesComponent.h"
+#include "Character/CharacterBase.h"
+
+
+FTimerManager &UDynamicAttribute::GetTimerManager() const
+{
+    //const UActorComponent *parent = Cast<UActorComponent>(GetOuter());
+    //check(parent != nullptr && "DynamicAttribute: ivalid parent");
+    //ACharacterBase *CharParent = Cast<ACharacterBase>(parent->GetOwner());
+    //check(CharParent != nullptr && "DynamicAttribute: ivalid character parent");
+    check(GetWorld() != nullptr && "DynamicAttribute: ivalid world");
+    return GetWorld()->GetTimerManager();
+}
+
+
 
 UConsumableAttribute::UConsumableAttribute()
 {
@@ -24,7 +38,8 @@ bool UConsumableAttribute::Consume(float amount)
 }
 
 
-URegenConsumable::URegenConsumable() : Super()
+URegenConsumable::URegenConsumable() :
+    Super()
 {
     CurrentRegenRate = BaseRegenRate;
     RegenInterval    = 1; // temp value, seconds between ticks
@@ -68,6 +83,7 @@ void URegenConsumable::OnRegenTick()
     if (GetWorld()->GetTimerManager().IsTimerActive(RegenTickTimer))
         GetWorld()->GetTimerManager().ClearTimer(RegenTickTimer);
 }
+
 void URegenConsumable::NoConsumeLeft()
 {
     NoConsumeBlock = true;
@@ -96,3 +112,4 @@ UWorld *URegenConsumable::GetWorld() const
     UAttributesComponent *parent = Cast<UAttributesComponent>(GetOuter());
     check(parent != nullptr && "Consume atrr: no parent obj") return parent->GetWorld();
 }
+

@@ -2,4 +2,4 @@
 
 #include "Attributes.h"
 
-FAttributes::FAttributes() : AttributeMap{ 0, 0, 0, 0, 0, 0 } {}
+FAttributeSet::FAttributeSet() : AttributeMap{ 0, 0, 0, 0, 0, 0 } {}

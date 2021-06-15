@@ -20,7 +20,6 @@ struct Attack
     //some special delegate shit
 };
 
-
 template<typename StateInfo>
 class ComboFSM
 {
@@ -73,3 +72,5 @@ private:
     TArray<State> _States;
     State *_CurrentState = nullptr;
 };
+
+

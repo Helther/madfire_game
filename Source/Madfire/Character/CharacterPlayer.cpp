@@ -128,14 +128,15 @@ void ACharacterPlayer::Update()
         GetMovementComponent()->Update();
 }
 
-void ACharacterPlayer::DoLevelUp(const FLevelInfo &levelInfo)
+void ACharacterPlayer::DoLevelUp(const FCharacterLevelInfo &levelInfo)
 {
-    bool dexChanged = UAttributesHelper::GetAttribute(levelInfo.Attributes, EAttributes::Dex) != 0;
-    bool strChanged = UAttributesHelper::GetAttribute(levelInfo.Attributes, EAttributes::Str) != 0;
+    //TODO: Move to Movement Component
+    bool dexChanged = UAttributeSetHelper::GetAttribute(levelInfo.Attributes, EAttributes::Dex) != 0;
+    bool strChanged = UAttributeSetHelper::GetAttribute(levelInfo.Attributes, EAttributes::Str) != 0;
     bool acrobaticsChanged = USkillHelper::GetValue(levelInfo.SkillList, ESkill::Tumble) != 0;
     if (dexChanged || strChanged || acrobaticsChanged)
         GetMovementComponent()->SetUpdate();
-    Super::DoLevelUp(levelInfo);
+    //Super::DoLevelUp(levelInfo);
     // todo other stuff
 }
 

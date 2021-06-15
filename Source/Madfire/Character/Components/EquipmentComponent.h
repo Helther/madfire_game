@@ -2,35 +2,19 @@
 
 #pragma once
 
-#include "../../Attributes/Attributes.h"
-#include "../../Attributes/Skills.h"
-#include "../../Items/ItemArmor.h"
-#include "../../Items/ItemBase.h"
-#include "../../Items/ItemWeapon.h"
+#include "Attributes/Attributes.h"
+#include "Attributes/Skills.h"
+#include "Items/ItemArmor.h"
+#include "Items/ItemBase.h"
+#include "Items/ItemWeapon.h"
+#include "Items/EquipmentSlot.h"
+#include "AbilitySystem/EffectBase.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 
 #include "EquipmentComponent.generated.h"
 
 
-USTRUCT(BlueprintType)
-struct FEquipmentSlot
-{
-    GENERATED_BODY()
-    // clang-format off
-	UPROPERTY(BlueprintReadWrite, Category = "Equipment Slot")
-		EItemSlot SlotType;
-
-	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Equipment Slot")
-		USkeletalMeshComponent *AttachedMeshSlot;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Slot")
-		UItemArmor *Item;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Slot")
-		FTransform RelativeTransform;
-    // clang-format on
-};
 
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -39,61 +23,46 @@ class MADFIRE_API UEquipmentComponent : public UActorComponent
     GENERATED_BODY()
 
 public:
-    void OnComponentCreated() override;
-    // clang-format off
-	/*
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
-		class UItemWeapon *MainWeapon;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
-		class UItemWeapon *OffHandWeapon;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
-		class UItemWeapon *MainWeaponSet2;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
-		class UItemWeapon *OffHandWeaponSet2;	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
-		class UItemArmor *HeadSlot;	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
-		class UItemArmor *ChestSlot;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
-		class UItemArmor *FootSlot;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
-		class UItemArmor *LegSlot;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
-		class UItemArmor *HandsSlot;
-		*/
+    UEquipmentComponent(const FObjectInitializer& ObjectInitializer);
 
+    void OnComponentCreated() override;
+
+    UItem *Equip(UItem *Item);
+    UItem *EquipToSlot(UItem *Item, EItemSlot SlotName);
+
+    UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
+    FSkillList EquipmentSkills;
 	UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
-		FSkillList EquipmentSkills;
+    FAttributeSet EquipmentAttributes;
 	UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
-		FAttributes EquimpentAttributes;
+    FDamageAbsorb  EqipmentDamageAbsorb;
 	UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
-		FDamageAbsorb  EqipmentDamageAbsorb;
+    FDamageResistance  EqipmentDamageResistance;
 	UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
-		FDamageResistance  EqipmentDamageResistance;
-	UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
-		FDamageAbsorb DamageBonus;
-	//UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
-		//Effects
+    FDamageAbsorb EqipmentDamageBonus;
+
+    void SwapWeapons();
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment Component")
-		float CurrentWeight;
+    float CurrentWeight;
 
 	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
-		void Update();
+    void Update();
 
 	UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
-		void SetUpdate() { IsDirty = true; }
+    void SetUpdate() { IsDirty = true; }
 	UFUNCTION(BlueprintCallable, Category = "Component Update")
-		void UnSetUpdate() { IsDirty = false; }
+    void UnSetUpdate() { IsDirty = false; }
 	UFUNCTION(BlueprintCallable, Category = "Component Update")
-		bool IsUpdateNeeded() { return IsDirty; }
+    bool IsUpdateNeeded() { return IsDirty; }
 
 
 	// debug
 	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
-		void UpWeight();
+    void UpWeight();
 	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
-		void DownWeight();
-    // clang-format on
+    void DownWeight();
+
 private:
     class ACharacterBase *Owner = nullptr;
     FEquipmentSlot Slot[(int32)EItemSlot::Max];

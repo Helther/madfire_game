@@ -30,6 +30,25 @@ void UAbilitySystemComponent::ReleaseAbility()
     }
 }
 
+void UAbilitySystemComponent::AddAbility(UAbstractAbility *Ability)
+{
+    //AbilityList.Append(Ability);
+}
+
+void UAbilitySystemComponent::RemoveAbility(UAbstractAbility *Ability)
+{
+    AbilityList.Remove(Ability);
+}
+
+void UAbilitySystemComponent::StateChanged(/*TChange*/)
+{
+
+}
+
+bool UAbilitySystemComponent::CheckState()
+{
+    return true;
+}
 
 
 // Called when the game starts

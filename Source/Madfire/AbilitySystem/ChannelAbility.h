@@ -26,11 +26,6 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
     void OnChannelUpdate();
 
-    /*
-    UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "AbilitySystem")
-    void ChannelUpdate();
-    void ChannelUpdate_Implementation();*/
-
     UFUNCTION()
     void PrecastFinish(UAnimMontage *animMontage, bool bInterrupted);
     UFUNCTION()
