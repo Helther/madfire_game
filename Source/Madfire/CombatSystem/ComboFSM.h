@@ -1,71 +1,97 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 
+
 DECLARE_DELEGATE_RetVal(bool, FLinkReq);
+DECLARE_DELEGATE(FStateEvent);
 
-struct Attack
+
+struct StateInfoBase
 {
-    class UAnimMontage *AttackMontage;
-    FName AnimSectionName;
-    float DamageMod;
-    float PowerMod;
-    float StaminaCost;
-    bool IsBlockablel;
-    bool IsParriable;
-    bool IsInterruptable;
-
-    //some special delegate shit
+    FStateEvent OnEnter;
+    FStateEvent OnLeave;
 };
 
 template<typename StateInfo>
 class ComboFSM
 {
+public:
     struct State
     {
-        FName Id;
-        StateInfo info;
+        friend class ComboFSM;
 
-        using Link = TPair<const State &, FLinkReq>;
+        State(int inputId) {Id = inputId;}
+        int Id;
+        StateInfo Info;
+        bool operator==(const State& other) const { return Id == other.Id; }
+
+    private:
+        using Link = TPair<int, FLinkReq>;
         TArray<Link> Links;
     };
 
-public:
     ComboFSM() {}
     ~ComboFSM() {}
 
-    bool contains(FName StateName)
+    bool contains(int Id) const
     {
-        if (_States.Contains(StateName))
+        if (_States.FindByKey(Id))
             return true;
         return false;
     }
 
-    State &state(FName StateName) { return _States.Find(StateName); }
-
-    void setCurrentState(FName StateName)
+    State *state(int StateId) 
     {
-        if (_CurrentState->Id != StateName)
-            _CurrentState = state(StateName);
+       check(contains(StateId) && "invalid state id");
+        return &_States[StateId];
+    }
+    const State *state(int StateId) const
+    {
+       check(contains(StateId) && "invalid state id");
+        return &_States[StateId];
     }
 
-    State &currentState() { return _CurrentState; }
-
-    ComboFSM &addState(FName StateName)
+    void setCurrentState(int Id)
     {
-        if (!contains(StateName))
-            _States.Push(state(StateName));
+        check(contains(Id) && "invalid state id");
+        if (_CurrentState && _CurrentState->Id == Id)
+            return;
+        if (_CurrentState)
+            _CurrentState->Info.OnLeave.ExecuteIfBound();
+        _CurrentState = state(Id);
+        _CurrentState->Info.OnEnter.ExecuteIfBound();
+    }
+
+    State *const currentState() { return _CurrentState; }
+
+    const State *const currentState() const { return _CurrentState; }
+
+    ComboFSM &addState(int StateId)
+    {
+        if (!contains(StateId))
+            _States.Emplace(State(StateId));
         return *this;
     }
-    ComboFSM &addLink(FName FromState, FName ToState, FLinkReq)
+    ComboFSM &addLink(int FromState, int ToState, const FLinkReq& Req)
     {
-        auto &from          = state(FromState);
-        const auto &to      = state(ToState);
-        const auto &NewLink = MakeTuple<to, FLinkReq>;
-        from.Links.Push(NewLink);
+        check(contains(FromState) && "invalid state id");
+        auto from = state(FromState);
+        from->Links.Emplace(MakeTuple<int&, const FLinkReq&>(ToState, Req));
         return *this;
+    }
+
+    const State* proccessNextState() const
+    {
+        if (_CurrentState)
+        {
+            for (const auto& link : _CurrentState->Links)
+            {
+                if (link.Value.Execute())
+                    return state(link.Key);
+            }
+        }
+        return nullptr;
     }
 
 private:

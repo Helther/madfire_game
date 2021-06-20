@@ -100,7 +100,7 @@ UBaseMovementComponent::UBaseMovementComponent(
 // вызывать при изменении модификатора
 void UBaseMovementComponent::CalculateMaxSpeeds(float SpeedModifier)
 {
-    if (!CanMove())    // скорости на которые не влияют модификаторы
+    if (IsOverWeight())    // скорости на которые не влияют модификаторы
     {
         MaxWalkSpeed         = 0;
         MaxWalkSpeedCrouched = 0;
@@ -165,9 +165,10 @@ FTraceSpawnParams UBaseMovementComponent::GetTraceSpawnParams(bool IsLow)
 
 bool UBaseMovementComponent::CanVaultOrClimb(bool IsLow)
 {
-    if (IsRootOrTeleport() || !CanMove())
+    if (!CanMove() || !(MoveAbilitiesCurrent & EMoveAbilities::CanClimb))
         return false;
-    UE_LOG(LogTemp, Warning, TEXT("CanVault or climb %s"),
+    if (ShowDebugInfo)
+        UE_LOG(LogTemp, Warning, TEXT("CanVault or climb %s"),
            IsLow ? TEXT("low") : TEXT("high"));
     const FRotator CharRotation = Character->GetActorRotation();
     //setting spawn parameters
@@ -187,12 +188,14 @@ bool UBaseMovementComponent::CanVaultOrClimb(bool IsLow)
     // проверка на возможность волта
     if (VaultSpaceCheck(*ledgeLocRot.Get()))
     {
-        UE_LOG(LogTemp, Warning, TEXT("CanVaultOrClimb: trying vault %s"),
+        if (ShowDebugInfo)
+            UE_LOG(LogTemp, Warning, TEXT("CanVaultOrClimb: trying vault %s"),
                IsLow ? TEXT("low") : TEXT("high"));
         if (DoVault(*ledgeLocRot.Get(), IsLow))
             return true;
     }
-    UE_LOG(LogTemp, Warning, TEXT("CanVaultOrClimb: doing climb %s"),
+    if (ShowDebugInfo)
+        UE_LOG(LogTemp, Warning, TEXT("CanVaultOrClimb: doing climb %s"),
            IsLow ? TEXT("low") : TEXT("high"));
     if (DoClimbLedge(*ledgeLocRot.Get(), IsLow))
         return true;
@@ -243,7 +246,6 @@ bool UBaseMovementComponent::DoVault(const StartClimbData &LocationData, bool Is
 
 bool UBaseMovementComponent::DoClimbLedge(const StartClimbData &LocationData, bool IsLow)
 {
-    ///TODO add stamina calculation and usage
     // vector in the direction opposite to the wall's normal
     const auto res =
       FQuat(FRotator(0, LocationData.Rotation.Yaw, 0)) * FQuat(FRotator(0, 180, 0));
@@ -344,7 +346,8 @@ bool UBaseMovementComponent::VaultSpaceCheck(const StartClimbData &LedgeData)
         if (vaultHit.GetActor() == nullptr)
             return true;
     }
-    UE_LOG(LogTemp, Warning, TEXT("VaultSpaceCheck error: fail"))
+    if (ShowDebugInfo)
+        UE_LOG(LogTemp, Warning, TEXT("VaultSpaceCheck error: fail"))
     return false;
 }
 
@@ -354,7 +357,6 @@ TSharedPtr<StartClimbData>
                                            const float &MaxHeight,
                                            bool CheckAngle)
 {
-    auto CharRotation  = Character->GetActorRotation();
     auto FinalLocation = MakeShared<StartClimbData>();
     auto charBottomHeight =
       Character->GetActorLocation().Z - Character->GetDefaultHalfHeight();
@@ -382,7 +384,8 @@ TSharedPtr<StartClimbData>
         // ограничение по числу итераций
         if ((MinHeight > currentTraceHeight) && (currentTraceHeight > MaxHeight))
         {
-            UE_LOG(LogTemp, Warning,
+            if (ShowDebugInfo)
+                UE_LOG(LogTemp, Warning,
                    TEXT("GetClimbStartLoc error: exceeded height limits"))
             return nullptr;
         }
@@ -402,7 +405,8 @@ TSharedPtr<StartClimbData>
             UE_LOG(LogTemp, Warning, TEXT("GetClimbStartLoc error: not enough space"))
         if (NumOfIterations == MaxNumOfIter)
         {
-            UE_LOG(LogTemp, Warning,
+            if (ShowDebugInfo)
+                UE_LOG(LogTemp, Warning,
                    TEXT("GetClimbStartLoc error: reached max num of iterations"))
             break;
         }
@@ -418,7 +422,8 @@ TSharedPtr<StartClimbData>
         sParamsH.Start += wallNormalDir.Vector() * currentDistanceToWall;
         HitWallH.Reset();
     }
-    UE_LOG(LogTemp, Warning, TEXT("GetClimbStartLoc: Number of steps %d"),
+    if (ShowDebugInfo)
+        UE_LOG(LogTemp, Warning, TEXT("GetClimbStartLoc: Number of steps %d"),
            NumOfIterations);
     // vert trace линией вниз для нахождения вертикальной точки на выступе
     const auto res = FQuat(FRotator(0, HitWallH.ImpactNormal.Rotation().Yaw, 0))
@@ -454,8 +459,11 @@ bool UBaseMovementComponent::checkRelativeRotation(const float WallNormalYaw)
       FMath::Abs(acos(FVector::DotProduct(charsV, wallsV)) * 180.f / PI - 180.f);
     const bool res = resAngle < MaxClimbRotationAngle;
     if (!res)
-        UE_LOG(LogTemp, Warning,
-               TEXT("checkRelativeRotation error: Bad relative angle (%f)"), resAngle)
+    {
+        if (ShowDebugInfo)
+            UE_LOG(LogTemp, Warning,
+                TEXT("checkRelativeRotation error: Bad relative angle (%f)"), resAngle)
+    }
     return res;
 }
 
@@ -468,7 +476,8 @@ EClimbTraceResult UBaseMovementComponent::IsEnoughSpace(const FVector &StartLoca
     if (!IsCharacterCapsuleOk(StartLocation, IsCrouching(), true, StartCC)
         || !IsCharacterCapsuleOk(StartLocation, IsCrouching(), false, StartCC))
     {
-        UE_LOG(LogTemp, Warning,
+        if (ShowDebugInfo)
+            UE_LOG(LogTemp, Warning,
                TEXT("IsEnoughSpace error: not enough space for anim start"));
         return EClimbTraceResult::FailAtStart;
     }
@@ -479,14 +488,16 @@ EClimbTraceResult UBaseMovementComponent::IsEnoughSpace(const FVector &StartLoca
         if (!IsCharacterCapsuleOk(EndLocation, IsCrouching(), true, EndCC)
             || !IsCharacterCapsuleOk(EndLocation, IsCrouching(), false, EndCC))
         {
-            UE_LOG(LogTemp, Warning,
+            if (ShowDebugInfo)
+                UE_LOG(LogTemp, Warning,
                    TEXT("IsEnoughSpace error: not enough space for stand anim end"));
             auto tempEnd = EndLocation
               + FVector(0, 0, -Character->GetDefaultHalfHeight() + CrouchedHalfHeight);
             if (!IsCharacterCapsuleOk(tempEnd, true, true, EndCC)
                 || !IsCharacterCapsuleOk(tempEnd, true, false, EndCC))
             {
-                UE_LOG(LogTemp, Warning,
+                if (ShowDebugInfo)
+                    UE_LOG(LogTemp, Warning,
                        TEXT("IsEnoughSpace error: not enough space for crouch anim end"));
                 return EClimbTraceResult::FailAtEnd;
             }
@@ -538,13 +549,16 @@ bool UBaseMovementComponent::IsCharacterCapsuleOk(const FVector &CenterLoc,
       params, sParams, HitWall, CC, false);
     bool res = HitWall.GetActor() == nullptr;
     if (!res)
-        UE_LOG(LogTemp, Warning, TEXT("IsCharacterCapsuleOk error: Not OK!"))
+    {
+        if (ShowDebugInfo)
+            UE_LOG(LogTemp, Warning, TEXT("IsCharacterCapsuleOk error: Not OK!"))
+    }
     return res;
 }
 
 void UBaseMovementComponent::ClimbDownWall()
 {
-    if (IsRootOrTeleport())
+    if (!CanMove() || !(MoveAbilitiesCurrent & EMoveAbilities::CanClimb))
         return;
     float ClimbDownTracelength = 20;    //TODO temp
     FTraceSpawnParams sParams;
@@ -571,7 +585,7 @@ void UBaseMovementComponent::ClimbDownWall()
 
 void UBaseMovementComponent::HangOnFall()
 {
-    if (IsRootOrTeleport())
+    if (!CanMove() || !(MoveAbilitiesCurrent & EMoveAbilities::CanClimb))
         return;
     auto charPelvisLoc = Character->GetActorLocation();
     FTraceSpawnParams sParams;
@@ -627,7 +641,8 @@ void UBaseMovementComponent::HangOnWall(TSharedPtr<StartClimbData> HangData,
           ECollisionChannel::ECC_WorldStatic, false);
         if (HitWallAdd.GetActor() != nullptr)
         {
-            UE_LOG(LogTemp, Warning, TEXT("HangOnWall error: Hit under character"));
+            if (ShowDebugInfo)
+                UE_LOG(LogTemp, Warning, TEXT("HangOnWall error: Hit under character"));
             return;
         }
         // проверка на повисание на углу
@@ -671,7 +686,8 @@ bool UBaseMovementComponent::CheckWallGeometry(const StartClimbData &Data)
                                             HitWallLeft, EWallChannel, false);
     if (HitWallLeft.GetActor() == nullptr && HitWallRight.GetActor() == nullptr)
     {
-        UE_LOG(LogTemp, Warning, TEXT("CheckWallGeometry error: invalid wall geometry"))
+        if (ShowDebugInfo)
+            UE_LOG(LogTemp, Warning, TEXT("CheckWallGeometry error: invalid wall geometry"))
         return false;
     }
     return true;
@@ -679,7 +695,7 @@ bool UBaseMovementComponent::CheckWallGeometry(const StartClimbData &Data)
 
 void UBaseMovementComponent::DoDodge(const EControlDirections& Direction)
 {
-    if (Character->AttributeComponent->Stamina->CurrentValue <= 0)
+    if (Character->AttributeComponent->Stamina->CurrentValue <= 0 || !(MoveAbilitiesCurrent & EMoveAbilities::CanDodge))
         return;
     if (IsCrouching())
     {
@@ -698,7 +714,7 @@ void UBaseMovementComponent::DoDodge(const EControlDirections& Direction)
 
 void UBaseMovementComponent::ClimbWall()
 {
-    if (!IsRootOrTeleport())
+    if (CanMove() && (MoveAbilitiesCurrent & EMoveAbilities::CanClimb))
     {
         const float AnimVertMovement =
           Character->GetDefaultHalfHeight() * 2;    // TODO temp
@@ -775,9 +791,10 @@ bool UBaseMovementComponent::CheckCanHangAgain()
 void UBaseMovementComponent::JumpOffWall(const EControlDirections &Directions)
 {
     // todo сделать чтобы направления были с учетом поворота камеры
-    if (!IsRootOrTeleport() && bWallJumpAbility)
+    if (CanMove() && bWallJumpAbility)
     {
-        UE_LOG(LogTemp, Warning, TEXT("JumpOffWall: doing jmp off"))
+        if (ShowDebugInfo)
+            UE_LOG(LogTemp, Warning, TEXT("JumpOffWall: doing jmp off"))
         bCanHangAgain  = false;
         bWasJumpingOff = true;
         ++Character->JumpMaxCount;    //для возможности усиления прыжка
@@ -871,6 +888,10 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
         if(prevCustomMode == static_cast<int>(ECustomMovementMode::Dodge))
             Character->AttributeComponent->Stamina->UnblockRegen();
     }
+    if (prevMode != MovementMode)
+        OnMoveModeChanged.Broadcast(prevMode, MovementMode);
+    if (prevCustomMode != CustomMovementMode)
+        OnParkourModeChanged.Broadcast(prevCustomMode, CustomMovementMode);
     Super::OnMovementModeChanged(prevMode, prevCustomMode);
 }
 
@@ -1059,13 +1080,15 @@ void UBaseMovementComponent::TransitionStart(const FVector &EndLoc,
 {
     if (bIsTransitioning)
     {
-        UE_LOG(LogTemp, Warning, TEXT("TransitionStart error: already transitioning"))
+        if (ShowDebugInfo)
+            UE_LOG(LogTemp, Warning, TEXT("TransitionStart error: already transitioning"))
         return;
     }
     if (AnimToPlay == nullptr
         || !AnimToPlay->IsValidSectionName(FTransitionSectionNames::End))
     {
-        UE_LOG( LogTemp, Warning, TEXT("TransitionStart error: bad animation to play"))
+        if (ShowDebugInfo)
+            UE_LOG( LogTemp, Warning, TEXT("TransitionStart error: bad animation to play"))
         return;
     }
     bIsTransitioning = true;
@@ -1083,7 +1106,7 @@ void UBaseMovementComponent::TransitionStart(const FVector &EndLoc,
         Character->StartAnimation(CurrentTransitionAnim, callBack, AnimPlayRate,
                                   FTransitionSectionNames::Start);
     }
-    else
+    else if (ShowDebugInfo)
         UE_LOG(LogTemp, Warning, TEXT("TransitionStart info: no anim start section"))
 }
 
@@ -1093,14 +1116,18 @@ void UBaseMovementComponent::TransitionStart(UCurveVector *Curve, const EControl
 {
     if (bIsTransitioning)
     {
-        UE_LOG(LogTemp, Warning, TEXT("TransitionStart error: already transitioning"))
+        if (ShowDebugInfo)
+            UE_LOG(LogTemp, Warning, TEXT("TransitionStart error: already transitioning"))
         return;
     }
     if (AnimToPlay == nullptr || 
         !AnimToPlay->IsValidSectionName(FTransitionSectionNames::Start) ||
         !AnimToPlay->IsValidSectionName(FTransitionSectionNames::End))
     {
-        UE_LOG( LogTemp, Warning, TEXT("TransitionStart error: bad animation to play"))
+        if(Type == AnimTypes::Dodge)
+            Character->AttributeComponent->Stamina->UnblockRegen();
+        if (ShowDebugInfo)
+            UE_LOG( LogTemp, Warning, TEXT("TransitionStart error: bad animation to play"))
         return;
     }
     bIsTransitioning = true;
@@ -1128,7 +1155,8 @@ void UBaseMovementComponent::On_TransitionFinished()
     callBack.BindUObject(this, AnimDelegates[static_cast<AnimTypes>(animType)]);
     Character->StartAnimation(CurrentTransitionAnim, callBack, AnimPlayRate, FTransitionSectionNames::End);
     TransitionCleanUp();
-    UE_LOG(LogTemp, Warning, TEXT("TransitionFinished!"))
+    if (ShowDebugInfo)
+        UE_LOG(LogTemp, Warning, TEXT("TransitionFinished!"))
 }
 
 void UBaseMovementComponent::TransitionProcess(float deltaTime)
@@ -1150,7 +1178,8 @@ void UBaseMovementComponent::TransitionProcess(float deltaTime)
             if (!locSweep || !rotSweep)
             {
                 TransitionInterrupt();
-                UE_LOG(LogTemp, Warning, TEXT("TransitionProcess error: collision hit!!"))
+                if (ShowDebugInfo)
+                    UE_LOG(LogTemp, Warning, TEXT("TransitionProcess error: collision hit!!"))
             }
         }
     }
@@ -1169,7 +1198,8 @@ void UBaseMovementComponent::TransitionProcess(float deltaTime)
             if (!locSweep)
             {
                 TransitionInterrupt();
-                UE_LOG(LogTemp, Warning, TEXT("TransitionProcess error: collision hit!!"))
+                if (ShowDebugInfo)
+                    UE_LOG(LogTemp, Warning, TEXT("TransitionProcess error: collision hit!!"))
             }
         }
     }
@@ -1180,7 +1210,8 @@ void UBaseMovementComponent::TransitionInterrupt()
     check(bIsTransitioning && "Transition: can't interrupt");
     Character->StopAnimMontage(CurrentTransitionAnim);
     TransitionCleanUp();
-    UE_LOG(LogTemp, Warning, TEXT("TransitionInterrupt error: interrupted!!"))
+    if (ShowDebugInfo)
+        UE_LOG(LogTemp, Warning, TEXT("TransitionInterrupt error: interrupted!!"))
 }
 
 void UBaseMovementComponent::TransitionCleanUp()
@@ -1239,7 +1270,6 @@ void UBaseMovementComponent::OnSprintConsume()
 
 void UBaseMovementComponent::Update()
 {
-    //const auto dex = UAttributesHelper::GetAttribute(Character->AttributesComponent->CurrentAttributes, EAttributes::Dex);
     const auto tumble = USkillHelper::GetValue(
         Character->AttributeComponent->Skills, ESkill::Tumble);
     const auto dexMod = UAttributeSetHelper::GetModifier(
@@ -1247,11 +1277,13 @@ void UBaseMovementComponent::Update()
     // более verbose способ получения модификатора
     const auto tumbleMod = UAttributeSetHelper::GetModifier(
         Character->AttributeComponent->Attributes, FSkillList::ModifierMap[(int)ESkill::Tumble]);
-
-    UE_LOG(LogTemp, Warning, TEXT("skill val %d"),
-        USkillHelper::GetValue(Character->AttributeComponent->Skills, ESkill::Tumble))
-        UE_LOG(LogTemp, Warning, TEXT("skill mod %d"),
-            UAttributeSetHelper::GetModifier(Character->AttributeComponent->Attributes, FSkillList::ModifierMap[(int)ESkill::Tumble]))
+    if (ShowDebugInfo)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("skill val %d"),
+            USkillHelper::GetValue(Character->AttributeComponent->Skills, ESkill::Tumble))
+            UE_LOG(LogTemp, Warning, TEXT("skill mod %d"),
+                UAttributeSetHelper::GetModifier(Character->AttributeComponent->Attributes, FSkillList::ModifierMap[(int)ESkill::Tumble]))
+    }
         // ловкость
 
         MinFallHeightThreshold = GetSigmoidValue(
@@ -1332,21 +1364,24 @@ void UBaseMovementComponent::Update()
     CalculateMaxSpeeds(GetSpeedModifier());
 
     // debug log todo
-    UE_LOG(LogTemp, Warning, TEXT("MinFallHeightThreshold %f"), MinFallHeightThreshold)
-    UE_LOG(LogTemp, Warning, TEXT("MaxfallHeightThreshold %f"), MaxfallHeightThreshold)
-    UE_LOG(LogTemp, Warning, TEXT("JumpWallZVelocity %f"), JumpWallZVelocity)
-    UE_LOG(LogTemp, Warning, TEXT("JumpWallXYVelocity %f"), JumpWallXYVelocity)
-    UE_LOG(LogTemp, Warning, TEXT("JumpZVelocity %f"), JumpZVelocity)
-    UE_LOG(LogTemp, Warning, TEXT("AnimPlayRate %f"), AnimPlayRate)
-    UE_LOG(LogTemp, Warning, TEXT("AirControl %f"), AirControl)
-    UE_LOG(LogTemp, Warning, TEXT("BrakingDecelerationFalling %f"),
-           BrakingDecelerationFalling)
-    UE_LOG(LogTemp, Warning, TEXT("FallingLateralFriction %f"), FallingLateralFriction)
-    UE_LOG(LogTemp, Warning, TEXT("JumpMaxHoldTime %f"), Character->JumpMaxHoldTime)
-    UE_LOG(LogTemp, Warning, TEXT("MaxAcceleration %f"), MaxAcceleration)
-    UE_LOG(LogTemp, Warning, TEXT("BrakingDecelerationWalking %f"),
-           BrakingDecelerationWalking)
-    UE_LOG(LogTemp, Warning, TEXT("BrakingFriction %f"), BrakingFriction)
+    if (ShowDebugInfo)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("MinFallHeightThreshold %f"), MinFallHeightThreshold)
+        UE_LOG(LogTemp, Warning, TEXT("MaxfallHeightThreshold %f"), MaxfallHeightThreshold)
+        UE_LOG(LogTemp, Warning, TEXT("JumpWallZVelocity %f"), JumpWallZVelocity)
+        UE_LOG(LogTemp, Warning, TEXT("JumpWallXYVelocity %f"), JumpWallXYVelocity)
+        UE_LOG(LogTemp, Warning, TEXT("JumpZVelocity %f"), JumpZVelocity)
+        UE_LOG(LogTemp, Warning, TEXT("AnimPlayRate %f"), AnimPlayRate)
+        UE_LOG(LogTemp, Warning, TEXT("AirControl %f"), AirControl)
+        UE_LOG(LogTemp, Warning, TEXT("BrakingDecelerationFalling %f"),
+               BrakingDecelerationFalling)
+        UE_LOG(LogTemp, Warning, TEXT("FallingLateralFriction %f"), FallingLateralFriction)
+        UE_LOG(LogTemp, Warning, TEXT("JumpMaxHoldTime %f"), Character->JumpMaxHoldTime)
+        UE_LOG(LogTemp, Warning, TEXT("MaxAcceleration %f"), MaxAcceleration)
+        UE_LOG(LogTemp, Warning, TEXT("BrakingDecelerationWalking %f"),
+               BrakingDecelerationWalking)
+        UE_LOG(LogTemp, Warning, TEXT("BrakingFriction %f"), BrakingFriction)
+    }
 
     UnSetUpdate();
 }
@@ -1358,7 +1393,8 @@ void UBaseMovementComponent::Crouch(bool bClientSimulation)
         Super::Crouch(bClientSimulation);
         return;
     }
-    UE_LOG(LogTemp, Warning, TEXT("blocked crouch"));
+    if (ShowDebugInfo)
+        UE_LOG(LogTemp, Warning, TEXT("blocked crouch"));
     bWantsToCrouch = false;
 }
 
@@ -1368,7 +1404,8 @@ bool UBaseMovementComponent::DoJump(bool bReplayingMoves)
         || bConstrainToPlane || FMath::Abs(PlaneConstraintNormal.Z) == 1.f
         || WeightFactor > 1)
     {
-        UE_LOG(LogTemp, Warning, TEXT("blocked jump"));
+        if (ShowDebugInfo)
+            UE_LOG(LogTemp, Warning, TEXT("blocked jump"));
         return false;
     }
     if (Character->AttributeComponent->Stamina->CurrentValue <= 0)
@@ -1388,11 +1425,9 @@ bool UBaseMovementComponent::DoJump(bool bReplayingMoves)
         return Super::DoJump(bReplayingMoves);
 }
 
-bool UBaseMovementComponent::CanMove() const
+bool UBaseMovementComponent::IsOverWeight() const
 {
-    if (WeightFactor > MaxOverweightMoveFactor)
-        return false;
-    return true;
+    return WeightFactor > MaxOverweightMoveFactor;
 }
 
 float UBaseMovementComponent::GetWeightFactor() const
@@ -1412,18 +1447,24 @@ float UBaseMovementComponent::GetWeightFactor() const
 void UBaseMovementComponent::OnParkourEnded(UAnimMontage *animMontage,
                                               bool bInterrupted)
 {
-    if (bInterrupted)
-        UE_LOG(LogTemp, Warning, TEXT("ParkourInterrupt"))
-    else
-        UE_LOG(LogTemp, Warning, TEXT("ParkourFinishedNormally"))
+    if (ShowDebugInfo)
+    {
+        if (bInterrupted)
+            UE_LOG(LogTemp, Warning, TEXT("ParkourInterrupt"))
+        else
+            UE_LOG(LogTemp, Warning, TEXT("ParkourFinishedNormally"))
+    }
     // todo reset character capsule size if modified
 }
 
 void UBaseMovementComponent::OnDodgeEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
-    if (bInterrupted)
-        UE_LOG(LogTemp, Warning, TEXT("DodgeInterrupt"))
-    else
-        UE_LOG(LogTemp, Warning, TEXT("DodgeFinishedNormally"))
+    if (ShowDebugInfo)
+    {
+        if (bInterrupted)
+            UE_LOG(LogTemp, Warning, TEXT("DodgeInterrupt"))
+        else
+            UE_LOG(LogTemp, Warning, TEXT("DodgeFinishedNormally"))
+    }
     // todo disable invul
 }

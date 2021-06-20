@@ -33,15 +33,13 @@ public:
 
     void OnJumped_Implementation() override;
 
-    UFUNCTION(BlueprintCallable, Category = "Character Base") // todo debug
-    void StartAnimTest(float InPlayRate);
-
+    UFUNCTION(BlueprintCallable, Category = "Character")
     void DoLevelUp(const FCharacterLevelInfo &levelInfo);
 
     void StartAnimation(UAnimMontage *AnimMontage, const FOnMontageBlendingOutStarted &EndCallBack, float InPlayRate, FName StartSectionName = NAME_None);
 
-    UFUNCTION(BlueprintCallable, Category = "Character Base")
-    void InterruptAnimation(ECCState Source, int OldState);
+    UFUNCTION(BlueprintCallable, Category = "Animation")
+    void InterruptAnimation(ECCState Source);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite,meta = (Bitmask, BitmaskEnum = "ECCState", Category = "Character Stats"))
     int CurrentCCState;
@@ -50,7 +48,7 @@ public:
     UCombatComponent *CombatComponent;
 
     UBaseMovementComponent *GetMovementComponent() const override;
-    void Update() override;
+    void Update(const FCharacterLevelInfo &levelInfo) override;
 
 protected:
     // Called to bind functionality to input

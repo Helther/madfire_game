@@ -7,19 +7,21 @@
 
 UCastedAbility::UCastedAbility(const FObjectInitializer &f) :
     Super(f)
-{}
-
-void UCastedAbility::AbilityInit()
 {
-    CurrentCharges = MaxCharges;
-
     OnPrecastFinish.BindUObject(this,&UCastedAbility::PrecastFinish);
     OnCastFinish.BindUObject(this,&UCastedAbility::CastFinish);
     OnCastReadyFinish.BindUObject(this,&UCastedAbility::CastReadyFinish);
     OnReleaseFinish.BindUObject(this,&UCastedAbility::ReleaseFinish);
 }
 
-void UCastedAbility::AbilitySetup(UAbilitySystemComponent *Component)
+void UCastedAbility::AbilityInit()
+{
+    CurrentCharges = MaxCharges;
+
+    Super::AbilityInit();
+}
+
+void UCastedAbility::AbilitySetup(UCombatComponent *Component)
 {
     Super::AbilitySetup(Component);
 }
@@ -33,6 +35,7 @@ void UCastedAbility::Tick(float DeltaTime)
         if(CurrentCastTime >= CastTime && !bCastReady)
         {
             bCastReady = true;
+            bUserAnimInterrupt = true;
             StartAnimation(CastReadySectionName,OnCastReadyFinish);
         }
     }
@@ -56,13 +59,24 @@ void UCastedAbility::PrecastFinish(UAnimMontage *animMontage, bool bInterrupted)
 
 void UCastedAbility::CastFinish(UAnimMontage *animMontage, bool bInterrupted)
 {
-    // todo think of a way to separate interrupt from cast ready progress and call cancel when interrupt
+    if(bUserAnimInterrupt)// to cast ready then
+        bUserAnimInterrupt = false;
+    else if(bInterrupted)
+        Interrupt();
 }
 
 void UCastedAbility::CastReadyFinish(UAnimMontage* animMontage, bool bInterrupted)
 {
+    if(bUserAnimInterrupt)// to ability ready then
+    {
+        bUserAnimInterrupt = false;
+        AbilityReady();
+    }
+    else if(bInterrupted)
+    {
+        Interrupt();
+    }
     bCastReady = false;
-    AbilityReady();
 }
 
 void UCastedAbility::ReleaseFinish(UAnimMontage *animMontage, bool bInterrupted)
@@ -70,7 +84,7 @@ void UCastedAbility::ReleaseFinish(UAnimMontage *animMontage, bool bInterrupted)
     if(!bInterrupted)
     {
         ReleaseNotify();
-        StartCooldown();
+        Cancel();
     }
     else
     {
@@ -91,38 +105,40 @@ void UCastedAbility::Activate()
         UE_LOG(AbilitySystemLog, Warning, TEXT("Casted Ability: OnActivate No Cast Montage"));
         return;
     }
+    bIsActive = true;
     Super::Activate();
 }
 
 void UCastedAbility::Release()
 {
-    if((!bIsCasted) || (CurrentCastTime <= CastTime))
+    if((!bIsCasted) || (CurrentCastTime < CastTime))
     {
-        Cancel();
+        Cancel();// character ended
         return;
     }
 
     bIsCasted = false;
-
+    bUserAnimInterrupt = true;
     StartAnimation(AftercastSectionName,OnReleaseFinish);
 
     --CurrentCharges;
+    Super::Release();
 }
 
 void UCastedAbility::Cancel()
 {
-    Super::Cancel();
     bIsCasted = false;
     StopAnimation();
     StartCooldown();
+    Super::Cancel();
 }
 
 void UCastedAbility::Interrupt()
 {
-    Super::Interrupt();
     bIsCasted = false;
     StopAnimation();
     StartCooldown();
+    Super::Interrupt();
 }
 
 void UCastedAbility::CastNotify()

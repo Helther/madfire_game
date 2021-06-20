@@ -19,6 +19,10 @@ struct FInputKeyNames
     static const FName Dodge;
     static const FName CameraPitch;
     static const FName CameraYaw;
+    static const FName Attack;
+    static const FName Block;
+    static const FName DrawWeapon;
+    static const FName UseAbility;
     static const FName ClimbDownTest;
 };
 
@@ -36,9 +40,7 @@ enum class EPawnGameplayState
     MAX    //dlc stuff
 };
 
-/**
- * 
- */
+
 UCLASS()
 class MADFIRE_API APlayerCharController : public APlayerController
 {
@@ -47,10 +49,10 @@ class MADFIRE_API APlayerCharController : public APlayerController
     // текущий режим контроллера чарактера
     EPawnGameplayState CurrentGameplayState;
     /*
-	UPROPERTY(EditAnywhere, Category = "Character Input")
-		float PitchSensitivity;
-	UPROPERTY(EditAnywhere, Category = "Character Input")
-		float YawSensitivity;
+    UPROPERTY(EditAnywhere, Category = "Character Input")
+        float PitchSensitivity;
+    UPROPERTY(EditAnywhere, Category = "Character Input")
+        float YawSensitivity;
 */
 
     //движение вперед-назад
@@ -76,16 +78,22 @@ class MADFIRE_API APlayerCharController : public APlayerController
     void UnJumpAction();
     //jump button held
     void JumpRepAction();
-    // нажатие кнопки атака
-    void AttackAction();
-    // нажатие кнопки блок
-    void BlockAction();
     // нажатие кнопки уклонения
     void DodgeAction();
+    // нажатие/отпускание кнопки атака
+    void AttackOnAction();
+    void AttackOffAction();
+    // нажатие/отпускание кнопки блок
+    void BlockOnAction();
+    void BlockOffAction();
     // нажатие кнопки достать/спрятать оружие
     void WeaponAction();
     // нажатие кнопки взаимодействия
     void InteractAction();
+    // activate current ability
+    void AbilityOn();
+    // stop activating current ability
+    void AilityOff();
 
     ACharacterPlayer *Player;
 
@@ -94,7 +102,7 @@ public:
 
     // temp value for min input amount to register
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-        float MovementDeadZone{};
+    float MovementDeadZone;
 
 protected:
     APlayerCharController();
@@ -103,4 +111,16 @@ protected:
     virtual void SetupInputComponent() override;
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
+
+    void OnDirectionTimeout(uint8 directions);
+    // new direction timer
+    FTimerHandle FaceTimer;
+    FTimerHandle SideTimer;
+    // in seconds
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float NewDirectionTime; 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool FaceGotOld = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool SideGotOld = false;
 };

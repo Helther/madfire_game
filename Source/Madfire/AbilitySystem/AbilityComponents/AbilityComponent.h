@@ -6,7 +6,7 @@
 #include "GameFramework/Character.h"
 #include "AbilityComponent.generated.h"
 
-class UAbilitySystemComponent;
+class UCombatComponent;
 class UAbstractAbility;
 
 /*
@@ -22,7 +22,7 @@ public:
     UAbilityComponent(const FObjectInitializer &f);
 
     virtual void ComponentInit(UAbstractAbility *parent);
-    virtual bool ComponentSetup(UAbilitySystemComponent *Component);
+    virtual bool ComponentSetup(UCombatComponent *Component);
 
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "AbilitySystem")
     void OnComponentInit();
@@ -43,7 +43,7 @@ public:
     virtual void DeactivateComponent_Implementation() { }
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AbilitySystem")
-    UAbilitySystemComponent *AbilitySystemComponent; //Set through ComponentSetup    
+    UCombatComponent *CombatComponent; //Set through ComponentSetup    
 };
 
 /*

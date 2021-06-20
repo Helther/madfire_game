@@ -45,13 +45,6 @@ void ACharacterPlayer::OnWalkingOffLedge_Implementation(
     }
 }
 
-void ACharacterPlayer::StartAnimTest(float InPlayRate)
-{
-    FOnMontageBlendingOutStarted callBack;
-    callBack.BindUObject(GetMovementComponent(), &UBaseMovementComponent::OnParkourEnded);
-    StartAnimation(GetMovementComponent()->VaultMontageHigh, callBack, InPlayRate);
-}
-
 void ACharacterPlayer::StartAnimation(UAnimMontage *AnimMontage,
                                     const FOnMontageBlendingOutStarted &EndCallBack,
                                     float InPlayRate,
@@ -59,19 +52,19 @@ void ACharacterPlayer::StartAnimation(UAnimMontage *AnimMontage,
 {
     check(AnimMontage != nullptr && "Start Anim: null anim");
     PlayAnimMontage(AnimMontage, InPlayRate, StartSectionName);
-    auto animInstance    = Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
+    auto animInstance    = GetMesh()->GetAnimInstance();
     auto montageInstance = animInstance->GetActiveInstanceForMontage(AnimMontage);
     montageInstance->OnMontageBlendingOutStarted = EndCallBack;
 }
 
-void ACharacterPlayer::InterruptAnimation(ECCState Source, int OldState)
+void ACharacterPlayer::InterruptAnimation(ECCState Source)
 {
     //todo
     // already controlled
-    if (OldState != ECCState::NoCC)
+    if (CurrentCCState != ECCState::NoCC)
     {
         //check if highest order bit of source is lower than old
-        if (GetHighestPriorityCC(Source) < GetHighestPriorityCC(OldState))
+        if (GetHighestPriorityCC(Source) < GetHighestPriorityCC(CurrentCCState))
         {
             UE_LOG(LogTemp,
                    Warning,
@@ -81,17 +74,30 @@ void ACharacterPlayer::InterruptAnimation(ECCState Source, int OldState)
     }
     else
     {
-        ///// todo determine character state (combat, movement, transition, )
         // interrupted by character
         // player can interrupt blocks, spell casts, wall hanging, some attacks and not much else
         if (Source == ECCState::NoCC)
         {
+            auto animInstance = GetMesh()->GetAnimInstance();
             if (GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
             {
-                auto animInstance =
-                  Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
                 if (animInstance->Montage_IsActive(GetMovementComponent()->HangMontage))
                     animInstance->StopSlotAnimation(0.f, FAnimSlotNames::FullBody);
+            }
+            else if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
+            {
+                if (animInstance->Montage_IsActive(CombatComponent->CombatFSM.currentState()->Info.AttackInfo->AttackMontage))
+                    animInstance->Montage_Stop(0.f, CombatComponent->CombatFSM.currentState()->Info.AttackInfo->AttackMontage);
+            }
+            else if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Parry)
+            {
+                if (animInstance->Montage_IsActive(CombatComponent->GetCurrentCombatStance()->CurrentParryAnim))
+                    animInstance->Montage_Stop(0.f, CombatComponent->GetCurrentCombatStance()->CurrentParryAnim);
+            }
+            if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Ability)
+            {
+                if (animInstance->Montage_IsActive(CombatComponent->CurrentAbility->CastAnimMontage))
+                    animInstance->Montage_Stop(0.f, CombatComponent->CurrentAbility->CastAnimMontage);
             }
             return;
         }
@@ -121,22 +127,25 @@ UBaseMovementComponent *ACharacterPlayer::GetMovementComponent() const
     return Cast<UBaseMovementComponent>(ACharacter::GetMovementComponent());
 }
 
-void ACharacterPlayer::Update() 
+void ACharacterPlayer::Update(const FCharacterLevelInfo &levelInfo) 
 {
-    Super::Update();
+    Super::Update(levelInfo);
     if (GetMovementComponent()->IsUpdateNeeded())
         GetMovementComponent()->Update();
+    if (CombatComponent->IsUpdateNeeded())
+		CombatComponent->Update();
+	// todo other stuff
 }
 
 void ACharacterPlayer::DoLevelUp(const FCharacterLevelInfo &levelInfo)
 {
-    //TODO: Move to Movement Component
-    bool dexChanged = UAttributeSetHelper::GetAttribute(levelInfo.Attributes, EAttributes::Dex) != 0;
+    AttributeComponent->LevelUp(levelInfo);
+	bool dexChanged = UAttributeSetHelper::GetAttribute(levelInfo.Attributes, EAttributes::Dex) != 0;
     bool strChanged = UAttributeSetHelper::GetAttribute(levelInfo.Attributes, EAttributes::Str) != 0;
     bool acrobaticsChanged = USkillHelper::GetValue(levelInfo.SkillList, ESkill::Tumble) != 0;
     if (dexChanged || strChanged || acrobaticsChanged)
-        GetMovementComponent()->SetUpdate();
-    //Super::DoLevelUp(levelInfo);
+		GetMovementComponent()->SetDirty();
+    Update(levelInfo);
     // todo other stuff
 }
 
@@ -158,11 +167,14 @@ void ACharacterPlayer::PostInitializeComponents()
 {
     Super::PostInitializeComponents();
     auto animInstance = Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
-    CCAnims.Emplace(ECCState::KnockDown, animInstance->KnockDownAnim);
-    CCAnims.Emplace(ECCState::LossOfBalance, animInstance->LossOfBalanceAnim);
-    CCAnims.Emplace(ECCState::Sleep, animInstance->SleepAnim);
-    CCAnims.Emplace(ECCState::Stasis, animInstance->StasisAnim);
-    CCAnims.Emplace(ECCState::Stun, animInstance->StunAnim);
+    if (animInstance)
+    {
+        CCAnims.Emplace(ECCState::KnockDown, animInstance->KnockDownAnim);
+        CCAnims.Emplace(ECCState::LossOfBalance, animInstance->LossOfBalanceAnim);
+        CCAnims.Emplace(ECCState::Sleep, animInstance->SleepAnim);
+        CCAnims.Emplace(ECCState::Stasis, animInstance->StasisAnim);
+        CCAnims.Emplace(ECCState::Stun, animInstance->StunAnim);
+    }
 }
 
 

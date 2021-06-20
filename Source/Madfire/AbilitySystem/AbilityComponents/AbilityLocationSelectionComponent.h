@@ -14,7 +14,7 @@ class UAbilityLocationSelection : public UAbilityTargetSelection
 
 public:
     void ComponentInit(UAbstractAbility *parent) override;
-    bool ComponentSetup(UAbilitySystemComponent *Component) override;
+    bool ComponentSetup(UCombatComponent *Component) override;
 
     UPROPERTY(BlueprintCallable, BlueprintAssignable, Category = "AbilitySystem")
     FLocationChoosed OnLocationChoosed;

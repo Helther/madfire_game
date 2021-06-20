@@ -1,10 +1,14 @@
 #include "AbilityComponentSamples.h"
 #include "Character/CharacterBase.h"
 
+#if _MSC_VER 
+#pragma warning( disable : 4706 )
+#endif
+
 void UAbilitySelfSelection::ActivateComponent_Implementation()
 {
     ACharacterBase *Owner = nullptr;
-    if(AbilitySystemComponent && (Owner = Cast<ACharacterBase>(AbilitySystemComponent->GetOwner())))
+    if(CombatComponent && (Owner = Cast<ACharacterBase>(CombatComponent->GetOwner())))
         OnTargetChoosed.Broadcast(Owner);
     else
     {
@@ -20,13 +24,13 @@ void UAbilityProjectileSpawn::ActivateComponent_Implementation()
         return;
     }
 
-    if(!AbilitySystemComponent)
+    if(!CombatComponent)
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("UAbilityProjectileSpawn: No Ability System Component is Set"));
         return;
     }
 
-    auto Owner = Cast<ACharacterBase>(AbilitySystemComponent->GetOwner());
+    auto Owner = Cast<ACharacterBase>(CombatComponent->GetOwner());
     auto Controller = Owner->GetController();
 
     if(!(Owner && Controller))

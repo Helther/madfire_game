@@ -53,7 +53,7 @@ protected:
     void CastNotify() override;
     void Release() override;
     void ReleaseNotify() override;
-
+    void Interrupt() override; // NOTE don't forget to deactivate component when interrupted
 };
 
 

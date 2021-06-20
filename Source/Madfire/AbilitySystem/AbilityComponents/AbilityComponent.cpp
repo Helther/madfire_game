@@ -100,11 +100,11 @@ void UAbilityComponent::ComponentInit(UAbstractAbility *parent)
 }
 
 
-bool UAbilityComponent::ComponentSetup(UAbilitySystemComponent *Component)
+bool UAbilityComponent::ComponentSetup(UCombatComponent *Component)
 {
     UE_LOG(AbilitySystemLog, Error, TEXT("AbilityComponent: Setup"));
 
-    AbilitySystemComponent = Component;
+    CombatComponent = Component;
     OnComponentSetup();
     return true;
 }

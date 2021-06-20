@@ -1,5 +1,5 @@
 #include "AbilitySoundComponent.h"
-#include "Character/Components/AbilitySystemComponent.h"
+#include "Character/Components/CombatComponent.h"
 
 void UAbilitySoundComponent::ActivateComponent_Implementation()
 {
@@ -16,13 +16,13 @@ void UAbilitySoundComponent::DeactivateComponent_Implementation()
 
 }
 
-bool UAbilitySoundComponent::ComponentSetup(UAbilitySystemComponent *Component)
+bool UAbilitySoundComponent::ComponentSetup(UCombatComponent *Component)
 {
     Super::ComponentSetup(Component);
 
     if(!IsValid())
         return false;
-    auto Owner = Cast<ACharacter>(AbilitySystemComponent->GetOwner());
+    auto Owner = Cast<ACharacter>(CombatComponent->GetOwner());
     const FAttachmentTransformRules TransformRules = FAttachmentTransformRules(LocationRule, RotationRule, ScaleRule, bWeldSimulatedBodies);
     if(Owner)
         AudioComponent->AttachToComponent(Owner->GetMesh(), TransformRules, SocketName);
@@ -63,7 +63,7 @@ void UAbilitySoundComponent::ComponentInit(UAbstractAbility *parent)
 
 bool UAbilitySoundComponent::IsValid()
 {
-    if(!(AbilitySystemComponent->IsValidLowLevelFast()))
+    if(!(CombatComponent->IsValidLowLevelFast()))
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("Ability Sound Component: Component or Owner Is Null"));
         return false;

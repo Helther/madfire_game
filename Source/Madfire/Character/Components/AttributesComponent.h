@@ -13,11 +13,11 @@
 #include "../../Attributes/Skills.h"
 #include "../../Attributes/RaceInfo.h"
 #include "Attributes/Barrier.h"
-#include <Attributes/ConsumableAttributes.h>
+#include "Attributes/CharacterLevelInfo.h"
 #include "AttributesComponent.generated.h"
 
 
-
+constexpr int MaxLevel = 30;
 
 /**
  *
@@ -163,80 +163,3 @@ public:
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 };
 
-
-/**
- * 
- */
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class MADFIRE_API UAttributesComponent : public UActorComponent
-{
-    GENERATED_BODY()
-
-public:
-    // Sets default values for this component's properties
-    UAttributesComponent();
-    // clang-format off
-	//============= Base stats
-    UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
-        FAttributeSet BaseAttributes; //!< Базовые аттрибуты (сила, ловкость и т.д.)
-    UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
-		FSkillList  BaseSkills;     //!< Базовые скилы (дипломатия, кузнечество и т.д.)
-    UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
-		FDamageResistance BaseDamageResistance;  //!< Базовое снижение урона (в процентах)
-    UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
-		FDamageAbsorb BaseDamageAbsorb;       //!< Базовое снижение урона (на число (поглощение))
-    UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
-		FDamageAbsorb BaseDamageBonus;       //!< Базовая прибавка к урону (на число или проценты?)
-
-	//============== Current stats - текущие значения. 
-	// Это значения полученные при пересчёте, кроме здоровья и стамины
-	UPROPERTY(BlueprintReadWrite, Category = "Character Stats")
-        FAttributeSet CurrentAttributes;
-	UPROPERTY(BlueprintReadWrite, Category = "Character Stats")
-		FSkillList CurrentSkills;
-	UPROPERTY(BlueprintReadWrite, Category = "Character Stats")
-		FDamageResistance CurrentDamageResistance;
-	UPROPERTY(BlueprintReadWrite, Category = "Character Stats")
-		FDamageAbsorb CurrentDamageAbsorb;
-	UPROPERTY(BlueprintReadWrite, Category = "Character Stats")
-		FDamageAbsorb CurrentDamageBonus;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
-		float AttackSpeed;	/*!< в процентах*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
-		float CastSpeed;	/*!< в процентах*/
-
-
-	// объект для упраления значениями хп (текущее, макс, реген)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Character Stats")
-		URegenConsumable *Health;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Character Stats")
-		URegenConsumable *Stamina;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Character Stats")
-		UConsumableAttribute *MagicShield;
-		/*
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSubclassOf<UHealthContainer> HealthClass;
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSubclassOf<UStaminaContainer> StaminaClass;
-  UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSubclassOf<UMagicShieldContainer> MagicShieldClass;
-	*/
-	virtual void Update();
-	UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
-		void SetUpdate() { IsDirty = true; }
-	UFUNCTION(BlueprintCallable, Category = "Component Update")
-		void UnSetUpdate() { IsDirty = false; }
-	UFUNCTION(BlueprintCallable, Category = "Component Update")
-		bool IsUpdateNeeded() { return IsDirty; }
-    // clang-format on
-protected:
-    // Called when the game starts
-    virtual void BeginPlay() override;
-    // Called every frame
-    virtual void TickComponent(float DeltaTime, ELevelTick TickType,
-                               FActorComponentTickFunction *ThisTickFunction) override;
-
-private:
-    class ACharacterBase *Character;
-    bool IsDirty = false;
-};

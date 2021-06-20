@@ -9,7 +9,7 @@
 #include "AbilityAction.generated.h"
 
 
-class UAbilitySystemComponent;
+class UCombatComponent;
 class UAbstractAbility;
 
 /*
@@ -27,7 +27,7 @@ public:
     UAbstractAbility *Ability;
 
     UPROPERTY()
-    UAbilitySystemComponent *AbilitySystemComponent;
+    UCombatComponent *CombatComponent;
 
 
     /*

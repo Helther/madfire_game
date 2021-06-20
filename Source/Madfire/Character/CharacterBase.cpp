@@ -5,15 +5,11 @@
 ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) :
     Super(ObjectInitializer)
 {
-    // Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
     PrimaryActorTick.bCanEverTick = true;
-    //AttributesComponent = CreateDefaultSubobject<UAttributesComponent>("AttributesComponent");
     AttributeComponent = CreateDefaultSubobject<UAttributeComponent>("AttributeComponent");
-    //ExperienceComponent  = CreateDefaultSubobject<UExperienceComponent>("ExperienceComponent");
     EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
     InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
     EffectComponent = CreateDefaultSubobject<UEffectComponent>("EffectComponent");
-    AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>("AbilitySystemComponent");
     MaxWeightMod   = 10.f;
 }
 
@@ -41,15 +37,8 @@ void ACharacterBase::BeginPlay()
     Super::BeginPlay();
 }
 
-void ACharacterBase::OnUpdate()
+void ACharacterBase::Update(const FCharacterLevelInfo &levelInfo)
 {
-    this->Update();
-}
-
-void ACharacterBase::Update()
-{
-    //if (ExperienceComponent->IsUpdateNeeded())
-        //ExperienceComponent->Update();
     if (AttributeComponent->IsUpdateNeeded())
     {
         AttributeComponent->Update();

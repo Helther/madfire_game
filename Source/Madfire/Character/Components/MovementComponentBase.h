@@ -1,11 +1,15 @@
 #pragma once
 
-#include "Character/CharacterAnimInstance.h"
+#include "../CharacterAnimInstance.h"
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TraceFunctional/TraceFunctional.h"
 
 #include "MovementComponentBase.generated.h"
+
+// bind these from related component to link them
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMovementModeChanged, int, OldState, int, NewState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FParkourModeChanged, uint8, OldState, uint8, NewState);
 
 // values represent degrees of rotation relative to forward direction
 enum class EControlDirections : int
@@ -65,7 +69,7 @@ enum EClimbTraceResult
 };
 
 UENUM(BlueprintType, meta = (Bitflags, UseEnumValuesAsMaskValuesInEditor = "true"))
-enum EMoveAbilities //!< Флаги возможностей передвижения
+enum EMoveAbilities
 {
     NoMove   = 0,
     CanJump  = 1 UMETA(DisplayName = "CanJump"),
@@ -85,9 +89,7 @@ struct StartClimbData
     FRotator Rotation;
 };
 
-/**
- * 
- */
+
 UCLASS()
 class MADFIRE_API UBaseMovementComponent : public UCharacterMovementComponent
 {
@@ -187,8 +189,13 @@ public:
     // same day different axis
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Climb general")
     float LocationVertOffset = 0;
+    // manual horizontal movement block
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    bool MovementLock = false;
     // check if character playing root motion or teleporting
     bool IsRootOrTeleport() const;
+    // 
+    bool CanMove() const { return !(IsOverWeight() || IsRootOrTeleport() || MovementLock); }
 
 protected:
     FTraceParams params;
@@ -433,7 +440,7 @@ public:
     void OnSprintConsume();
     virtual void Update();
     // false если перс перегружен или замедлен до остановки
-    bool CanMove() const;
+    bool IsOverWeight() const;
     float GetWeightFactor() const;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
@@ -451,7 +458,7 @@ public:
     float TransitionRotationSpeed{};
 
     UFUNCTION(BlueprintCallable, Category = "Component Update")
-    void SetUpdate() { IsDirty = true; }
+    void SetDirty() { IsDirty = true; }
     UFUNCTION(BlueprintCallable, Category = "Component Update")
     void UnSetUpdate() { IsDirty = false; }
     UFUNCTION(BlueprintCallable, Category = "Component Update")
@@ -459,6 +466,9 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
     bool ShowDebugInfo;
+
+    FMovementModeChanged OnMoveModeChanged;
+    FParkourModeChanged OnParkourModeChanged;
 
 protected:
     /// наследованный мусор

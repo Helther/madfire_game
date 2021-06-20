@@ -9,8 +9,7 @@
 #include "GameFramework/Actor.h"
 #include "AbstractAbility.generated.h"
 
-
-class UAbilitySystemComponent;
+class UCombatComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAbilityEvent, UAbstractAbility*, Ability);
 
@@ -28,6 +27,8 @@ class UAbstractAbility : public UObject, public FTickableGameObject
 
 public:
     UAbstractAbility(const FObjectInitializer &);
+
+    bool bIsActive = false;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
     UAnimMontage *CastAnimMontage;
@@ -87,13 +88,13 @@ public:
     bool bIsCooldown = false;
 
     UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
-    UAbilitySystemComponent *AbilitySystemComponent;
+    UCombatComponent *CombatComponent;
 
     //Interface
     virtual void AbilityInit();
 
     //Called by AbilitySystemComponent when Ability Selected
-    virtual void AbilitySetup(UAbilitySystemComponent *Component);
+    virtual void AbilitySetup(UCombatComponent *Component);
 
     void Tick(float DeltaTime) override;
 
@@ -165,6 +166,8 @@ protected:
 
     bool StartAnimation(FName SectionName, FOnMontageBlendingOutStarted Delegate);
     bool StopAnimation();
+
+    bool bUserAnimInterrupt = false;
 
     /*
     inline bool isValid(void)

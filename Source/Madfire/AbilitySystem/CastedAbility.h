@@ -16,7 +16,7 @@ public:
 
     void AbilityInit() override;
 
-    void AbilitySetup(UAbilitySystemComponent *Component) override;
+    void AbilitySetup(UCombatComponent *Component) override;
 
     UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
     float CurrentCastTime;
@@ -46,7 +46,7 @@ public:
     const FName PrecastSectionName = "Precast Section";
     const FName CastLoopSectionName = "Cast Loop Section";
     const FName CastReadySectionName = "Cast Ready Section";
-    const FName AftercastSectionName = "Release Section";
+    const FName AftercastSectionName = "Aftercast Section";
 
     FOnMontageBlendingOutStarted OnPrecastFinish;
     FOnMontageBlendingOutStarted OnCastFinish;

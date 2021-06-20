@@ -1,16 +1,14 @@
 ﻿#include "AbstractAbility.h"
 #include "AbilitySystemLog.h"
-#include "Character/Components/AbilitySystemComponent.h"
+#include "Character/Components/CombatComponent.h"
 
 UAbstractAbility::UAbstractAbility(const FObjectInitializer &f) :
     Super(f)
-{
+{}
 
-}
-
-void UAbstractAbility::AbilitySetup(UAbilitySystemComponent *Component)
+void UAbstractAbility::AbilitySetup(UCombatComponent *Component)
 {
-    AbilitySystemComponent = Component;
+    CombatComponent = Component;
     for(auto &component : AbilityComponents)
     {
         component->ComponentSetup(Component);
@@ -110,20 +108,26 @@ void UAbstractAbility::Release()
 
 void UAbstractAbility::Cancel()
 {
+    bIsActive = false;
     OnAbilityCancel();
+    check(CombatComponent && "Cancel: Bad component!");
+    CombatComponent->UpdateCombatFSM();
 }
 
 void UAbstractAbility::Interrupt()
 {
+    bIsActive = false;
     OnAbilityInterrupt();
+    check(CombatComponent && "Interrupt: Bad component!");
+    CombatComponent->UpdateCombatFSM();
 }
 
 bool UAbstractAbility::StopAnimation()
 {
-    if(!AbilitySystemComponent)
+    if(!CombatComponent)
         return false;
 
-    auto Owner = Cast<ACharacter>(AbilitySystemComponent->GetOwner());
+    auto Owner = Cast<ACharacter>(CombatComponent->GetOwner());
     if(!Owner)
         return false;
 
@@ -139,20 +143,20 @@ bool UAbstractAbility::StartAnimation(FName SectionName, FOnMontageBlendingOutSt
         return false;
     }
 
-    if(!AbilitySystemComponent)
+    if(!CombatComponent)
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("Ability: AbilitySystemComponent is not set"));
         return false;
     }
 
-    if(!AbilitySystemComponent->GetOwner())
+    if(!CombatComponent->GetOwner())
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("Ability: AbilitySystemComponent Owner is not set"));
         return false;
     }
 
 
-    auto Owner = Cast<ACharacter>(AbilitySystemComponent->GetOwner());
+    auto Owner = Cast<ACharacter>(CombatComponent->GetOwner());
 
     if(!Owner)
     {
@@ -168,5 +172,3 @@ bool UAbstractAbility::StartAnimation(FName SectionName, FOnMontageBlendingOutSt
 
     return true;
 }
-
-

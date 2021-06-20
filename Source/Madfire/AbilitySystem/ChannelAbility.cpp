@@ -5,18 +5,19 @@
 
 UChannelAbility::UChannelAbility(const FObjectInitializer &f) :
     Super(f)
-{}
+{
+    OnPrecastFinish.BindUObject(this,&UChannelAbility::PrecastFinish);
+    OnCastFinish.BindUObject(this,&UChannelAbility::CastFinish);
+}
 
 void UChannelAbility::AbilityInit()
 {
     CurrentCharges = MaxCharges;
 
-    OnPrecastFinish.BindUObject(this,&UChannelAbility::PrecastFinish);
-    OnCastFinish.BindUObject(this,&UChannelAbility::CastFinish);
     Super::AbilityInit();
 }
 
-void UChannelAbility::AbilitySetup(UAbilitySystemComponent *Component)
+void UChannelAbility::AbilitySetup(UCombatComponent *Component)
 {
     Super::AbilitySetup(Component);
 }
@@ -39,15 +40,14 @@ void UChannelAbility::PrecastFinish(UAnimMontage *animMontage, bool bInterrupted
 
 void UChannelAbility::CastFinish(UAnimMontage *animMontage, bool bInterrupted)
 {
-    if (!bInterrupted)
+    if (bUserAnimInterrupt)
     {
+        bUserAnimInterrupt = false;
         // PlayAftercast
         // Note loop section is always interrupted
     }
     else
-    {
-
-    }
+        Interrupt();
 }
 
 void UChannelAbility::ChannelUpdate()
@@ -56,6 +56,7 @@ void UChannelAbility::ChannelUpdate()
     if(CurrentCharges < 1)
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("Not enough Charges"));
+        bUserAnimInterrupt = true;
         StartCooldown();
         Release();
     }
@@ -75,14 +76,15 @@ void UChannelAbility::Activate()
         UE_LOG(AbilitySystemLog, Error, TEXT("Channel Ability: Can't start the animation"));
         return;
     }
+    bIsActive = true;
     Super::Activate();
 }
 
 void UChannelAbility::Release()
 {
     StartAnimation(AftercastSectionName,OnReleaseFinish);
-    AbilityEnd();
     Super::Release();
+    Cancel();// character ended
 }
 
 void UChannelAbility::Cancel()

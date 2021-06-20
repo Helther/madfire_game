@@ -8,9 +8,7 @@
 #include "Components/EquipmentComponent.h"
 #include "Components/InventoryComponent.h"
 #include "Components/MovementComponentBase.h"
-#include "Components/ExperienceComponent.h"
 #include "Components/EffectComponent.h"
-#include "Components/AbilitySystemComponent.h"
 
 
 #include "CharacterBase.generated.h"
@@ -28,10 +26,7 @@ public:
     ACharacterBase(const FObjectInitializer &ObjectInitializer);
 
     float TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent, class AController *EventInstigator, AActor *DamageCauser) override;
-    virtual void Update();
-
-    UFUNCTION(BlueprintCallable, Category = "Character Base")
-    void OnUpdate(); //!< Blueprint interface  for Blueprints
+    virtual void Update(const FCharacterLevelInfo &levelInfo);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats",
               meta = (ClampMin = "0.0", UIMin = "0.0"))
@@ -42,18 +37,12 @@ public:
 
     UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
     UAttributeComponent *AttributeComponent;
-    //UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
-    //UAttributesComponent *AttributesComponent;
-    //UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
-    //UExperienceComponent *ExperienceComponent;
     UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
     UEquipmentComponent *EquipmentComponent;
     UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
     UInventoryComponent *InventoryComponent;
     UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
     UEffectComponent *EffectComponent;
-    UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
-    UAbilitySystemComponent *AbilitySystemComponent;
 
 
 protected:

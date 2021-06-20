@@ -1,5 +1,5 @@
 #include "AbilitySamples.h"
-#include "Character/Components/AbilitySystemComponent.h"
+#include "Character/Components/CombatComponent.h"
 #include "AbilitySystem/AbilityFunctional.h"
 #include "Character/CharacterBase.h"
 
@@ -73,6 +73,17 @@ void UCastedAbility_Sample::Release()
         UE_LOG(AbilitySystemLog, Error, TEXT("CastedAbility_Sample: No Aim Component"));
     }
     Super::Release();
+}
+
+void UCastedAbility_Sample::Interrupt()
+{
+    if(AimingComponent)
+        AimingComponent->DeactivateComponent();
+    else
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("CastedAbility_Sample: No Aim Component"));
+    }
+    Super::Interrupt();
 }
 
 void UCastedAbility_Sample::ReleaseNotify()

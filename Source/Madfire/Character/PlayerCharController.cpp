@@ -15,9 +15,18 @@ const FName FInputKeyNames::Jump          = "Jump";
 const FName FInputKeyNames::Dodge         = "Dodge";
 const FName FInputKeyNames::CameraPitch   = "CameraPitch";
 const FName FInputKeyNames::CameraYaw     = "CameraYaw";
+const FName FInputKeyNames::Attack        = "Attack";
+const FName FInputKeyNames::Block         = "Block";
+const FName FInputKeyNames::DrawWeapon    = "Draw weapon";
+const FName FInputKeyNames::UseAbility    = "UseAbility";
 const FName FInputKeyNames::ClimbDownTest = "ClimbDownTest";
 
-APlayerCharController::APlayerCharController() {}
+APlayerCharController::APlayerCharController() 
+{
+    // debug
+    NewDirectionTime = 0.5f;
+    MovementDeadZone = 0.3f;
+}
 
 EControlDirections APlayerCharController::GetInputDirection()
 {
@@ -27,7 +36,7 @@ EControlDirections APlayerCharController::GetInputDirection()
     {
         if (rght > MovementDeadZone)
             return EControlDirections::FRightD;
-        else if  (rght < MovementDeadZone)
+        else if  (rght < -MovementDeadZone)
             return EControlDirections::FLeftD;
         else
             return EControlDirections::ForwardD;
@@ -36,7 +45,7 @@ EControlDirections APlayerCharController::GetInputDirection()
     {
         if (rght > MovementDeadZone)
             return EControlDirections::BRightD;
-        else if  (rght < MovementDeadZone)
+        else if  (rght < -MovementDeadZone)
             return EControlDirections::BLeftD;
         else
             return EControlDirections::BackD;
@@ -45,7 +54,7 @@ EControlDirections APlayerCharController::GetInputDirection()
     {
         if (fwd > MovementDeadZone)
             return EControlDirections::FRightD;
-        else if  (fwd < MovementDeadZone)
+        else if  (fwd < -MovementDeadZone)
             return EControlDirections::BRightD;
         else
             return EControlDirections::RightD;
@@ -54,7 +63,7 @@ EControlDirections APlayerCharController::GetInputDirection()
     {
         if (fwd > MovementDeadZone)
             return EControlDirections::FLeftD;
-        else if  (fwd < MovementDeadZone)
+        else if  (fwd < -MovementDeadZone)
             return EControlDirections::BLeftD;
         else
             return EControlDirections::LeftD;
@@ -69,6 +78,7 @@ void APlayerCharController::BeginPlay()
     check(Player != nullptr && "APlayerCharController: No pawn");
     CurrentGameplayState = EPawnGameplayState::InWorld;    // debug
 }
+
 void APlayerCharController::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
@@ -108,6 +118,20 @@ void APlayerCharController::SetupInputComponent()
           FInputKeyNames::CameraPitch, this, &APlayerCharController::CameraPitch);
         InputComponent->BindAxis(
           FInputKeyNames::CameraYaw, this, &APlayerCharController::CameraYaw);
+        InputComponent->BindAction(
+            FInputKeyNames::Attack, IE_Pressed, this, &APlayerCharController::AttackOnAction);
+        InputComponent->BindAction(
+            FInputKeyNames::Attack, IE_Released, this, &APlayerCharController::AttackOffAction);
+        InputComponent->BindAction(
+            FInputKeyNames::Block, IE_Pressed, this, &APlayerCharController::BlockOnAction);
+        InputComponent->BindAction(
+            FInputKeyNames::Block, IE_Released, this, &APlayerCharController::BlockOffAction);
+        InputComponent->BindAction(
+            FInputKeyNames::DrawWeapon, IE_Pressed, this, &APlayerCharController::WeaponAction);
+        InputComponent->BindAction(
+            FInputKeyNames::UseAbility, IE_Pressed, this, &APlayerCharController::AbilityOn);
+        InputComponent->BindAction(
+            FInputKeyNames::UseAbility, IE_Released, this, &APlayerCharController::AilityOff);
     }
 }
 
@@ -131,15 +155,30 @@ bool APlayerCharController::IsActionKeyPressed(const FName &ActionKey)
     return false;
 }
 
+void APlayerCharController::OnDirectionTimeout(uint8 directions)
+{
+    Player->CombatComponent->SpecialDirections &= 0xf & ~directions;
+    if (directions & (ESpecialDirection::SLEFT | ESpecialDirection::SRIGHT))
+        SideGotOld = true;
+    else
+        FaceGotOld = true;
+}
+
 void APlayerCharController::MoveForward(float AxisValue)
 {
     check(Player != nullptr && "APlayerCharController: No pawn");
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (AxisValue != 0.0f && Player->CurrentCCState == ECCState::NoCC
-                && !Player->GetMovementComponent()->IsRootOrTeleport())
+            if (FMath::Abs(AxisValue) >= MovementDeadZone && Player->CurrentCCState == ECCState::NoCC
+                && Player->GetMovementComponent()->CanMove())
             {
+                const auto combatState = Player->CombatComponent->CombatFSM.currentState();
+                if (combatState != nullptr && combatState->Id == ECombatState::Ability)// check if can move during cast, interrupt then
+                {
+                    if (Player->CombatComponent->CurrentAbility->MoveAbilities == 0)
+                        Player->InterruptAnimation(ECCState::NoCC);
+                }
                 if (Player->GetMovementComponent()->MovementMode
                     == EMovementMode::MOVE_Swimming)
                 {
@@ -164,12 +203,31 @@ void APlayerCharController::MoveForward(float AxisValue)
                 }
                 else
                 {
-                    FRotator Rotation = FRotator(0.f, GetControlRotation().Yaw, 0.f);
-                    const FVector Direction =
-                      UKismetMathLibrary::GetForwardVector(Rotation);
+                    const FVector Direction = UKismetMathLibrary::GetForwardVector(FRotator(0.f, GetControlRotation().Yaw, 0.f));
                     //UE_LOG(LogTemp, Warning, TEXT("Forward vector %s"), *Direction.ToString());
                     Player->AddMovementInput(Direction, AxisValue, false);
+                    // special attack direction update
+                    if (!FaceGotOld)
+                    {
+                        uint8 direction;
+                        if (AxisValue > 0)
+                            direction = ESpecialDirection::SFORWARD;
+                        else
+                            direction = ESpecialDirection::SBACK;
+                        if (!(Player->CombatComponent->SpecialDirections & direction))
+                        {
+                            Player->CombatComponent->SpecialDirections &= 0xf & ~(ESpecialDirection::SFORWARD | ESpecialDirection::SBACK);
+                            Player->CombatComponent->SpecialDirections |= direction;
+                            GetWorld()->GetTimerManager().SetTimer(FaceTimer,
+                                [&, direction]() { OnDirectionTimeout(direction); }, NewDirectionTime, false);
+                        }
+                    }
                 }
+            }
+            else // reset special attack directions
+            {
+                Player->CombatComponent->SpecialDirections &= 0xf & ~(ESpecialDirection::SFORWARD | ESpecialDirection::SBACK);
+                FaceGotOld = false;
             }
             break;
         }
@@ -184,9 +242,15 @@ void APlayerCharController::MoveRight(float AxisValue)
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (AxisValue != 0.0f && Player->CurrentCCState == ECCState::NoCC
-                && !Player->GetMovementComponent()->IsRootOrTeleport())
+            if (FMath::Abs(AxisValue) >= MovementDeadZone && Player->CurrentCCState == ECCState::NoCC
+                && Player->GetMovementComponent()->CanMove())
             {
+                const auto combatState = Player->CombatComponent->CombatFSM.currentState();
+                if (combatState != nullptr && combatState->Id == ECombatState::Ability)// check if can move during cast, interrupt then
+                {
+                    if (Player->CombatComponent->CurrentAbility->MoveAbilities == 0)
+                        Player->InterruptAnimation(ECCState::NoCC);
+                }
                 if (Player->GetMovementComponent()->MovementMode
                     == EMovementMode::MOVE_Custom)
                 {
@@ -208,7 +272,34 @@ void APlayerCharController::MoveRight(float AxisValue)
                     const FVector Direction =
                       UKismetMathLibrary::GetRightVector(Rotation);
                     Player->AddMovementInput(Direction, AxisValue, false);
+                    // special attack direction update
+                    if (!SideGotOld)
+                    {
+                        uint8 direction;
+                        if (AxisValue > 0)
+                            direction = ESpecialDirection::SRIGHT;
+                        else
+                            direction = ESpecialDirection::SLEFT;
+                        if (!(Player->CombatComponent->SpecialDirections & direction))
+                        {
+                            Player->CombatComponent->SpecialDirections &= 0xf & ~(ESpecialDirection::SRIGHT | ESpecialDirection::SLEFT);
+                            Player->CombatComponent->SpecialDirections |= direction;
+                            GetWorld()->GetTimerManager().SetTimer(SideTimer,
+                                [&, direction]() { OnDirectionTimeout(direction); }, NewDirectionTime, false);
+                        }
+                    }
+                    //if (GetWorld()->GetTimerManager().IsTimerActive(SideTimer))
+                    //GetWorld()->GetTimerManager().ClearTimer(SideTimer);
                 }
+                if (Player->GetMovementComponent()->bWantToSprint && 
+                    Player->CombatComponent->IsWeaponDrawn && 
+                    InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.f)
+                    Player->GetMovementComponent()->bWantToSprint = false;
+            }
+            else // reset special attack directions
+            {
+                Player->CombatComponent->SpecialDirections &= 0xf & ~(ESpecialDirection::SLEFT | ESpecialDirection::SRIGHT);
+                SideGotOld = false;
             }
         }
         default:
@@ -260,7 +351,7 @@ void APlayerCharController::RunAction()
     }
 }
 
-void APlayerCharController::SprintAction()    ///add equipment weight check
+void APlayerCharController::SprintAction()    // TODO add equipment weight check
 {
     check(Player != nullptr && "APlayerCharController: No pawn");
 
@@ -271,8 +362,9 @@ void APlayerCharController::SprintAction()    ///add equipment weight check
             if (Player->GetMovementComponent()->IsMovingOnGround()
                 && Player->CurrentCCState == ECCState::NoCC)
             {
-                if (Player->CombatComponent->IsWeaponDrawn
-                    && InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.f)
+                if ((Player->CombatComponent->IsWeaponDrawn
+                    && InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.f) ||
+                    Player->CombatComponent->IsBusy())
                     return;
                 Player->GetMovementComponent()->bWantToSprint = true;
                 if (Player->bIsCrouched)
@@ -316,6 +408,8 @@ void APlayerCharController::CrouchAction()
                 if (Player->GetMovementComponent()->MovementMode
                     == EMovementMode::MOVE_Walking)
                 {
+                    if (Player->CombatComponent->IsBusy())
+                        return;
                     if (Player->GetMovementComponent()->IsCrouching())
                         Player->UnCrouch();
                     else
@@ -355,7 +449,7 @@ void APlayerCharController::JumpAction()
     {
         case (EPawnGameplayState::InWorld): {
             if (Player->CurrentCCState == ECCState::NoCC
-                && !Player->GetMovementComponent()->IsRootOrTeleport())
+                && Player->GetMovementComponent()->CanMove())
             {
                 if (Player->GetMovementComponent()->MovementMode
                     == EMovementMode::MOVE_Walking)
@@ -368,6 +462,12 @@ void APlayerCharController::JumpAction()
                         else if (Player->GetMovementComponent()->CanVaultOrClimb(false))
                             return;
                     }
+                    int currentCombatState = Player->CombatComponent->CombatFSM.currentState()->Id;
+                    bool canInterruptAction = (currentCombatState == ECombatState::Attack || currentCombatState == ECombatState::Parry) &&
+                        !Player->CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked) &&
+                        !Player->CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed);
+                    if (currentCombatState == ECombatState::Block || canInterruptAction)
+                        Player->InterruptAnimation(ECCState::NoCC);
                     Player->Jump();
                     return;
                 }
@@ -432,7 +532,7 @@ void APlayerCharController::JumpRepAction()
     {
         case (EPawnGameplayState::InWorld): {
             if (Player->CurrentCCState == ECCState::NoCC
-                && !Player->GetMovementComponent()->IsRootOrTeleport())
+                && !Player->GetMovementComponent()->CanMove())
             {
                 if (Player->GetMovementComponent()->MovementMode
                     == EMovementMode::MOVE_Falling)
@@ -448,16 +548,94 @@ void APlayerCharController::JumpRepAction()
 
 void APlayerCharController::DodgeAction()
 {
-        switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
             if (Player->CurrentCCState == ECCState::NoCC
-                && !Player->GetMovementComponent()->IsRootOrTeleport()) // todo учесть комбат
+                && Player->GetMovementComponent()->CanMove() && Player->CombatComponent->IsWeaponDrawn)
             {
                 if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
                     Player->GetMovementComponent()->DoDodge(GetInputDirection());
             }
             break;
+        }
+    }
+}
+
+void APlayerCharController::AttackOnAction()
+{
+    switch (CurrentGameplayState)    //todo учесть другие состояния
+    {
+    case (EPawnGameplayState::InWorld): {
+        if (Player->CurrentCCState == ECCState::NoCC)
+            Player->CombatComponent->OnAttack(true); // TODO check if ability is busy
+    }
+    }
+}
+
+void APlayerCharController::AttackOffAction()
+{
+    switch (CurrentGameplayState)    //todo учесть другие состояния
+    {
+        case (EPawnGameplayState::InWorld): {
+            if (Player->CurrentCCState == ECCState::NoCC)
+                Player->CombatComponent->OnAttack(false);
+        }
+    }
+}
+
+void APlayerCharController::BlockOnAction()
+{
+    switch (CurrentGameplayState)    //todo учесть другие состояния
+    {
+        case (EPawnGameplayState::InWorld): {
+            if (Player->CurrentCCState == ECCState::NoCC && !Player->GetMovementComponent()->IsCrouching() &&
+                Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
+                Player->CombatComponent->OnBlock(true);
+        }
+    }
+}
+
+void APlayerCharController::BlockOffAction()
+{
+    switch (CurrentGameplayState)    //todo учесть другие состояния
+    {
+        case (EPawnGameplayState::InWorld): {
+            if (Player->CurrentCCState == ECCState::NoCC && !Player->GetMovementComponent()->IsCrouching())
+                Player->CombatComponent->OnBlock(false);
+        }
+    }
+}
+
+void APlayerCharController::WeaponAction()
+{
+    switch (CurrentGameplayState)    //todo учесть другие состояния
+    {
+        case (EPawnGameplayState::InWorld): {
+            if (Player->CurrentCCState == ECCState::NoCC && Player->GetMovementComponent()->MovementMode != EMovementMode::MOVE_Custom)
+                    Player->CombatComponent->OnDrawWeapon();
+        }
+    }
+}
+
+void APlayerCharController::AbilityOn()
+{
+    switch (CurrentGameplayState)    //todo учесть другие состояния
+    {
+        case (EPawnGameplayState::InWorld): {
+            if (Player->CurrentCCState == ECCState::NoCC)
+                Player->CombatComponent->OnUseAbility(true);
+        }
+    }
+}
+
+void APlayerCharController::AilityOff()
+{
+    switch (CurrentGameplayState)    //todo учесть другие состояния
+    {
+        case (EPawnGameplayState::InWorld): {
+            if (Player->CurrentCCState == ECCState::NoCC)
+                Player->CombatComponent->OnUseAbility(false);
         }
     }
 }

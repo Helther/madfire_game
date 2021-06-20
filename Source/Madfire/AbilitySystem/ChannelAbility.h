@@ -18,7 +18,7 @@ public:
 
     void AbilityInit() override;
 
-    void AbilitySetup(UAbilitySystemComponent *Component) override;
+    void AbilitySetup(UCombatComponent *Component) override;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AbilitySystem")
     float CastRate = 0.5f;

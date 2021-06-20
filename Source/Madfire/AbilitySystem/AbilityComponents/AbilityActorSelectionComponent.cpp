@@ -1,5 +1,5 @@
 #include "AbilityActorSelectionComponent.h"
-#include "Character/Components/AbilitySystemComponent.h"
+#include "Character/Components/CombatComponent.h"
 
 void UAbilityActorSelection::ComponentInit(UAbstractAbility *parent)
 {
@@ -7,7 +7,7 @@ void UAbilityActorSelection::ComponentInit(UAbstractAbility *parent)
     Super::ComponentInit(parent);
 }
 
-bool UAbilityActorSelection::ComponentSetup(UAbilitySystemComponent *Component)
+bool UAbilityActorSelection::ComponentSetup(UCombatComponent *Component)
 {
     return Super::ComponentSetup(Component);
 }

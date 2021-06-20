@@ -1,5 +1,5 @@
 #include "InstantAbility.h"
-#include "Character/Components/AbilitySystemComponent.h"
+#include "Character/Components/CombatComponent.h"
 #include "Character/CharacterBase.h"
 
 void UInstantAbility::AbilityInit()
@@ -8,7 +8,7 @@ void UInstantAbility::AbilityInit()
     OnPrecastFinish.BindUObject(this,&UInstantAbility::PrecastFinish);
 }
 
-void UInstantAbility::AbilitySetup(UAbilitySystemComponent *Component)
+void UInstantAbility::AbilitySetup(UCombatComponent *Component)
 {
     Super::AbilitySetup(Component);
 }
@@ -19,6 +19,9 @@ void UInstantAbility::PrecastFinish(UAnimMontage *animMontage, bool bInterrupted
     {
         CurrentCharges--;
         CastNotify();
+        bIsActive = false;
+        check(CombatComponent && "Cancel: Bad component!");
+        CombatComponent->UpdateCombatFSM();
     }
     else
     {
@@ -39,7 +42,7 @@ void UInstantAbility::Activate()
     }
     else
     {}
-
+    bIsActive = true;
     Super::Activate();
 }
 
@@ -63,4 +66,3 @@ void UInstantAbility::CastNotify()
 {
     OnCastNotify();
 }
-

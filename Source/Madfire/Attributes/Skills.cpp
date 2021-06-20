@@ -4,8 +4,6 @@
 
 const EAttributes FSkillList::ModifierMap[(int32)ESkill::Max] = {
     EAttributes::Int,    //Appraise
-    EAttributes::Cha,    //Bluff
-    EAttributes::Cha,    //Intimidate
     EAttributes::Cha,    //Diplomacy
     EAttributes::Cha,    //Perform
     EAttributes::Wis,    //Perception
@@ -26,7 +24,7 @@ const EAttributes FSkillList::ModifierMap[(int32)ESkill::Max] = {
 };
 
 FSkillList::FSkillList()
-  : SkillMap{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+  : SkillMap{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
 {}
 
 FSkillList &FSkillList::operator+=(const FSkillList &rhs)
