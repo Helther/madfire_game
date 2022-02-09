@@ -4,12 +4,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Components/AttributesComponent.h"
-#include "Components/CombatComponent.h"
-#include "Components/EquipmentComponent.h"
-#include "Components/InventoryComponent.h"
-#include "Components/MovementComponentBase.h"
 #include "Components/EffectComponent.h"
-
 
 #include "CharacterBase.generated.h"
 
@@ -24,33 +19,13 @@ class MADFIRE_API ACharacterBase : public ACharacter
 public:
     // Sets default values for this character's properties
     ACharacterBase(const FObjectInitializer &ObjectInitializer);
-
+    // Returns remaining HP
     float TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent, class AController *EventInstigator, AActor *DamageCauser) override;
     virtual void Update(const FCharacterLevelInfo &levelInfo);
+    void BeginPlay() override;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats",
-              meta = (ClampMin = "0.0", UIMin = "0.0"))
-    float MaxWeightMod;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Stats")
-    float MaxWeight;
-
-    UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
+    UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
     UAttributeComponent *AttributeComponent;
-    UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
-    UEquipmentComponent *EquipmentComponent;
-    UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
-    UInventoryComponent *InventoryComponent;
-    UPROPERTY(BlueprintReadWrite, Category = "Character Components", VisibleAnywhere)
+    UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
     UEffectComponent *EffectComponent;
-
-
-protected:
-    // Called when the game starts or when spawned
-    virtual void BeginPlay() override;
-    // Called every frame
-    virtual void Tick(float DeltaTime) override;
-
-        // clang-format on
-    void CalculateMaxWeight();
 };

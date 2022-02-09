@@ -29,42 +29,43 @@ public:
 
     UItem *Equip(UItem *Item);
     UItem *EquipToSlot(UItem *Item, EItemSlot SlotName);
+    FEquipmentSlot* GetEquipmentFromSlot(EItemSlot SlotName);
 
     UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FSkillList EquipmentSkills;
-	UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
+    UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FAttributeSet EquipmentAttributes;
-	UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
+    UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FDamageAbsorb  EqipmentDamageAbsorb;
-	UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
+    UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FDamageResistance  EqipmentDamageResistance;
-	UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
+    UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FDamageAbsorb EqipmentDamageBonus;
 
     void SwapWeapons();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment Component")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment Component")
     float CurrentWeight;
 
-	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
+    UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     void Update();
 
-	UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
     void SetUpdate() { IsDirty = true; }
-	UFUNCTION(BlueprintCallable, Category = "Component Update")
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
     void UnSetUpdate() { IsDirty = false; }
-	UFUNCTION(BlueprintCallable, Category = "Component Update")
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
     bool IsUpdateNeeded() { return IsDirty; }
 
 
-	// debug
-	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
+    // TODO test functions
+    UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     void UpWeight();
-	UFUNCTION(BlueprintCallable, Category = "Equipment Component")
+    UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     void DownWeight();
 
 private:
-    class ACharacterBase *Owner = nullptr;
+    class ACharacterCreature *Owner = nullptr;
     FEquipmentSlot Slot[(int32)EItemSlot::Max];
     bool IsDirty = false;
 

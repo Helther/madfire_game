@@ -386,7 +386,7 @@ bool UInventoryComponent::RemoveFromStack(int32 index, int32 amount,
 
 void UInventoryComponent::Update()
 {
-    // todo define
+    // todo finish
     CalculateWeight();
     UnSetUpdate();
 }

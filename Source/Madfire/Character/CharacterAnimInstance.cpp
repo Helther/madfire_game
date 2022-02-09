@@ -1,68 +1,88 @@
 ﻿#include "CharacterAnimInstance.h"
 
-#include "Character/CharacterPlayer.h"
+#include "Character/CharacterCreature.h"
 
 void UCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
-    CharacterPlayer = Cast<ACharacterPlayer>(GetOwningActor());
+    CharacterInstance = Cast<ACharacterCreature>(GetOwningActor());
     Super::NativeUpdateAnimation(DeltaSeconds);
 }
 
 void UCharacterAnimInstance::OnWeaponSwitch()
 {    
-    auto& stateInfo = CharacterPlayer->CombatComponent->CombatFSM.state(ECombatState::WeaponSwitch)->Info;
+    auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::WeaponSwitch)->Info;
     stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::WeaponGrabbed, true);
+    CharacterInstance->CombatComponent->WeaponsSetup(!CharacterInstance->CombatComponent->WeaponDrawn());
 }
 
 void UCharacterAnimInstance::OnBlockActivation(bool activate)
 {
-    if (CharacterPlayer->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Block)
+    if (CharacterInstance->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Block)
     {
-        auto& stateInfo = CharacterPlayer->CombatComponent->CombatFSM.state(ECombatState::Block)->Info;
+        auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::Block)->Info;
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::BlockOrParryActive, activate);
     }
 }
 
 void UCharacterAnimInstance::OnParryActivation(bool activate)
 {
-    if (CharacterPlayer->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Parry)
+    if (CharacterInstance->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Parry)
     {
-        auto& stateInfo = CharacterPlayer->CombatComponent->CombatFSM.state(ECombatState::Parry)->Info;
+        auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::Parry)->Info;
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::BlockOrParryActive, activate);
     }
 }
 
 void UCharacterAnimInstance::OnMovementAllowed(bool activate)
 {
-    auto& stateInfo = CharacterPlayer->CombatComponent->CombatFSM.currentState()->Info;
+    auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.currentState()->Info;
     stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::MovementBlocked, !activate);
-    CharacterPlayer->GetMovementComponent()->MovementLock = !activate;
+    CharacterInstance->GetMovementComponent()->MovementLock = !activate;
 }
 
 void UCharacterAnimInstance::OnRotationAllowed(bool activate)
 {
-    auto& stateInfo = CharacterPlayer->CombatComponent->CombatFSM.currentState()->Info;
+    auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.currentState()->Info;
     stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::RotationBlocked, !activate);
     RootMotionMode = activate ? ERootMotionMode::IgnoreRootMotion : ERootMotionMode::RootMotionFromMontagesOnly;
 }
 
 void UCharacterAnimInstance::OnComboCanContinue()
 {
-    auto& stateInfo = CharacterPlayer->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
-    if (CharacterPlayer->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
+    auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
+    if (CharacterInstance->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
     {
         if (!stateInfo.CheckAnimInfo(ECombatStateAnimInfo::ComboSaved))
             stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::ComboCanContinue, true);
         else
-            CharacterPlayer->CombatComponent->StartNextComboAttack(false);
+            CharacterInstance->CombatComponent->StartNextComboAttack(false);
+    }
+}
+
+void UCharacterAnimInstance::OnCollisionActivation(bool mainHand, bool activate)
+{
+    if (CharacterInstance->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
+    {
+        auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
+        stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CollisionOn, activate);
+        CharacterInstance->CombatComponent->SetCurrentWeaponCollision(mainHand, activate);// TODO separate norifies for main and off hand
+    }
+}
+
+void UCharacterAnimInstance::OnParriableActivation(bool activate)
+{
+    if (CharacterInstance->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
+    {
+        auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
+        stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanBeParried, activate);
     }
 }
 
 bool UCharacterAnimInstance::IsMovementAllowed() const
 {
-    if(CharacterPlayer != nullptr && CharacterPlayer->CombatComponent->CombatFSM.currentState())
+    if(CharacterInstance != nullptr && CharacterInstance->CombatComponent != nullptr && CharacterInstance->CombatComponent->CombatFSM.currentState())
     {
-        const auto& stateInfo = CharacterPlayer->CombatComponent->CombatFSM.currentState()->Info;
+        const auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.currentState()->Info;
         return !stateInfo.CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked);
     }
     return false;

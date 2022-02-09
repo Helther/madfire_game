@@ -15,6 +15,8 @@ struct FDamageResistance
 {
     GENERATED_BODY()
 
+    FDamageResistance();
+
     FDamageResistance &operator+=(const FDamageResistance &resistance);
     FDamageResistance operator+(const FDamageResistance &resistance);
 
@@ -26,6 +28,8 @@ USTRUCT(BlueprintType)
 struct FDamageAbsorb
 {
     GENERATED_BODY()
+
+    FDamageAbsorb();
 
     FDamageAbsorb &operator+=(const FDamageAbsorb &resistance);
     FDamageAbsorb operator+(const FDamageAbsorb &resistance);

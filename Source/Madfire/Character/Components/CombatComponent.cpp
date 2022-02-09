@@ -1,11 +1,18 @@
 #include "CombatComponent.h"
 
-#include "../CharacterPlayer.h"
+#include "../CharacterCreature.h"
+#include "Kismet/KismetMathLibrary.h"
 
 const FName FAnimSectionNames::Start = "Start";
 const FName FAnimSectionNames::End = "End";
 const FName FAnimSectionNames::Cancel = "Cancel";
 
+
+const FName FWeaponSlotNames::Main = "WeaponMainSlot";
+const FName FWeaponSlotNames::Off = "WeaponOffSlot";
+const FName FWeaponSlotNames::SheathMain = "WeaponSheathMainSlot";
+const FName FWeaponSlotNames::SheathOff = "WeaponSheathOffSlot";
+const FName FWeaponSlotNames::Back = "WeaponSheathBackSlot";
 
 UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitilizer)
   : Super(ObjectInitilizer)
@@ -13,19 +20,71 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitili
     PrimaryComponentTick.bCanEverTick = true;
     // TODO temp test
     AttackSpeed = 1.f;// TODO set in update from dex mod?
+    UnarmedBaseDamage = 1.f;
+    CastSpeed = 1.f;
     BlockStaminaRegenRateMod = 0.5f;
     ShowDebugInfo = true;
     CombatModeRotationRate = 500.f;
     ActionRotationRate = 100.f;
     ChargeStartTime = 0.2f;
-    //
+    BlockStaminaCost = 10.f;
+    KnockdownThreshhold = 1.5f;
+    HitForceReductionMod = 0.8f;
+    MaxFacingAngle = 45.f;
+    // end temp
+
     InitCombatFSM();
 }
+
+FName UCombatComponent::GetSlotFromWeaponType(EWeaponType type, bool draw, bool mainHand)
+{
+    if (draw)
+    {
+        return mainHand ? FWeaponSlotNames::Main : FWeaponSlotNames::Off;
+    }
+    else
+    {
+        // TODO consider adding special sheath anims for two handed weapons
+        switch (type)
+        {
+        case EWeaponType::Quaterstaff:
+        case EWeaponType::Spear:
+        case EWeaponType::Crossbow:
+        case EWeaponType::Battleaxe:
+        case EWeaponType::Warhammer:
+        case EWeaponType::Greatclub:
+        case EWeaponType::Halberd:
+        case EWeaponType::Longbow:
+        case EWeaponType::Shortbow:
+        case EWeaponType::Shield:
+            return FWeaponSlotNames::Back;
+        default:
+            return mainHand ? FWeaponSlotNames::SheathMain : FWeaponSlotNames::SheathOff;
+        }
+    }
+}
+
+float UCombatComponent::CalculateWeaponDamage(const UItemWeapon* weapon, float attackInfoDamageMod, float strMod)
+{
+    if (weapon->WeaponType == EWeaponType::Unarmed)
+    {
+        auto gloves = Character->EquipmentComponent->GetEquipmentFromSlot(EItemSlot::HandsSlot)->Item;
+        if (gloves)
+            return (UnarmedBaseDamage + gloves->Weight) * strMod;
+        else
+            return UnarmedBaseDamage * strMod;
+    }
+    else
+    {
+        return weapon->DamageValue * attackInfoDamageMod + strMod;
+    }
+}
+
 // Called when the game starts
 void UCombatComponent::BeginPlay()
 {
     Super::BeginPlay();
-    Character = Cast<ACharacterPlayer>(GetOwner());
+    Character = Cast<ACharacterCreature>(GetOwner());
     check(Character != nullptr && "UCombatComponent: No pawn");
     Character->GetMovementComponent()->OnMoveModeChanged.AddDynamic(this, &UCombatComponent::OnMovementModeChanged);
     // TODO temp, stance resolve this on new stance
@@ -36,6 +95,11 @@ void UCombatComponent::BeginPlay()
     GetCurrentCombatStance()->CurrentDrawAnim = GetCurrentCombatStance()->CustomDrawAnim;
     GetCurrentCombatStance()->CurrentSheathAnim = GetCurrentCombatStance()->CustomSheathAnim;
     /////
+    // TODO temp weapon spawn, instead should spawn when setting in equipment
+    CurrentWeaponMainH = DefaultWeaponMainH;
+    auto actor = GetWorld()->SpawnActor(CurrentWeaponMainH->ItemActor);
+    CurrentMainWeaponActor = Cast<AItemActor>(actor);
+    CurrentMainWeaponActor->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FWeaponSlotNames::SheathMain);
 }
 
 // Called every frame
@@ -109,7 +173,7 @@ void UCombatComponent::InitCombatFSM()
     req.BindLambda([&]() // set relevant attack info into current state, check special, if not start combo
     {
         bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;
-        if (!IsWeaponDrawn || !AttackPressed || !hasStamina)
+        if (!IsWeaponDrawn || !AttackPressed || !hasStamina || Character->GetMovementComponent()->IsTransitionInProgress())
             return false;
         ESpecialType special = ESpecialType::None;
         if (Character->GetMovementComponent()->bIsSprinting)
@@ -211,7 +275,7 @@ void UCombatComponent::InitCombatFSM()
     });
     CombatFSM.addLink(ECombatState::Block, ECombatState::Idle, req);
     req.Unbind();
-    req.BindLambda([&]() // check if stance has parry
+    req.BindLambda([&]() // check if stance has parry (Note: кулачный бой не должен иметь парри)
     {
         bool hasStanceAnims = CurrentCombatStance->CurrentParryAnim != nullptr;
         bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;
@@ -256,11 +320,11 @@ void UCombatComponent::InitCombatFSM()
     });
     CombatFSM.addLink(ECombatState::Parry, ECombatState::Block, req);
     req.Unbind();
-    req.BindLambda([&]()// TODO finish counter attack check, check if was parried
+    req.BindLambda([&]()// TODO finish counter attack check, check if was parried (no special counter atttacks planned at the moment)
     {
         auto newAttackInfo = CurrentCombatStance->GetAttackInfoForSpecial(ESpecialType::CounterAttack);
         CombatFSM.state(ECombatState::Attack)->Info.AttackInfo = newAttackInfo;
-        return newAttackInfo != nullptr && 0;// TODO temp
+        return newAttackInfo != nullptr && 0;// TODO temp noop
     });
     CombatFSM.addLink(ECombatState::Parry, ECombatState::Attack, req);
     req.Unbind();
@@ -292,6 +356,9 @@ void UCombatComponent::InitCombatFSM()
         CombatFSM.state(ECombatState::Attack)->Info.AttackInfo = nullptr;
         CombatFSM.state(ECombatState::Attack)->Info.ChargeStage = -1;
         ResetCurrentCombo();
+        CharactersHit.Reset();
+        SetCurrentWeaponCollision(true, false);
+        SetCurrentWeaponCollision(false, false);
         CalculateMaxCombatSpeeds();
     });
     req.BindLambda([&]()
@@ -382,20 +449,62 @@ void UCombatComponent::ResetActionState(int StateId)
 }
 
 void UCombatComponent::OnMovementModeChanged(int oldMode, int newMode)
-{
-    
+{ 
     if (CombatFSM.currentState() && CombatFSM.currentState()->Id == ECombatState::Attack)
     {
         // check if started falling during regular attack
         if (newMode == EMovementMode::MOVE_Falling && !CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed))
             Character->InterruptAnimation(ECCState::NoCC);
         // check if landed during air attack to finish anim
-        if ( newMode == EMovementMode::MOVE_Walking && CombatFSM.currentState()->Info.AttackInfo->Special == ESpecialType::Air)
+        if (newMode == EMovementMode::MOVE_Walking && CombatFSM.currentState()->Info.AttackInfo->Special == ESpecialType::Air)
         {
             CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
             FOnMontageBlendingOutStarted callBack;
             callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
             Character->StartAnimation(CombatFSM.currentState()->Info.AttackInfo->AttackMontage, callBack, AttackSpeed, FAnimSectionNames::End);	
+        }
+    }
+}
+
+void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+    auto hitActor = SweepResult.GetActor();
+    if (hitActor == nullptr || hitActor == Character || hitActor == CurrentMainWeaponActor || hitActor == CurrentOffWeaponActor)// Check self and weapon
+        return;
+    if (CombatFSM.currentState()->Id == ECombatState::Attack)
+    {
+        const auto &info = CombatFSM.state(ECombatState::Attack)->Info;
+        if (info.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && !HasAlreadyHitTarget(hitActor))
+        {
+            CharactersHit.Emplace(hitActor);
+            // check witch hand has active collision
+            auto activeWeapon = CurrentMainWeaponActor->ItemCollision->GetGenerateOverlapEvents() ? CurrentWeaponMainH : CurrentWeaponOffH;
+            auto hitCharacter = Cast<ACharacterBase>(hitActor);
+            if (hitCharacter)
+            {
+                if (ShowDebugInfo)
+                    UE_LOG(LogTemp, Warning, TEXT("OnBeginOverlap Hit character!"));
+                int32 strMod = UAttributeSetHelper::GetModifier(hitCharacter->AttributeComponent->Attributes, EAttributes::Str);
+                const float damage = CalculateWeaponDamage(activeWeapon, CombatFSM.state(ECombatState::Attack)->Info.AttackInfo->DamageMod, strMod);
+                float force = CalculateHitForce(activeWeapon->Weight, strMod, info.AttackInfo->PowerMod); // Use Force, Luke
+                hitCharacter->TakeDamage(damage, FForceDamageEvent(activeWeapon->DamageType, force), Character->GetController(), Character);
+            }
+            else // hit an obsticle
+            {
+                if (SweepResult.GetComponent()->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic) // check if hit a wall and interrupt with loss of balance
+                {
+                    if (ShowDebugInfo)
+                        UE_LOG(LogTemp, Warning, TEXT("OnBeginOverlap Hit wall!"));
+                    Character->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::HitWall);
+                }
+                else // try to damage the actor
+                {
+                    if (ShowDebugInfo)
+                        UE_LOG(LogTemp, Warning, TEXT("OnBeginOverlap Hit actor!"));
+                    const float damage = CalculateWeaponDamage(activeWeapon, CombatFSM.state(ECombatState::Attack)->Info.AttackInfo->DamageMod, 0);
+                    hitActor->TakeDamage(damage, FDamageEvent(activeWeapon->DamageType), Character->GetController(), Character);
+                }
+            }
         }
     }
 }
@@ -516,18 +625,6 @@ void UCombatComponent::OnUseAbility(bool Started)
     }
 }
 
-float UCombatComponent::CalculateDamage(AActor *Target, UItemWeapon *Weapon) const
-{
-    // TODO skip combat comp checks if character doesn't have one, and stats checks if not a characterbase
-    return 0.0f;
-}
-
-float UCombatComponent::CalculatePower(AActor *Target, UItemWeapon *Weapon) const
-{
-    // TODO skip combat comp checks if character doesn't have one, and stats checks if not a characterbase
-    return 0.0f;
-}
-
 void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
 {
     check(CombatFSM.currentState()->Id == ECombatState::Attack && "StartNextComboAttack: not in attack state");
@@ -564,6 +661,9 @@ void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
         ++CurrentCombatStance->CurrentCombo;
         Character->AttributeComponent->Stamina->Consume(nextAttackInfo->StaminaCost);
         stateInfo.ResetAnimInfo();
+        CharactersHit.Reset();
+        SetCurrentWeaponCollision(true, false);
+        SetCurrentWeaponCollision(false, false);
         auto animInstance = Cast<UCharacterAnimInstance>(Character->GetMesh()->GetAnimInstance());
         animInstance->OnMovementAllowed(false);
         stateInfo.AttackInfo = nextAttackInfo;
@@ -579,6 +679,24 @@ bool UCombatComponent::HasAlreadyHitTarget(AActor *Target) const
     if (Target)
         return CharactersHit.Contains(Target);
     return false;
+}
+
+float UCombatComponent::GetAngleBetweenAttackerAndDefender(AActor *Attacker, AActor *Defender)
+{
+    check(Attacker != nullptr && Defender != nullptr && "GetAngleBetweenActors: invalid arg");
+    const FVector defenderV = FRotator(0, Defender->GetActorRotation().Yaw, 0).Vector();
+    const FVector attackerV = UKismetMathLibrary::GetDirectionUnitVector(Attacker->GetActorLocation(), Defender->GetActorLocation());
+    float direction = FVector::DotProduct(attackerV, defenderV);
+    return FMath::Abs(acos(direction) * 180.f / PI - 180.f);
+}
+
+float UCombatComponent::GetAngleBetweenActors(AActor *First, AActor *Second)
+{
+    check(First != nullptr && Second != nullptr && "GetAngleBetweenActors: invalid arg");
+    const FVector firstV = FRotator(0, First->GetActorRotation().Yaw, 0).Vector();
+    const FVector secondV = FRotator(0, Second->GetActorRotation().Yaw, 0).Vector();
+    float direction = FVector::DotProduct(firstV, secondV);
+    return FMath::Abs(acos(direction) * 180.f / PI - 180.f);
 }
 
 void UCombatComponent::OnWeaponSwitchEnded(UAnimMontage* animMontage, bool bInterrupted)
@@ -659,6 +777,52 @@ bool UCombatComponent::CanBeInterruptedWithBlock(int CurrentState) const
     const auto state = CombatFSM.state(CurrentState);
     bool pass = !state->Info.CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked) && BlockPressed;
     return pass;
+}
+
+void UCombatComponent::WeaponsSetup(bool draw)
+{
+    if (CurrentWeaponMainH != nullptr)
+    {
+        WeaponSetup(CurrentWeaponMainH, CurrentMainWeaponActor, draw, true);
+        if (CurrentWeaponOffH != nullptr)
+            WeaponSetup(CurrentWeaponOffH, CurrentOffWeaponActor, draw, false);
+    }
+    else if (DefaultWeaponMainH != nullptr)
+    {
+        WeaponSetup(DefaultWeaponMainH, CurrentMainWeaponActor, draw, true);
+        if (DefaultWeaponOffH != nullptr)
+            WeaponSetup(DefaultWeaponOffH, CurrentOffWeaponActor, draw, false);
+    }
+}
+
+void UCombatComponent::WeaponSetup(UItemWeapon* weapon, AItemActor* actor, bool draw, bool mainHand)
+{
+    const FName slot = UCombatComponent::GetSlotFromWeaponType(weapon->WeaponType, draw, mainHand);
+    if (draw)
+    {
+        actor->ItemCollision->OnComponentBeginOverlap.AddDynamic(this, &UCombatComponent::OnWeaponOverlap);
+        actor->ItemCollision->SetCollisionProfileName("OverlapAll");
+    }
+    else
+    {
+        actor->ItemCollision->OnComponentBeginOverlap.RemoveDynamic(this, &UCombatComponent::OnWeaponOverlap);
+    }
+    actor->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, slot);
+}
+
+void UCombatComponent::SetCurrentWeaponCollision(bool main, bool enable)
+{
+    if (main && CurrentMainWeaponActor != nullptr)
+    {
+        CurrentMainWeaponActor->ItemCollision->SetGenerateOverlapEvents(enable);
+        // other options
+        //SetCollisionObjectType
+        //SetCollisionResponseToChannel
+    }
+    else if (CurrentOffWeaponActor != nullptr)
+    {
+        CurrentOffWeaponActor->ItemCollision->SetGenerateOverlapEvents(enable);
+    }
 }
 
 void UCombatComponent::ActivateAbility()

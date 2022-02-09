@@ -12,8 +12,9 @@
 #include "../../Attributes/DamageMap.h"
 #include "../../Attributes/Skills.h"
 #include "../../Attributes/RaceInfo.h"
-#include "Attributes/Barrier.h"
-#include "Attributes/CharacterLevelInfo.h"
+#include "../../Attributes/Barrier.h"
+#include "../../Attributes/CharacterLevelInfo.h"
+
 #include "AttributesComponent.generated.h"
 
 
@@ -29,12 +30,12 @@ class UAttributeComponent : public UActorComponent
 
 public:
     UAttributeComponent(const FObjectInitializer& ObjectInitializer);
-
+    // Deprecated
     UPROPERTY(Instanced, EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
     URaceInfo *CharacterRace;
 
     UPROPERTY(SaveGame, EditAnywhere, BlueprintReadOnly, Category = "Character Attributes")
-    FAttributeSet Attributes; //!< Базовые аттрибуты (сила, ловкость и т.д.)
+    FAttributeSet Attributes; //!< Текущие аттрибуты (сила, ловкость и т.д.)
     UPROPERTY(SaveGame, EditAnywhere, BlueprintReadOnly, Category = "Character Attributes")
     FSkillList Skills;
 
@@ -45,11 +46,6 @@ public:
     UPROPERTY(SaveGame, EditAnywhere, BlueprintReadOnly, Category = "Character Attributes")
     FDamageResistance DamageResistance;  //!< Базовое снижение урона (в процентах)
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
-    float AttackSpeed;	/*!< в процентах*/
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
-    float CastSpeed;	/*!< в процентах*/
-
     //Primary Attributes
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
     UDynamicAttribute *Health;
@@ -59,12 +55,12 @@ public:
     //Experience
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
     float CurrentExperience;
-
+    //Skill Points givin you on LevelUp
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
-    float FreeSkillPoints; //Skill Points givin you on LevelUp
-
+    float FreeSkillPoints;
+    //Attribute Points givin you on LevelUp
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
-    float FreeAttributePoints; //Attribute Points givin you on LevelUp
+    float FreeAttributePoints;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character Attributes")
     UCurveFloat *ExperienceCurve;
@@ -98,61 +94,59 @@ public:
     bool IsUpdateNeeded() const { return bIsDirty; }
 
     bool SkillCheck(ESkill Skill, int32 value);
-
+    // Deprecated
 #if WITH_EDITOR
     void PostEditChangeProperty(struct FPropertyChangedEvent &e);
 #endif
 
     //For external use only
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
     void ModifyAttribute(FAttributeSet Attribute);
-    void ModifySkills(FSkillList Skills);
-    void ModifyDamageAbsorb(FDamageAbsorb DamageAbsorb);
-    void ModifyDamageResist(FDamageResistance DamageResist);
-    void ModifyDamageBonus(FDamageAbsorb DamageBonus);
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
+    void ModifySkills(FSkillList SkillsBonus);
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
+    void ModifyDamageAbsorb(FDamageAbsorb DAbsorb);
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
+    void ModifyDamageResist(FDamageResistance DResist);
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
+    void ModifyDamageBonus(FDamageAbsorb DBonus);
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
     void ModifyHealthBonus(float HPBonus);
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
     void ModifyHealthRegen(float HPRegen);
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
     void ModifyStaminaBonus(float STBonus);
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
     void ModifyStaminaRegen(float STRegen);
 
 
     UPROPERTY(BlueprintReadWrite, Category = "Character Attributes")
     FAttributeSet BaseAttribute;
 
-
-    FAttributeSet BonusAttribute;    
-    FSkillList BonusSkills;    
-    FDamageAbsorb BonusDamageAbsorb;    
-    FDamageAbsorb BonusDamageBonus;    
-    FDamageResistance BonusDamageResistance;    
+    // Used for effects buffs/debuffs
+    FAttributeSet BonusAttribute;
+    FSkillList BonusSkills;
+    FDamageAbsorb BonusDamageAbsorb;
+    FDamageAbsorb BonusDamageBonus;
+    FDamageResistance BonusDamageResistance;
     float BonusHealth = 0.f;    
     float BonusHealthRegen = 1.f;
     float BonusStamina = 0.f;    
     float BonusStaminaRegen = 1.f;
 
-    void UpdateBaseAttribute();
-    void UpdateAttribute();
-    void UpdateSkills();
-    void UpdateDamageAbsorb();
-    void UpdateDamageResist();
-    void UpdateDamageBonus();
-    void UpdateHealth();
-    void UpdateHealthRegen();
-    void UpdateStamina();
-    void UpdateStaminaRegen();
-
-
-    //Returns Remount HP
+    //Returns remaining HP
     float TakeDamage(float DamageAmount, UDamageType *DamageType, AActor *DamageCauser);
 
     UPROPERTY(EditAnywhere)
     TArray<UBarrier*> BarrierList;
 
-    const class ACharacterBase *GetCharacterOwner() const;
-
 private:
+    const class ACharacterBase *GetCharacterOwner() const;
+    ACharacterBase *GetCharacterOwner();
+
     bool bIsDirty = false;
 
-
+    void CallUpdate();
 
     // UActorComponent interface
 public:

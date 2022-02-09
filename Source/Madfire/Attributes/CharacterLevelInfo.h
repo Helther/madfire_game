@@ -15,10 +15,23 @@ struct FCharacterLevelInfo
     FCharacterLevelInfo();
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
-    float HealthBonus;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
     FSkillList SkillList;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
     FAttributeSet Attributes;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    FDamageAbsorb DamageAbsorbBonus;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    FDamageAbsorb DamageBonus;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    FDamageResistance DamageResistanceBonus;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    float HealthBonus;    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    float HealthRegenBonus;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    float StaminaBonus; 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    float StaminaRegenBonus;
+
     //todo add feats
 };

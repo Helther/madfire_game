@@ -96,7 +96,7 @@ void UEffectComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 void UEffectComponent::Update(float DeltaTime)
 {
     ACharacterBase *owner = Cast<ACharacterBase>(GetOwner());
-
+    // TODO apply efefcts to attributes
     if(!owner)
     {
         UE_LOG(LogTemp,Warning, TEXT("UEffectComponent: No Owner"))

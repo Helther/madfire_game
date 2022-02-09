@@ -15,8 +15,8 @@ class URaceInfo : public UDataAsset
 {
     GENERATED_BODY()
 public:
-
-    //Talants
+    // TODO add damage ress
+    //Talents
     UPROPERTY(EditDefaultsOnly)
     FAttributeSet Attributes;
     UPROPERTY(EditDefaultsOnly)

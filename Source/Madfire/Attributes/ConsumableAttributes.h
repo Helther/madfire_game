@@ -37,7 +37,7 @@ struct FAttributeData
 
     bool Consume(float Amount)
     {
-        const float result = CurrentValue + Amount;
+        const float result = CurrentValue - Amount;
         if(result <= 0)
         {
             CurrentValue = 0;
@@ -148,7 +148,7 @@ public:
     UFUNCTION(BlueprintCallable)
     bool Consume(float Amount)
     {
-        const float result = CurrentValue + Amount;
+        const float result = CurrentValue - Amount;
         if(result <= 0)
         {
             CurrentValue = 0;

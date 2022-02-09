@@ -2,7 +2,7 @@
 
 #include "MovementComponentBase.h"
 
-#include "Character/CharacterPlayer.h"
+#include "Character/CharacterCreature.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Rules/Utils.h"
@@ -13,12 +13,14 @@
 const FName FTransitionSectionNames::Start = "transition_start";
 const FName FTransitionSectionNames::End   = "transition_finish";
 
-UBaseMovementComponent::UBaseMovementComponent(
+UHumanoidMovementComponent::UHumanoidMovementComponent(
   const class FObjectInitializer &ObjectInitilizer)
   : Super(ObjectInitilizer)
 {
     bNotifyApex                    = true;
     bCanWalkOffLedgesWhenCrouching = true;
+    bUseControllerDesiredRotation  = false;
+    bOrientRotationToMovement      = true;
     maxSpeedBlock                  = false;
     //////////////////////////////////////Debug///////////////////////////
     MaxWalkSpeedDefault         = 250;
@@ -67,16 +69,18 @@ UBaseMovementComponent::UBaseMovementComponent(
     AnimPlayRate               = AnimPlayRateBase;
     MaxOverweightMoveFactor    = MaxOverweightMoveFactorBase;
 
-    FallDamageScale   = 0.25f;
+    FallDamageMod   = 0.25f;
     SpeedScale        = 0.25f;
     AccelerationScale = 0.25f;
     AnimPlayRateScale = 0.25f;
     FrictionScale     = 0.25f;
 
-    abilityMod             = 1.f;
-    skillMod               = 1.f;
-    weightMod              = 1.f;
-    weightFactorBalanceMod = 10.f;
+    AbilityMod             = 1.f;
+    SkillMod               = 1.f;
+    WeightMod              = 1.f;
+    WeightFactorBalanceMod = 10.f;
+    SpeedModStrafe = 0.85f;
+    SpeedModBackwards = 0.5f;
     DodgeAbilityMod = 10.f;
 
     ShowDebugInfo = false;
@@ -93,12 +97,12 @@ UBaseMovementComponent::UBaseMovementComponent(
     AirControl
     MaxCustomMovementSpeed
     */
-    AnimDelegates.Emplace(AnimTypes::Parkour, &UBaseMovementComponent::OnParkourEnded);
-    AnimDelegates.Emplace(AnimTypes::Dodge, &UBaseMovementComponent::OnDodgeEnded);
+    AnimDelegates.Emplace(AnimTypes::Parkour, &UHumanoidMovementComponent::OnParkourEnded);
+    AnimDelegates.Emplace(AnimTypes::Dodge, &UHumanoidMovementComponent::OnDodgeEnded);
 }
 
 // вызывать при изменении модификатора
-void UBaseMovementComponent::CalculateMaxSpeeds(float SpeedModifier)
+void UHumanoidMovementComponent::CalculateMaxSpeeds(float SpeedModifier)
 {
     if (IsOverWeight())    // скорости на которые не влияют модификаторы
     {
@@ -123,14 +127,14 @@ void UBaseMovementComponent::CalculateMaxSpeeds(float SpeedModifier)
     }
 }
 
-float UBaseMovementComponent::GetSpeedModifier() const 
+float UHumanoidMovementComponent::GetSpeedModifier() const 
 {
     const auto dexMod = UAttributeSetHelper::GetModifier(Character->AttributeComponent->Attributes, EAttributes::Dex);
-    return GetSigmoidValue(dexMod + weightFactorBalanceMod * (-WeightFactor), weightMod,
+    return GetSigmoidValue(dexMod + WeightFactorBalanceMod * (-WeightFactor), WeightMod,
                         1.f - SpeedScale, 1.f + SpeedScale); // нормально
 }
 
-FTraceSpawnParams UBaseMovementComponent::GetTraceSpawnParams(bool IsLow)
+FTraceSpawnParams UHumanoidMovementComponent::GetTraceSpawnParams(bool IsLow)
 {
     const FVector CharLocation  = Character->GetActorLocation();
     const FRotator CharRotation = Character->GetActorRotation();
@@ -163,7 +167,7 @@ FTraceSpawnParams UBaseMovementComponent::GetTraceSpawnParams(bool IsLow)
     return sParamsH;
 }
 
-bool UBaseMovementComponent::CanVaultOrClimb(bool IsLow)
+bool UHumanoidMovementComponent::CanVaultOrClimb(bool IsLow)
 {
     if (!CanMove() || !(MoveAbilitiesCurrent & EMoveAbilities::CanClimb))
         return false;
@@ -202,7 +206,7 @@ bool UBaseMovementComponent::CanVaultOrClimb(bool IsLow)
     return false;
 }
 
-bool UBaseMovementComponent::DoVault(const StartClimbData &LocationData, bool IsLow)
+bool UHumanoidMovementComponent::DoVault(const StartClimbData &LocationData, bool IsLow)
 {
     // vector in the direction opposite to the wall's normal
     const auto res = FQuat(FRotator(0, LocationData.Rotation.Yaw, 0)) * FQuat(FRotator(0, 180, 0));
@@ -244,7 +248,7 @@ bool UBaseMovementComponent::DoVault(const StartClimbData &LocationData, bool Is
     return false;
 }
 
-bool UBaseMovementComponent::DoClimbLedge(const StartClimbData &LocationData, bool IsLow)
+bool UHumanoidMovementComponent::DoClimbLedge(const StartClimbData &LocationData, bool IsLow)
 {
     // vector in the direction opposite to the wall's normal
     const auto res =
@@ -312,7 +316,7 @@ bool UBaseMovementComponent::DoClimbLedge(const StartClimbData &LocationData, bo
     }
 }
 
-bool UBaseMovementComponent::VaultSpaceCheck(const StartClimbData &LedgeData)
+bool UHumanoidMovementComponent::VaultSpaceCheck(const StartClimbData &LedgeData)
 {
     FQuat Rotation(FRotator(0, LedgeData.Rotation.Yaw, 90));
     FHitResult vaultHit;
@@ -352,7 +356,7 @@ bool UBaseMovementComponent::VaultSpaceCheck(const StartClimbData &LedgeData)
 }
 
 TSharedPtr<StartClimbData>
-  UBaseMovementComponent::GetClimbStartLoc(const FTraceSpawnParams &StartTrace,
+  UHumanoidMovementComponent::GetClimbStartLoc(const FTraceSpawnParams &StartTrace,
                                            const float &MinHeight,
                                            const float &MaxHeight,
                                            bool CheckAngle)
@@ -449,7 +453,7 @@ TSharedPtr<StartClimbData>
     return FinalLocation;
 }
 
-bool UBaseMovementComponent::checkRelativeRotation(const float WallNormalYaw)
+bool UHumanoidMovementComponent::checkRelativeRotation(const float WallNormalYaw)
 {
     FVector charsV = FRotator(0, Character->GetActorRotation().Yaw, 0).Vector();
     charsV.Normalize();
@@ -467,7 +471,7 @@ bool UBaseMovementComponent::checkRelativeRotation(const float WallNormalYaw)
     return res;
 }
 
-EClimbTraceResult UBaseMovementComponent::IsEnoughSpace(const FVector &StartLocation,
+EClimbTraceResult UHumanoidMovementComponent::IsEnoughSpace(const FVector &StartLocation,
                                                         const FVector &EndLocation,
                                                         const ECollisionChannel &StartCC,
                                                         const ECollisionChannel &EndCC)
@@ -508,12 +512,12 @@ EClimbTraceResult UBaseMovementComponent::IsEnoughSpace(const FVector &StartLoca
     return EClimbTraceResult::SuccessStand;
 }
 
-bool UBaseMovementComponent::IsRootOrTeleport() const
+bool UHumanoidMovementComponent::IsRootOrTeleport() const
 {
     return bIsTransitioning || Character->IsPlayingRootMotion();
 }
 
-bool UBaseMovementComponent::IsCharacterCapsuleOk(const FVector &CenterLoc,
+bool UHumanoidMovementComponent::IsCharacterCapsuleOk(const FVector &CenterLoc,
                                                   const bool &Crouching,
                                                   const bool &H2L,
                                                   const ECollisionChannel &CC) const
@@ -556,7 +560,7 @@ bool UBaseMovementComponent::IsCharacterCapsuleOk(const FVector &CenterLoc,
     return res;
 }
 
-void UBaseMovementComponent::ClimbDownWall()
+void UHumanoidMovementComponent::ClimbDownWall()
 {
     if (!CanMove() || !(MoveAbilitiesCurrent & EMoveAbilities::CanClimb))
         return;
@@ -583,7 +587,7 @@ void UBaseMovementComponent::ClimbDownWall()
     HangOnWall(hangData, true);
 }
 
-void UBaseMovementComponent::HangOnFall()
+void UHumanoidMovementComponent::HangOnFall()
 {
     if (!CanMove() || !(MoveAbilitiesCurrent & EMoveAbilities::CanClimb))
         return;
@@ -605,7 +609,7 @@ void UBaseMovementComponent::HangOnFall()
     HangOnWall(hangData, false);
 }
 
-void UBaseMovementComponent::HangOnWall(TSharedPtr<StartClimbData> HangData,
+void UHumanoidMovementComponent::HangOnWall(TSharedPtr<StartClimbData> HangData,
                                         bool ClimbDown)
 {
     if (HangData.Get() == nullptr)
@@ -658,7 +662,7 @@ void UBaseMovementComponent::HangOnWall(TSharedPtr<StartClimbData> HangData,
     }
 }
 
-bool UBaseMovementComponent::CheckWallGeometry(const StartClimbData &Data)
+bool UHumanoidMovementComponent::CheckWallGeometry(const StartClimbData &Data)
 {
     FHitResult HitWallLeft;
     FHitResult HitWallRight;
@@ -693,7 +697,7 @@ bool UBaseMovementComponent::CheckWallGeometry(const StartClimbData &Data)
     return true;
 }
 
-void UBaseMovementComponent::DoDodge(const EControlDirections& Direction)
+void UHumanoidMovementComponent::DoDodge(const EControlDirections& Direction)
 {
     if (Character->AttributeComponent->Stamina->CurrentValue <= 0 || !(MoveAbilitiesCurrent & EMoveAbilities::CanDodge))
         return;
@@ -712,7 +716,7 @@ void UBaseMovementComponent::DoDodge(const EControlDirections& Direction)
                     ECustomMovementMode::Dodge, MovementMode);
 }
 
-void UBaseMovementComponent::ClimbWall()
+void UHumanoidMovementComponent::ClimbWall()
 {
     if (CanMove() && (MoveAbilitiesCurrent & EMoveAbilities::CanClimb))
     {
@@ -753,7 +757,7 @@ void UBaseMovementComponent::ClimbWall()
     }
 }
 
-void UBaseMovementComponent::GetOffWall()
+void UHumanoidMovementComponent::GetOffWall()
 {
     if (!IsRootOrTeleport())
     {
@@ -762,7 +766,7 @@ void UBaseMovementComponent::GetOffWall()
     }
 }
 // todo всё еще можно повиснуть заново если до это сидел и стена достаточно низкая
-bool UBaseMovementComponent::CheckCanHangAgain()
+bool UHumanoidMovementComponent::CheckCanHangAgain()
 {
     if (!bCanHangAgain)
     {
@@ -788,7 +792,7 @@ bool UBaseMovementComponent::CheckCanHangAgain()
     return bCanHangAgain;
 }
 
-void UBaseMovementComponent::JumpOffWall(const EControlDirections &Directions)
+void UHumanoidMovementComponent::JumpOffWall(const EControlDirections &Directions)
 {
     // todo сделать чтобы направления были с учетом поворота камеры
     if (CanMove() && bWallJumpAbility)
@@ -816,7 +820,7 @@ void UBaseMovementComponent::JumpOffWall(const EControlDirections &Directions)
     }
 }
 
-void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
+void UHumanoidMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
                                                    uint8 prevCustomMode)
 {
     if (MovementMode == MOVE_Swimming && IsCrouching())
@@ -895,26 +899,40 @@ void UBaseMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
     Super::OnMovementModeChanged(prevMode, prevCustomMode);
 }
 
-float UBaseMovementComponent::GetMaxSpeed() const
+float UHumanoidMovementComponent::GetMaxSpeed() const
 {
+    float speedMod = 1.f;
+    // странный алгоритм рассчета направления персонажа для уменьшения скорости бега в стороны и назад
+    if (Character->CombatComponent->WeaponDrawn())
+    {
+        const auto velocity = Character->GetVelocity();
+        const auto controlRot = Character->Controller->GetControlRotation();
+        float direction = Character->GetMesh()->GetAnimInstance()->CalculateDirection(velocity, controlRot);
+        direction = FMath::Abs(direction);
+        if (direction > 60.f && direction <= 110.f) // если движение в сторону
+            speedMod = SpeedModStrafe;
+        else if (direction > 110.f) // если движение назад
+            speedMod = SpeedModBackwards;
+    }
+
     switch (MovementMode)
     {
         case MOVE_Walking:
         case MOVE_NavWalking: {
             if (IsCrouching() && bIsRunning && WeightFactor <= 1)
-                return MaxRunSpeedCrouched;
+                return MaxRunSpeedCrouched * speedMod;
             else if (IsCrouching() && !bIsRunning)
                 return MaxWalkSpeedCrouched;
             else if (!bWantToSprint && !bIsRunning)
                 return MaxWalkSpeed;
             else if (!bWantToSprint && bIsRunning && WeightFactor <= 1)
-                return MaxRunSpeed;
+                return MaxRunSpeed * speedMod;
             else if (bWantToSprint
                      && Character->AttributeComponent->Stamina->CurrentValue > 0
                      && WeightFactor <= 1)
                 return MaxSprintSpeed;
             else if (WeightFactor <= 1)
-                return MaxRunSpeed;
+                return MaxRunSpeed * speedMod;
             else
                 return MaxWalkSpeed;
         }
@@ -932,7 +950,7 @@ float UBaseMovementComponent::GetMaxSpeed() const
     }
 }
 
-void UBaseMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
+void UHumanoidMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
 {
     Super::PhysWalking(deltaTime, Iterations);
 
@@ -945,7 +963,7 @@ void UBaseMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
             bIsRunning = true;
             if (!GetWorld()->GetTimerManager().IsTimerActive(SprintConsumeTimer))
                 GetWorld()->GetTimerManager().SetTimer(
-                  SprintConsumeTimer, this, &UBaseMovementComponent::OnSprintConsume,
+                  SprintConsumeTimer, this, &UHumanoidMovementComponent::OnSprintConsume,
                   SprintConsumeTime, true);
             Character->AttributeComponent->Stamina->BlockRegen();
             bIsSprinting = true;
@@ -965,12 +983,12 @@ void UBaseMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
     //UE_LOG(LogTemp, Warning, TEXT("IsSprint %s"), bIsSprinting ? TEXT("true") : TEXT("false"));
 }
 
-void UBaseMovementComponent::PhysFalling(float deltaTime, int32 Iterations)
+void UHumanoidMovementComponent::PhysFalling(float deltaTime, int32 Iterations)
 {
     Super::PhysFalling(deltaTime, Iterations);
 }
 
-void UBaseMovementComponent::PhysCustom(
+void UHumanoidMovementComponent::PhysCustom(
   float deltaTime, int32 Iterations)    ///TODO разобраться в стандартной реализации
 {
     //UE_LOG(LogTemp,Warning, TEXT("root %s"),Character->IsPlayingRootMotion() ? TEXT("true" : TEXT("false")));
@@ -1050,7 +1068,7 @@ void UBaseMovementComponent::PhysCustom(
 
 //проверка получит ли персонаж урон от падения и сколько
 //TODO добавить реализацию получения урона
-bool UBaseMovementComponent::FallDamageCheck()
+bool UHumanoidMovementComponent::FallDamageCheck()
 {
     const float difference = fallLocationHeight - Character->GetActorLocation().Z;
     fallLocationHeight     = 0;
@@ -1063,7 +1081,7 @@ bool UBaseMovementComponent::FallDamageCheck()
         return false;
 }
 
-void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
+void UHumanoidMovementComponent::ApplyFallDamage(float FallDistance)
 {
     check(MinFallHeightThreshold && "ApplyFallDamage: div by zero")
     float damage = Character->AttributeComponent->Health->GetMaxValue();
@@ -1071,7 +1089,7 @@ void UBaseMovementComponent::ApplyFallDamage(float FallDistance)
         damage *= (FallDistance - MinFallHeightThreshold) / MinFallHeightThreshold;
 }
 
-void UBaseMovementComponent::TransitionStart(const FVector &EndLoc,
+void UHumanoidMovementComponent::TransitionStart(const FVector &EndLoc,
                                              const FRotator &EndRot,
                                              UAnimMontage *AnimToPlay,
                                              AnimTypes Type,
@@ -1110,7 +1128,7 @@ void UBaseMovementComponent::TransitionStart(const FVector &EndLoc,
         UE_LOG(LogTemp, Warning, TEXT("TransitionStart info: no anim start section"))
 }
 
-void UBaseMovementComponent::TransitionStart(UCurveVector *Curve, const EControlDirections &Direction,
+void UHumanoidMovementComponent::TransitionStart(UCurveVector *Curve, const EControlDirections &Direction,
                                              UAnimMontage *AnimToPlay, AnimTypes Type,
                                              ECustomMovementMode InMode, EMovementMode OutMode)
 {
@@ -1148,7 +1166,7 @@ void UBaseMovementComponent::TransitionStart(UCurveVector *Curve, const EControl
     Character->StartAnimation(CurrentTransitionAnim, callBack, AnimPlayRate, FTransitionSectionNames::Start);
 }
 
-void UBaseMovementComponent::On_TransitionFinished()
+void UHumanoidMovementComponent::On_TransitionFinished()
 {
     check(CurrentTransitionAnim != nullptr && "Transition: no anim!");
     FOnMontageBlendingOutStarted callBack;
@@ -1159,7 +1177,7 @@ void UBaseMovementComponent::On_TransitionFinished()
         UE_LOG(LogTemp, Warning, TEXT("TransitionFinished!"))
 }
 
-void UBaseMovementComponent::TransitionProcess(float deltaTime)
+void UHumanoidMovementComponent::TransitionProcess(float deltaTime)
 {
     if (TransitionDirection.Get() == nullptr)
     {
@@ -1205,7 +1223,7 @@ void UBaseMovementComponent::TransitionProcess(float deltaTime)
     }
 }
 
-void UBaseMovementComponent::TransitionInterrupt()
+void UHumanoidMovementComponent::TransitionInterrupt()
 {
     check(bIsTransitioning && "Transition: can't interrupt");
     Character->StopAnimMontage(CurrentTransitionAnim);
@@ -1214,7 +1232,7 @@ void UBaseMovementComponent::TransitionInterrupt()
         UE_LOG(LogTemp, Warning, TEXT("TransitionInterrupt error: interrupted!!"))
 }
 
-void UBaseMovementComponent::TransitionCleanUp()
+void UHumanoidMovementComponent::TransitionCleanUp()
 {
     check(bIsTransitioning && "Transition: can't' cancel");
     bIsTransitioning = false;
@@ -1226,18 +1244,17 @@ void UBaseMovementComponent::TransitionCleanUp()
     TransitionDirection.Release();
 }
 
-void UBaseMovementComponent::BeginPlay()
+void UHumanoidMovementComponent::BeginPlay()
 {
     Super::BeginPlay();
-    //для игрока каст в игрового перса
-    Character = Cast<ACharacterPlayer>(PawnOwner);
-    check(Character != nullptr && "UBaseMovementComponent error: No pawn");
+    Character = Cast<ACharacterCreature>(PawnOwner);
+    check(Character != nullptr && "UHumanoidMovementComponent error: No pawn");
     params.ActorsToIgnore.Add(CharacterOwner);
     params.isDebug       = ShowDebugInfo;
     MoveAbilitiesCurrent = MoveAbilitiesDefault;
 }
 
-void UBaseMovementComponent::NotifyJumpApex()
+void UHumanoidMovementComponent::NotifyJumpApex()
 {
     /*
     // todo действие при достижении вершины прыжка
@@ -1248,7 +1265,7 @@ void UBaseMovementComponent::NotifyJumpApex()
     */
 }
 
-void UBaseMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
+void UHumanoidMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
                                            FActorComponentTickFunction *ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -1260,15 +1277,15 @@ void UBaseMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Tick
     //UE_LOG(LogTemp, Warning, TEXT("floor distance %f"), CurrentFloor.GetDistanceToFloor());
 }
 
-void UBaseMovementComponent::OnSprintConsume()
+void UHumanoidMovementComponent::OnSprintConsume()
 {
     if (Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Sprint))
         GetWorld()->GetTimerManager().SetTimer(SprintConsumeTimer, this,
-                                               &UBaseMovementComponent::OnSprintConsume,
+                                               &UHumanoidMovementComponent::OnSprintConsume,
                                                SprintConsumeTime, true);
 }
 
-void UBaseMovementComponent::Update()
+void UHumanoidMovementComponent::Update()
 {
     const auto tumble = USkillHelper::GetValue(
         Character->AttributeComponent->Skills, ESkill::Tumble);
@@ -1287,42 +1304,42 @@ void UBaseMovementComponent::Update()
         // ловкость
 
         MinFallHeightThreshold = GetSigmoidValue(
-            dexMod, abilityMod, MinFallHeightThresholdBase * (1.f - FallDamageScale),
-            MinFallHeightThresholdBase * (1.f + FallDamageScale));
+            dexMod, AbilityMod, MinFallHeightThresholdBase * (1.f - FallDamageMod),
+            MinFallHeightThresholdBase * (1.f + FallDamageMod));
     MaxfallHeightThreshold = GetSigmoidValue(
-        dexMod, abilityMod, MaxfallHeightThresholdBase * (1.f - FallDamageScale),
-        MaxfallHeightThresholdBase * (1.f + FallDamageScale));
+        dexMod, AbilityMod, MaxfallHeightThresholdBase * (1.f - FallDamageMod),
+        MaxfallHeightThresholdBase * (1.f + FallDamageMod));
 
     JumpWallZVelocity =
-        GetSigmoidValue(dexMod, abilityMod, JumpWallZVelocityBase * (1.f - SpeedScale),
+        GetSigmoidValue(dexMod, AbilityMod, JumpWallZVelocityBase * (1.f - SpeedScale),
             JumpWallZVelocityBase * (1.f + SpeedScale));
     JumpWallXYVelocity =
-        GetSigmoidValue(dexMod, abilityMod, JumpWallXYVelocityBase * (1.f - SpeedScale),
+        GetSigmoidValue(dexMod, AbilityMod, JumpWallXYVelocityBase * (1.f - SpeedScale),
             JumpWallXYVelocityBase * (1.f + SpeedScale));
     JumpZVelocity =
-        GetSigmoidValue(dexMod, abilityMod, JumpZVelocityBase * (1.f - SpeedScale),
+        GetSigmoidValue(dexMod, AbilityMod, JumpZVelocityBase * (1.f - SpeedScale),
             JumpZVelocityBase * (1.f + SpeedScale));
     AnimPlayRate =
-        GetSigmoidValue(dexMod, abilityMod, AnimPlayRateBase * (1.f - AnimPlayRateScale),
+        GetSigmoidValue(dexMod, AbilityMod, AnimPlayRateBase * (1.f - AnimPlayRateScale),
             AnimPlayRateBase * (1.f + AnimPlayRateScale));
     MaxOverweightMoveFactor = GetSigmoidValue(
-        dexMod, abilityMod, 1.f, MaxOverweightMoveFactorBase * 1.2f);    // temp
+        dexMod, AbilityMod, 1.f, MaxOverweightMoveFactorBase * 1.2f);    // temp
 
       // акробатика
 
     AirControl =
-        GetSigmoidValue(tumble + tumbleMod, skillMod, -1.f + AirControlBase, 1.f);
+        GetSigmoidValue(tumble + tumbleMod, SkillMod, -1.f + AirControlBase, 1.f);
     if (AirControl < 0)
         AirControl = 0.f;
 
     // не нужно, не работает, не будет работать т.к. в воздухе нет ускорения, получается постоянное замедление
-    //BrakingDecelerationFalling = GetSigmoidValue(tumble + tumbleMod, skillMod, -BrakingDecelerationFallingBase, BrakingDecelerationFallingBase);
+    //BrakingDecelerationFalling = GetSigmoidValue(tumble + tumbleMod, SkillMod, -BrakingDecelerationFallingBase, BrakingDecelerationFallingBase);
     //if(BrakingDecelerationFalling < 0)
     //    BrakingDecelerationFalling = 0.f;
-    //FallingLateralFriction = GetSigmoidValue(tumble, skillMod, FallingLateralFrictionBase * (1.f - FrictionScale), FallingLateralFrictionBase * (1.f + FrictionScale));
+    //FallingLateralFriction = GetSigmoidValue(tumble, SkillMod, FallingLateralFrictionBase * (1.f - FrictionScale), FallingLateralFrictionBase * (1.f + FrictionScale));
 
     Character->JumpMaxHoldTime =
-        GetSigmoidValue(tumble + tumbleMod, skillMod, -JumpMaxHoldTimeBase,
+        GetSigmoidValue(tumble + tumbleMod, SkillMod, -JumpMaxHoldTimeBase,
             JumpMaxHoldTimeBase);    // ue4 имплементация (поэтому в персе)
     if (Character->JumpMaxHoldTime < 0)
         Character->JumpMaxHoldTime = 0.f;
@@ -1347,15 +1364,15 @@ void UBaseMovementComponent::Update()
     }
 
     MaxAcceleration =
-      GetSigmoidValue(dexMod + weightFactorBalanceMod * (-WeightFactor), weightMod,
+      GetSigmoidValue(dexMod + WeightFactorBalanceMod * (-WeightFactor), WeightMod,
                       MaxAccelerationBase * (1.f - AccelerationScale),
                       MaxAccelerationBase * (1.f + AccelerationScale));
     BrakingDecelerationWalking =
-      GetSigmoidValue(dexMod + weightFactorBalanceMod * (-WeightFactor), weightMod,
+      GetSigmoidValue(dexMod + WeightFactorBalanceMod * (-WeightFactor), WeightMod,
                       BrakingDecelerationWalkingBase * (1.f - AccelerationScale),
                       BrakingDecelerationWalkingBase * (1.f + AccelerationScale));
     BrakingFriction =
-      GetSigmoidValue(dexMod + weightFactorBalanceMod * (-WeightFactor), weightMod,
+      GetSigmoidValue(dexMod + WeightFactorBalanceMod * (-WeightFactor), WeightMod,
                       BrakingFrictionBase * (1.f - FrictionScale),
                       BrakingFrictionBase * (1.f + FrictionScale));
 
@@ -1363,7 +1380,6 @@ void UBaseMovementComponent::Update()
     //Max Speed update
     CalculateMaxSpeeds(GetSpeedModifier());
 
-    // debug log todo
     if (ShowDebugInfo)
     {
         UE_LOG(LogTemp, Warning, TEXT("MinFallHeightThreshold %f"), MinFallHeightThreshold)
@@ -1386,7 +1402,7 @@ void UBaseMovementComponent::Update()
     UnSetUpdate();
 }
 
-void UBaseMovementComponent::Crouch(bool bClientSimulation)
+void UHumanoidMovementComponent::Crouch(bool bClientSimulation)
 {
     if ((MoveAbilitiesCurrent & EMoveAbilities::CanCrouch) == EMoveAbilities::CanCrouch)
     {
@@ -1398,7 +1414,7 @@ void UBaseMovementComponent::Crouch(bool bClientSimulation)
     bWantsToCrouch = false;
 }
 
-bool UBaseMovementComponent::DoJump(bool bReplayingMoves)
+bool UHumanoidMovementComponent::DoJump(bool bReplayingMoves)
 {
     if ((MoveAbilitiesCurrent & EMoveAbilities::CanJump) != EMoveAbilities::CanJump
         || bConstrainToPlane || FMath::Abs(PlaneConstraintNormal.Z) == 1.f
@@ -1425,12 +1441,12 @@ bool UBaseMovementComponent::DoJump(bool bReplayingMoves)
         return Super::DoJump(bReplayingMoves);
 }
 
-bool UBaseMovementComponent::IsOverWeight() const
+bool UHumanoidMovementComponent::IsOverWeight() const
 {
     return WeightFactor > MaxOverweightMoveFactor;
 }
 
-float UBaseMovementComponent::GetWeightFactor() const
+float UHumanoidMovementComponent::GetWeightFactor() const
 {
     const float maxWeight = Character->MaxWeight;
     check(maxWeight > 0 && "GetWeightFactor: max weight is invalid");
@@ -1444,7 +1460,7 @@ float UBaseMovementComponent::GetWeightFactor() const
       / maxWeight;
 }
 
-void UBaseMovementComponent::OnParkourEnded(UAnimMontage *animMontage,
+void UHumanoidMovementComponent::OnParkourEnded(UAnimMontage *animMontage,
                                               bool bInterrupted)
 {
     if (ShowDebugInfo)
@@ -1457,7 +1473,7 @@ void UBaseMovementComponent::OnParkourEnded(UAnimMontage *animMontage,
     // todo reset character capsule size if modified
 }
 
-void UBaseMovementComponent::OnDodgeEnded(UAnimMontage *animMontage, bool bInterrupted)
+void UHumanoidMovementComponent::OnDodgeEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
     if (ShowDebugInfo)
     {

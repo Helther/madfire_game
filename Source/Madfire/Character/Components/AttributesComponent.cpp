@@ -37,103 +37,6 @@ void UAttributeComponent::LevelUp(const FCharacterLevelInfo &LevelInfo)
     SetDirty();
 }
 
-void UAttributeComponent::UpdateBaseAttribute()
-{
-    BaseAttribute = CharacterRace->Attributes;
-    for (auto &levelInfo : LevelList)
-        BaseAttribute += levelInfo.Attributes;
-
-}
-
-void UAttributeComponent::UpdateAttribute()
-{
-    auto Character = Cast<ACharacterBase>(GetOwner());
-    const UEquipmentComponent *Equipment = Character->EquipmentComponent;
-    BaseAttribute = CharacterRace->Attributes;
-    for (auto &levelInfo : LevelList)
-        BaseAttribute += levelInfo.Attributes;
-
-    Attributes = BaseAttribute + BonusAttribute + Equipment->EquipmentAttributes;
-}
-
-void UAttributeComponent::UpdateSkills()
-{
-    auto Character = Cast<ACharacterBase>(GetOwner());
-    const UEquipmentComponent *Equipment = Character->EquipmentComponent;
-    auto LevelSkills      = FSkillList();
-    for (auto &levelInfo : LevelList)
-        LevelSkills += levelInfo.SkillList;
-    Skills = LevelSkills + BonusSkills + Equipment->EquipmentSkills;
-}
-
-void UAttributeComponent::UpdateDamageAbsorb()
-{
-    auto Character = Cast<ACharacterBase>(GetOwner());
-    const UEquipmentComponent *Equipment = Character->EquipmentComponent;
-    DamageAbsorb = BonusDamageAbsorb + Equipment->EqipmentDamageAbsorb;
-}
-
-void UAttributeComponent::UpdateDamageResist()
-{
-    auto Character = Cast<ACharacterBase>(GetOwner());
-    const UEquipmentComponent *Equipment = Character->EquipmentComponent;
-    DamageResistance = BonusDamageResistance + Equipment->EqipmentDamageResistance;
-}
-
-void UAttributeComponent::UpdateDamageBonus()
-{
-    auto Character = Cast<ACharacterBase>(GetOwner());
-    const UEquipmentComponent *Equipment = Character->EquipmentComponent;
-    DamageBonus  = BonusDamageBonus + Equipment->EqipmentDamageBonus;
-}
-
-void UAttributeComponent::UpdateHealth()
-{
-    float hk = Health->CurrentValue / Health->GetMaxValue();
-    float LevelHealthBonus = 0;
-    const auto LevelNum = LevelList.Num();
-    for (auto &levelInfo : LevelList)
-        LevelHealthBonus += levelInfo.HealthBonus;
-    auto ConMod = UAttributeSetHelper::GetModifier(Attributes, EAttributes::Con);
-    if (ConMod < 0)
-        ConMod = 0;    // todo нужно ли?
-    Health->BaseValue = LevelHealthBonus + (ConMod * LevelNum);
-    Health->CurrentValue = Health->GetMaxValue() * hk;
-}
-
-void UAttributeComponent::UpdateHealthRegen()
-{
-    auto ConMod = UAttributeSetHelper::GetModifier(Attributes, EAttributes::Con);
-    if (ConMod < 0)
-        ConMod = 0;    // todo нужно ли?
-    Health->RegenValue = BonusHealthRegen + ConMod;
-}
-
-void UAttributeComponent::UpdateStamina()
-{
-    const auto LevelNum = LevelList.Num();
-    float sk = Stamina->CurrentValue / Stamina->GetMaxValue();
-    auto ConMod = UAttributeSetHelper::GetModifier(Attributes, EAttributes::Con);
-    if (ConMod < 0)
-        ConMod = 0;    // todo нужно ли?
-    auto StrMod = UAttributeSetHelper::GetModifier(Attributes, EAttributes::Str);
-    if (StrMod < 0)
-        StrMod = 0;
-    Stamina->BaseValue = (LevelNum * ConMod) + (LevelNum * StrMod);
-    Stamina->CurrentValue = Stamina->GetMaxValue() * sk;
-}
-
-void UAttributeComponent::UpdateStaminaRegen()
-{
-    auto ConMod = UAttributeSetHelper::GetModifier(Attributes, EAttributes::Con);
-    if (ConMod < 0)
-        ConMod = 0;    // todo нужно ли?
-    auto StrMod = UAttributeSetHelper::GetModifier(Attributes, EAttributes::Str);
-    if (StrMod < 0)
-        StrMod = 0;
-    Stamina->RegenValue = BonusStaminaRegen + StrMod + ConMod;
-}
-
 float UAttributeComponent::TakeDamage(float DamageAmount, UDamageType *DamageType, AActor *DamageCauser)
 {
     const auto PhysD  = Cast<UPhysicDamage>(DamageType);
@@ -143,6 +46,7 @@ float UAttributeComponent::TakeDamage(float DamageAmount, UDamageType *DamageTyp
     if(AbsoluteD)
     {
         Health->Consume(DamageAmount);
+        UE_LOG(LogTemp, Warning, TEXT("take damage after attributes %f"), DamageAmount);
         return Health->CurrentValue;
     }
 
@@ -159,49 +63,54 @@ float UAttributeComponent::TakeDamage(float DamageAmount, UDamageType *DamageTyp
 
     if(PhysD)
     {
-        auto Type  = PhysD->Type;
-        auto Force = PhysD->Force;
-        //TODO: Use Force, Luke
+        auto Type = PhysD->Type;
         DamageAmount -= DamageAbsorb.DamageMap[(int32)Type];
-        DamageAmount = DamageAmount * (DamageResistance.DamageMap[(int32)Type] - 100) / 100;
+        DamageAmount = DamageAmount * (100 - DamageResistance.DamageMap[(int32)Type]) / 100;
         Health->Consume(DamageAmount);
     }
     else if(MagicD)
     {
-        auto Type        = MagicD->Type;
+        auto Type = MagicD->Type;
         DamageAmount -= DamageAbsorb.DamageMap[(int32)Type];
-        DamageAmount = DamageAmount * (DamageResistance.DamageMap[(int32)Type] - 100) / 100;
+        DamageAmount = DamageAmount * (100 - DamageResistance.DamageMap[(int32)Type]) / 100;
         Health->Consume(DamageAmount);
     }
+    UE_LOG(LogTemp, Warning, TEXT("take damage after attributes %f"), DamageAmount);
     return Health->CurrentValue;
 }
 
 void UAttributeComponent::Update()
 {
-    auto Character = Cast<ACharacterBase>(GetOwner());
-    const UEquipmentComponent *Equipment = Character->EquipmentComponent;
+    auto Character = GetCharacterOwner();
 
     float hk = Health->CurrentValue / Health->GetMaxValue();
     float sk = Stamina->CurrentValue / Stamina->GetMaxValue();
-
-    check(CharacterRace != nullptr && "CharacterRace is Invalid");
-
-    BaseAttribute = CharacterRace->Attributes;
+    
+    BaseAttribute = FAttributeSet();
     auto LevelSkills = FSkillList();
     float LevelHealthBonus = 0;
+    float LevelStaminaBonus = 0;
+    float LevelHealthRegenBonus = 0;
+    float LevelStaminaRegenBonus = 0;
+    FDamageAbsorb LevelDamageAbsorbBonus;
+    FDamageAbsorb LevelDamageBonus;
+    FDamageResistance LevelDamageResistanceBonus;
     const auto LevelNum = LevelList.Num();
     for (auto &levelInfo : LevelList)
     {
-        LevelHealthBonus += levelInfo.HealthBonus;
         BaseAttribute += levelInfo.Attributes;
         LevelSkills += levelInfo.SkillList;
+        LevelHealthBonus += levelInfo.HealthBonus;
+        LevelStaminaBonus += levelInfo.StaminaBonus;
+        LevelHealthRegenBonus += levelInfo.HealthRegenBonus;
+        LevelStaminaRegenBonus += levelInfo.StaminaRegenBonus;
+        LevelDamageAbsorbBonus += levelInfo.DamageAbsorbBonus;
+        LevelDamageBonus += levelInfo.DamageBonus;
+        LevelDamageResistanceBonus += levelInfo.DamageResistanceBonus;
     }
 
-    Attributes = BaseAttribute + BonusAttribute + Equipment->EquipmentAttributes;
-    Skills = BonusSkills + LevelSkills + Equipment->EquipmentSkills;
-    DamageResistance = BonusDamageResistance + Equipment->EqipmentDamageResistance;
-    DamageAbsorb = BonusDamageAbsorb + Equipment->EqipmentDamageAbsorb;
-    DamageBonus  = BonusDamageBonus + Equipment->EqipmentDamageBonus;
+    Attributes = BaseAttribute + BonusAttribute;
+    Skills = BonusSkills + LevelSkills;
 
     auto ConMod = UAttributeSetHelper::GetModifier(Attributes, EAttributes::Con);
     if (ConMod < 0)
@@ -210,14 +119,18 @@ void UAttributeComponent::Update()
     if (StrMod < 0)
         StrMod = 0;
 
-    Health->BaseValue = 1.f + LevelHealthBonus + (ConMod * LevelNum);
+    Health->BaseValue = 1.f + LevelHealthBonus + (ConMod * LevelNum) + BonusHealth;
     Health->CurrentValue = Health->GetMaxValue() * hk;
 
-    Stamina->BaseValue = 1.f + (LevelNum * ConMod) + (LevelNum * StrMod);
+    Stamina->BaseValue = 1.f + (LevelNum * ConMod) + (LevelNum * StrMod) + LevelStaminaBonus + BonusStamina;
     Stamina->CurrentValue = Stamina->GetMaxValue() * sk;
 
-    Health->RegenValue = BonusHealthRegen + ConMod;
-    Stamina->RegenValue = BonusStaminaRegen + StrMod;
+    Health->RegenValue = LevelHealthRegenBonus + BonusHealthRegen + ConMod;
+    Stamina->RegenValue = LevelStaminaRegenBonus + BonusStaminaRegen + StrMod;
+
+    DamageAbsorb = LevelDamageAbsorbBonus + BonusDamageAbsorb;
+    DamageBonus = LevelDamageBonus + BonusDamageBonus;
+    DamageResistance = LevelDamageResistanceBonus + BonusDamageResistance;
 
     bIsDirty = false;
 }
@@ -231,58 +144,63 @@ bool UAttributeComponent::SkillCheck(ESkill Skill, int32 value)
 void UAttributeComponent::ModifyAttribute(FAttributeSet Attribute)
 {
     BonusAttribute += Attribute;
-    Update();
+    CallUpdate();
 }
 
-void UAttributeComponent::ModifySkills(FSkillList InSkills)
+void UAttributeComponent::ModifySkills(FSkillList SkillsBonus)
 {
-    BonusSkills += InSkills;
-    UpdateSkills();
+    BonusSkills += SkillsBonus;
+    CallUpdate();
 }
 
 void UAttributeComponent::ModifyDamageAbsorb(FDamageAbsorb DAbsorb)
 {
     BonusDamageAbsorb += DAbsorb;
-    UpdateDamageAbsorb();
+    CallUpdate();
 }
 
-void UAttributeComponent::ModifyDamageResist(FDamageResistance DamageResist)
+void UAttributeComponent::ModifyDamageResist(FDamageResistance DResist)
 {
-    DamageResist += DamageResist;
-    UpdateDamageResist();
+    BonusDamageResistance += DResist;
+    CallUpdate();
 }
 
 void UAttributeComponent::ModifyDamageBonus(FDamageAbsorb DBonus)
 {
     BonusDamageBonus += DBonus;
-    UpdateDamageBonus();
+    CallUpdate();
 }
 
 void UAttributeComponent::ModifyHealthBonus(float HPBonus)
 {
     BonusHealth += HPBonus;
-    UpdateHealth();
+    CallUpdate();
 }
 
 void UAttributeComponent::ModifyHealthRegen(float HPRegen)
 {
     BonusHealthRegen += HPRegen;
-    UpdateHealthRegen();
+    CallUpdate();
 }
 
 void UAttributeComponent::ModifyStaminaBonus(float STBonus)
 {
     BonusStamina += STBonus;
-    UpdateStamina();
+    CallUpdate();
 }
 
 void UAttributeComponent::ModifyStaminaRegen(float STRegen)
 {
     BonusStaminaRegen += STRegen;
-    UpdateStaminaRegen();
+    CallUpdate();
 }
 
 const ACharacterBase *UAttributeComponent::GetCharacterOwner() const
+{
+    return Cast<ACharacterBase>(GetOwner());
+}
+
+ACharacterBase *UAttributeComponent::GetCharacterOwner()
 {
     return Cast<ACharacterBase>(GetOwner());
 }
@@ -304,6 +222,13 @@ void UAttributeComponent::PostEditChangeProperty(FPropertyChangedEvent &e)
 }
 #endif
 
+void UAttributeComponent::CallUpdate()
+{
+    auto Character = GetCharacterOwner();
+    bIsDirty = true;
+    Character->Update(FCharacterLevelInfo());
+}
+
 void UAttributeComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     Super::EndPlay(EndPlayReason);
@@ -315,10 +240,9 @@ void UAttributeComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void UAttributeComponent::BeginPlay()
 {
     Super::BeginPlay();
-    auto Character = Cast<ACharacterBase>(GetOwner());
+    auto Character = GetCharacterOwner();
     //Health = NewObject<UDynamicAttribute>();
     //Stamina = NewObject<UDynamicAttribute>();
-
     check(Character != nullptr && "UAttributeComponent error: No pawn");
     check(Health != nullptr && "UAttributeComponent error: Health is Invalid");
     check(Stamina != nullptr && "UAttributeComponent error: Stamina is Invalid");

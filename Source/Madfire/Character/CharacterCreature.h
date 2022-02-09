@@ -1,0 +1,165 @@
+﻿#pragma once
+
+#include "CharacterBase.h"
+#include "Animation/AnimMontage.h"
+#include "Components/CombatComponent.h"
+#include "Components/EquipmentComponent.h"
+#include "Components/InventoryComponent.h"
+#include "Components/MovementComponentBase.h"
+
+#include "CharacterCreature.generated.h"
+
+UENUM(BlueprintType)
+// Character Control Bit mask with values as priority order (the higher the better)
+enum ECCState
+{
+    NoCC = 0,
+    Sleep,
+    Charm,
+    LossOfBalance,
+    Stupor,
+    Fear,
+    Rage,
+    MindControl,
+    Stun,
+    KnockDown,
+    Stasis,
+    NumOfModes
+};
+
+// TODO реализовать
+UENUM(BlueprintType)
+// Combat oriented Character Control sub CC modes (value represents priority order(the more the better))
+enum ELossOfBalanceCCSubState
+{
+    None = 0,
+    HitWall,
+    BlockedAttack,
+    WasParried,
+    Chamber // ударил об оружие противника
+};
+
+
+// Класс, отвечающий за управление состоянием контроля над персом и для слежения степени станлока определенных режимов контроля
+USTRUCT(BlueprintType)
+struct FCCStateManager
+{
+    GENERATED_BODY()
+
+    FCCStateManager();
+
+    FORCEINLINE void Init(ACharacterCreature* InCharacter) { Character = InCharacter; }
+
+    static int GetHighestPriorityCC(int bitmask);
+
+    FORCEINLINE bool HasCC() const { return CurrentCCState != ECCState::NoCC; }
+    FORCEINLINE bool IsInCCMode(ECCState Mode) const { return CurrentCCState & (1 << Mode); }
+    // sets flag, starts cc timer and stunLock timer, time in seconds (time null means anim driven time)
+    void SetCCMode(ECCState Mode, float *Time = nullptr);
+    void ResetCCMode(ECCState Mode);
+    FORCEINLINE int CurrentCCPriority() const { return GetHighestPriorityCC(CurrentCCState); }
+
+    // во сколько раз уменьшается время повторного контроля
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "1.0", UIMin = "1.0"))
+    float CCLockTimeDivider;
+
+    // время, через которое сбрасывается станлок, в секундах
+    UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
+    float CCLockTime;
+    
+private:
+    struct FCCTimers
+    {
+        FTimerHandle CCTimer;
+        FTimerHandle StunLockTimer;
+    };
+
+    void ResetCCLock(int index);
+    float GetCCLockTimeModifier(ECCState Mode) const;
+
+    ACharacterCreature* Character;
+    // массив пар таймер-счетчик станлока, где индекс соответствует енуму ECCState
+    TPair<FCCTimers,int> CCLocks[ECCState::NumOfModes];
+    int CurrentCCState; 
+};
+
+
+UCLASS()
+class MADFIRE_API ACharacterCreature : public ACharacterBase
+{
+    GENERATED_BODY()
+
+    friend struct FCCStateManager;
+
+public:
+    // Sets default values for this character's properties
+    ACharacterCreature(const FObjectInitializer &ObjectInitializer);
+
+    float TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent, class AController *EventInstigator, AActor *DamageCauser) override;
+    virtual void Update(const FCharacterLevelInfo &levelInfo);
+
+    void StartAnimation(UAnimMontage *AnimMontage,
+                        const FOnMontageBlendingOutStarted &EndCallBack, float InPlayRate,
+                        FName StartSectionName = NAME_None);
+
+    UFUNCTION(BlueprintCallable, Category = "Character Animation")
+    void InterruptAnimation(ECCState Source, ELossOfBalanceCCSubState SubMode = ELossOfBalanceCCSubState::None);
+
+    UHumanoidMovementComponent* GetMovementComponent() const override;
+
+    UFUNCTION(BlueprintCallable, Category = "Character")
+    void DoLevelUp(const FCharacterLevelInfo &levelInfo);
+
+    // TODO уточнить при балансировке
+    FORCEINLINE float CalculateMaxWeight() const
+    { return MaxWeightBase + MaxWeightModBase * UAttributeSetHelper::GetModifier(AttributeComponent->Attributes, EAttributes::Str); }
+    // TODO уточнить при балансировке
+    float CalculateKnockDownTime() const;
+
+    // Deprecated
+    //UPROPERTY(EditAnywhere, BlueprintReadWrite,
+    //          meta = (Bitmask, BitmaskEnum = "ECCState", Category = "Character Stats"))
+    //int CurrentCCState;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
+    FCCStateManager CCStateManager;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Stats")
+    float MaxWeight;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Stats")
+    float KnockDownTime;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
+    float KnockDownBaseTime;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
+    float KnockDownModBase;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
+    float KnockDownWeightModBase;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
+    float MaxWeightBase;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
+    float MaxWeightModBase;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
+    UInventoryComponent *InventoryComponent;
+    UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
+    UEquipmentComponent *EquipmentComponent;
+    UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
+    UCombatComponent *CombatComponent;
+
+protected:
+    void PostInitializeComponents() override;
+    void BeginPlay() override;
+
+    // clang-format off
+    UFUNCTION(BlueprintCallable, Category = "Character Animation")
+        void CCStunEnded(UAnimMontage *animMontage, bool bInterrupted);
+    UFUNCTION(BlueprintCallable, Category = "Character Animation")
+        void CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted); 
+    UFUNCTION(BlueprintCallable, Category = "Character Animation")
+        void CCKnockDownEnded(UAnimMontage *animMontage, bool bInterrupted);
+
+    TMap<ECCState, void (ACharacterCreature::*)(UAnimMontage *, bool)> CCInterruptDelegates;
+    TMap<ECCState, UAnimMontage *> CCAnims;
+    // loss of balance sub mode anims
+    TMap<ELossOfBalanceCCSubState, UAnimMontage *> CCLOBAnims;
+};

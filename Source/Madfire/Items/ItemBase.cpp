@@ -1,7 +1,8 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "ItemBase.h"
-
+#include "Components/BoxComponent.h"
+#include "../TraceFunctional/TraceDefines.h"
 
 UItem::UItem(const class FObjectInitializer &ObjectInititalizer)
   : Super(ObjectInititalizer)
@@ -28,28 +29,24 @@ AItemActor::AItemActor()
     // Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
     PrimaryActorTick.bCanEverTick = true;
 
-    ItemMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Item Mesh"));
+    ItemMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Item Mesh"));
 
-    RootComponent = ItemMesh;
+    ItemCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("Item Collision"));
+    ItemMesh->SetCollisionProfileName("NoCollision");
+    ItemMesh->SetGenerateOverlapEvents(false);
+    SetRootComponent(ItemMesh);
+    ItemCollision->SetupAttachment(RootComponent);
 }
 
 // Called when the game starts or when spawned
 void AItemActor::BeginPlay()
 {
     Super::BeginPlay();
-
-    if (ItemBase)
-        if (ItemBase->ItemMesh)
-            ItemMesh->SetSkeletalMesh(ItemBase->ItemMesh);
 }
 
 void AItemActor::OnConstruction(const FTransform &Transform)
 {
     Super::OnConstruction(Transform);
-
-    if (ItemBase)
-        if (ItemBase->ItemMesh)
-            ItemMesh->SetSkeletalMesh(ItemBase->ItemMesh);
 }
 
 bool AItemActor::OnInteract_Implementation(EInteractType EInteractType, ACharacter *controller)

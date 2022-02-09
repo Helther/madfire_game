@@ -170,7 +170,7 @@ void APlayerCharController::MoveForward(float AxisValue)
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (FMath::Abs(AxisValue) >= MovementDeadZone && Player->CurrentCCState == ECCState::NoCC
+            if (FMath::Abs(AxisValue) >= MovementDeadZone && !Player->CCStateManager.HasCC()
                 && Player->GetMovementComponent()->CanMove())
             {
                 const auto combatState = Player->CombatComponent->CombatFSM.currentState();
@@ -242,7 +242,7 @@ void APlayerCharController::MoveRight(float AxisValue)
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (FMath::Abs(AxisValue) >= MovementDeadZone && Player->CurrentCCState == ECCState::NoCC
+            if (FMath::Abs(AxisValue) >= MovementDeadZone && !Player->CCStateManager.HasCC()
                 && Player->GetMovementComponent()->CanMove())
             {
                 const auto combatState = Player->CombatComponent->CombatFSM.currentState();
@@ -292,7 +292,7 @@ void APlayerCharController::MoveRight(float AxisValue)
                     //GetWorld()->GetTimerManager().ClearTimer(SideTimer);
                 }
                 if (Player->GetMovementComponent()->bWantToSprint && 
-                    Player->CombatComponent->IsWeaponDrawn && 
+                    Player->CombatComponent->WeaponDrawn() && 
                     InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.f)
                     Player->GetMovementComponent()->bWantToSprint = false;
             }
@@ -360,9 +360,9 @@ void APlayerCharController::SprintAction()    // TODO add equipment weight check
         case (EPawnGameplayState::InWorld):    //todo учесть другие состояния
         {
             if (Player->GetMovementComponent()->IsMovingOnGround()
-                && Player->CurrentCCState == ECCState::NoCC)
+                && !Player->CCStateManager.HasCC())
             {
-                if ((Player->CombatComponent->IsWeaponDrawn
+                if ((Player->CombatComponent->WeaponDrawn()
                     && InputComponent->GetAxisValue(FInputKeyNames::MoveForward) <= 0.f) ||
                     Player->CombatComponent->IsBusy())
                     return;
@@ -402,7 +402,7 @@ void APlayerCharController::CrouchAction()
     {
         case (EPawnGameplayState::InWorld):    //todo учесть другие состояния
         {
-            if (Player->CurrentCCState == ECCState::NoCC
+            if (!Player->CCStateManager.HasCC()
                 && !Player->GetMovementComponent()->IsRootOrTeleport())
             {
                 if (Player->GetMovementComponent()->MovementMode
@@ -448,7 +448,7 @@ void APlayerCharController::JumpAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (Player->CurrentCCState == ECCState::NoCC
+            if (!Player->CCStateManager.HasCC()
                 && Player->GetMovementComponent()->CanMove())
             {
                 if (Player->GetMovementComponent()->MovementMode
@@ -531,7 +531,7 @@ void APlayerCharController::JumpRepAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (Player->CurrentCCState == ECCState::NoCC
+            if (!Player->CCStateManager.HasCC()
                 && !Player->GetMovementComponent()->CanMove())
             {
                 if (Player->GetMovementComponent()->MovementMode
@@ -551,8 +551,8 @@ void APlayerCharController::DodgeAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (Player->CurrentCCState == ECCState::NoCC
-                && Player->GetMovementComponent()->CanMove() && Player->CombatComponent->IsWeaponDrawn)
+            if (!Player->CCStateManager.HasCC()
+                && Player->GetMovementComponent()->CanMove() && Player->CombatComponent->WeaponDrawn())
             {
                 if (Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
                     Player->GetMovementComponent()->DoDodge(GetInputDirection());
@@ -567,7 +567,7 @@ void APlayerCharController::AttackOnAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
     case (EPawnGameplayState::InWorld): {
-        if (Player->CurrentCCState == ECCState::NoCC)
+        if (!Player->CCStateManager.HasCC())
             Player->CombatComponent->OnAttack(true); // TODO check if ability is busy
     }
     }
@@ -578,7 +578,7 @@ void APlayerCharController::AttackOffAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (Player->CurrentCCState == ECCState::NoCC)
+            if (!Player->CCStateManager.HasCC())
                 Player->CombatComponent->OnAttack(false);
         }
     }
@@ -589,7 +589,7 @@ void APlayerCharController::BlockOnAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (Player->CurrentCCState == ECCState::NoCC && !Player->GetMovementComponent()->IsCrouching() &&
+            if (!Player->CCStateManager.HasCC() && !Player->GetMovementComponent()->IsCrouching() &&
                 Player->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
                 Player->CombatComponent->OnBlock(true);
         }
@@ -601,7 +601,7 @@ void APlayerCharController::BlockOffAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (Player->CurrentCCState == ECCState::NoCC && !Player->GetMovementComponent()->IsCrouching())
+            if (!Player->CCStateManager.HasCC() && !Player->GetMovementComponent()->IsCrouching())
                 Player->CombatComponent->OnBlock(false);
         }
     }
@@ -612,7 +612,7 @@ void APlayerCharController::WeaponAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (Player->CurrentCCState == ECCState::NoCC && Player->GetMovementComponent()->MovementMode != EMovementMode::MOVE_Custom)
+            if (!Player->CCStateManager.HasCC() && Player->GetMovementComponent()->MovementMode != EMovementMode::MOVE_Custom)
                     Player->CombatComponent->OnDrawWeapon();
         }
     }
@@ -623,7 +623,7 @@ void APlayerCharController::AbilityOn()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (Player->CurrentCCState == ECCState::NoCC)
+            if (!Player->CCStateManager.HasCC())
                 Player->CombatComponent->OnUseAbility(true);
         }
     }
@@ -634,7 +634,7 @@ void APlayerCharController::AilityOff()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (Player->CurrentCCState == ECCState::NoCC)
+            if (!Player->CCStateManager.HasCC())
                 Player->CombatComponent->OnUseAbility(false);
         }
     }

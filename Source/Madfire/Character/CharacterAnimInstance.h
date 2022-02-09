@@ -15,7 +15,7 @@ class MADFIRE_API UCharacterAnimInstance : public UCharacterAnimInstanceBase
 public:
 
     UPROPERTY(BlueprintReadOnly, Category = "Character")
-    class ACharacterPlayer *CharacterPlayer;
+    class ACharacterCreature *CharacterInstance;
 
     UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
     void OnWeaponSwitch();
@@ -29,14 +29,32 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
     void OnMovementAllowed(bool activate);
     
-	UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
+    UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
     void OnRotationAllowed(bool activate);
 
     UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
     void OnComboCanContinue();
 
+    UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
+    void OnCollisionActivation(bool mainHand, bool activate);
+
+    UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
+    void OnParriableActivation(bool activate);
+
     UFUNCTION(BlueprintCallable)
     bool IsMovementAllowed() const;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *HitWallAnim;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *WasParriedAnim;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *BlockedAttackAnim;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *ChamberAnim;
 
 private:
     void NativeUpdateAnimation(float DeltaSeconds) override;

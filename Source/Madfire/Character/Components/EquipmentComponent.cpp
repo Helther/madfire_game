@@ -3,7 +3,7 @@
 #include "EquipmentComponent.h"
 
 #include "TraceFunctional/TraceDefines.h"
-#include "Character/CharacterBase.h"
+#include "Character/CharacterCreature.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
@@ -13,9 +13,15 @@
 
 void UEquipmentComponent::Update()
 {
-    // todo подумать что еще можно заапдейтить
+    // todo обновить бонусы к аттрибутам от снаряжения
     // проверить что содержимое слота изменилось
     //CalculateWeight(); debug temp
+    Owner->AttributeComponent->Attributes += EquipmentAttributes;
+    Owner->AttributeComponent->Skills += EquipmentSkills;
+    Owner->AttributeComponent->DamageAbsorb += EqipmentDamageAbsorb;
+    Owner->AttributeComponent->DamageResistance += EqipmentDamageResistance;
+    Owner->AttributeComponent->DamageBonus += EqipmentDamageBonus;
+
     UnSetUpdate();
 }
 
@@ -27,7 +33,7 @@ UEquipmentComponent::UEquipmentComponent(const FObjectInitializer &ObjectInitial
 void UEquipmentComponent::OnComponentCreated()
 {
     Super::OnComponentCreated();
-    Owner = Cast<ACharacterBase>(GetOwner());
+    Owner = Cast<ACharacterCreature>(GetOwner());
     check(Owner != nullptr && "No Owner!");
     if (Owner)
     {
@@ -52,6 +58,11 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
     auto tmp = Slot[(int32)SlotName].Item;
     Slot[(int32)SlotName].Item = Item;
     return tmp;
+}
+
+FEquipmentSlot* UEquipmentComponent::GetEquipmentFromSlot(EItemSlot SlotName)
+{
+    return &Slot[(int32)SlotName];
 }
 
 void UEquipmentComponent::SwapWeapons()

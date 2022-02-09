@@ -150,7 +150,8 @@
         Shortbow	UMETA(DisplayName = "Shortbow"),
         Warglave	UMETA(DisplayName = "Warglave"),
         Shortsword	UMETA(DisplayName = "Shortsword"),
-        Shield		UMETA(DisplayName = "Shield")
+        Shield		UMETA(DisplayName = "Shield"),
+        Unarmed     UMETA(DisplayName = "Unarmed")
     };
 
 

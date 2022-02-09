@@ -1,14 +1,14 @@
 #include "AbilityComponentSamples.h"
-#include "Character/CharacterBase.h"
+#include "Character/CharacterCreature.h"
 
-#if _MSC_VER 
+#ifdef _MSC_VER
 #pragma warning( disable : 4706 )
 #endif
 
 void UAbilitySelfSelection::ActivateComponent_Implementation()
 {
-    ACharacterBase *Owner = nullptr;
-    if(CombatComponent && (Owner = Cast<ACharacterBase>(CombatComponent->GetOwner())))
+    ACharacterCreature *Owner = nullptr;
+    if(CombatComponent && (Owner = Cast<ACharacterCreature>(CombatComponent->GetOwner())))
         OnTargetChoosed.Broadcast(Owner);
     else
     {
@@ -30,7 +30,7 @@ void UAbilityProjectileSpawn::ActivateComponent_Implementation()
         return;
     }
 
-    auto Owner = Cast<ACharacterBase>(CombatComponent->GetOwner());
+    auto Owner = Cast<ACharacterCreature>(CombatComponent->GetOwner());
     auto Controller = Owner->GetController();
 
     if(!(Owner && Controller))

@@ -19,6 +19,15 @@ struct FAnimSectionNames
     static const FName Cancel;
 };
 
+struct FWeaponSlotNames
+{
+    static const FName Main;
+    static const FName Off;
+    static const FName SheathMain;
+    static const FName SheathOff;
+    static const FName Back;
+};
+
 enum ECombatState
 {
     Idle = 0,
@@ -108,9 +117,9 @@ public:
 
     // for checking if allowed to do other combat related actions
     bool IsBusy() const { return CombatFSM.currentState()->Id != ECombatState::Idle; }
-    // TODO finish calcs
-    float CalculateDamage(AActor *Target, UItemWeapon *Weapon) const;
-    float CalculatePower(AActor *Target, UItemWeapon *Weapon) const;
+    void WeaponsSetup(bool draw);
+    // called in attack collision anim notify
+    void SetCurrentWeaponCollision(bool main, bool enable);
 
     // exclusively used to set new states(do not set directly from fsm!)
     bool UpdateCombatFSM();
@@ -128,11 +137,27 @@ public:
     uint8 SpecialDirections = 0u;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool ShowDebugInfo;
-
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float BlockStaminaCost;
+    // max ratio of hit power to character balance to not get kd
+    // should be higher than 1
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float KnockdownThreshhold;
+    // should be in range 0-1
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float HitForceReductionMod;
+    // значение относительно нормы (коэффициент)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float AttackSpeed;
-    bool IsWeaponDrawn;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float UnarmedBaseDamage;
+    // максимальный угол между направлениями бойцов
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float MaxFacingAngle;
     ComboFSM<CombatStateInfo> CombatFSM;
     FCombatStateChanged OnCombatStateChanged;
+    UItemWeapon *CurrentWeaponMainH = nullptr;
+    UItemWeapon *CurrentWeaponOffH = nullptr;
 
     //================================= Ability System ================================//
     UFUNCTION(BlueprintCallable, Category = "Ability System")
@@ -153,6 +178,21 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability System")
     UAbstractAbility *CurrentAbility;
 
+
+    float CalculateWeaponDamage(const UItemWeapon* weapon, float attackInfoDamageMod, float strMod);
+    // для расчета возможности применения блока или паррирования
+    static float GetAngleBetweenAttackerAndDefender(AActor *Attacker, AActor *Defender);
+    // для расчета разницы направлений
+    static float GetAngleBetweenActors(AActor *First, AActor *Second);
+
+    FORCEINLINE static float CalculateHitForce(float weaponWeight, float strMod, float mod) 
+        { return FMath::Max(weaponWeight + strMod, 1.f) * mod; } // TODO улучшить при балансировке
+
+    FORCEINLINE static float CalculateBalance(int32 skillVal, int32 strMod, float shieldWeight) 
+        { return FMath::Max(skillVal + strMod + shieldWeight, 1.f); } // TODO улучшить при балансировке
+
+    static FName GetSlotFromWeaponType(EWeaponType type, bool draw, bool mainHand);
+
 protected:
     void BeginPlay() override;
     void TickComponent(float DeltaTime, ELevelTick TickType,
@@ -164,10 +204,12 @@ protected:
     void CalculateMaxCombatSpeeds();
     void CalculateMaxBlockingSpeed(float SpeedModifier);
     bool CanBeInterruptedWithBlock(int CurrentState) const;
-
+    void WeaponSetup(UItemWeapon* weapon, AItemActor* actor, bool draw, bool mainHand);
     bool HasAlreadyHitTarget(AActor *Target) const;
     UFUNCTION()
     void OnMovementModeChanged(int oldMode, int newMode);
+    UFUNCTION()
+    void OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
 
     // character orientation to movement speed while weapon is drawn
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -181,7 +223,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float BlockStaminaRegenRateMod;    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-    UItemWeapon *DefaultWeapon = nullptr;
+    UItemWeapon *DefaultWeaponMainH = nullptr;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
+    UItemWeapon *DefaultWeaponOffH = nullptr;
     // TODO temp, set before drawing weapon with user selected ability in mind via resolver
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
     UCombatStance *CurrentCombatStance = nullptr;
@@ -190,11 +234,16 @@ protected:
     bool AttackPressed = false;
     bool BlockPressed = false;
     TSet<AActor*> CharactersHit;
-    class ACharacterPlayer *Character;
+    class ACharacterCreature *Character;
+    AItemActor *CurrentMainWeaponActor;
+    AItemActor *CurrentOffWeaponActor;
+    bool IsWeaponDrawn;
 
     //================================= Ability System ================================//
     void CalculateMaxCastingSpeed(float SpeedModifier);
-
+    // значение относительно нормы
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability System")
+    float CastSpeed;
     //Max move speed during ability cast
     UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Ability System")
     float MaxSpeedWhileCasting;    

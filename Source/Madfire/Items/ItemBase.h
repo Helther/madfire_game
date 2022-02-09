@@ -9,9 +9,7 @@
 #include "ItemBase.generated.h"
 
 
-/**
- * 
- */
+
 UCLASS(config = Game, EditInlineNew, BlueprintType, Blueprintable)
 class UItem : public UObject, public IInteractableInterface
 {
@@ -46,11 +44,9 @@ protected:
 public:
     virtual void TakeDamage(float, const struct FDamageEvent &, class AActor *EventInstigator);
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EInteractType"), Category = "Item Info")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
     TSubclassOf<class AItemActor> ItemActor;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item Info")
-    USkeletalMesh *ItemMesh = nullptr;
 
     //Item Info
     //UPROPERTY(BlueprintReadOnly, Category = "Item Info")
@@ -82,6 +78,8 @@ public:
 private:
 };
 
+
+class UBoxComponent;
 
 UCLASS(BlueprintType, Blueprintable)
 class AItemActor : public AActor, public IInteractableInterface
@@ -115,17 +113,18 @@ public:
 protected:
     // Called when the game starts or when spawned
     virtual void BeginPlay() override;
-
-public:
     // Called every frame
     virtual void Tick(float DeltaTime) override;
 
-
+public:
     UPROPERTY(Instanced, EditAnywhere, BlueprintReadWrite, Category = "Item Info")
     UItem *ItemBase = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
-    USkeletalMeshComponent *ItemMesh;
+    UStaticMeshComponent *ItemMesh;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    UBoxComponent *ItemCollision;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
     uint8 StackCount;

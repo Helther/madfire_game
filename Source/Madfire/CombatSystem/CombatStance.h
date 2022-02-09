@@ -23,7 +23,7 @@ enum class ESpecialType : uint8
 };
 ENUM_CLASS_FLAGS(ESpecialType)
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCustomAttackEvent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCustomAttackEvent, AActor *, Actor);
 
 USTRUCT(BlueprintType)
 struct FAttackInfo
@@ -38,7 +38,6 @@ struct FAttackInfo
     float DamageMod;
     UPROPERTY(EditAnywhere)
     float PowerMod;
-    // should be negative
     UPROPERTY(EditAnywhere)
     float StaminaCost;
     UPROPERTY(EditAnywhere)
@@ -104,14 +103,12 @@ public:
     UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Combat Speeds")
     float MaxBlockSpeed{};
 
-    // Should be negative value
     UPROPERTY(EditAnywhere)
-    float ParryStaminaCost = -15;
+    float ParryStaminaCost = 15;
     // used for req checks, set when gets stance resolved
     UPROPERTY(BlueprintReadOnly)
     class ACharacterBase* Owner = nullptr;
 
-    // TODO check default implem
     // Implement This, it's really important!
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
     bool CheckRequirement(class ACharacterBase *character);

@@ -19,22 +19,22 @@ class UItemWeapon : public UItem
 public:
     UItemWeapon(const class FObjectInitializer &ObjectInititalizer);
 
-    UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Weapon Stats")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon Stats")
     EWeaponType WeaponType;
 
-    UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Weapon Stats")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon Stats")
     EWeaponSize WeaponSize;
 
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Weapon Stats")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats")
     float DamageValue;
 
-    UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Weapon Stats")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon Stats")
     TSubclassOf<UPhysicDamage> DamageType;
 
     //For Shields
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Weapon Stats")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats")
     FDamageAbsorb DamageLimit;
 
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Weapon Stats")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats")
     FDamageResistance DamageResistance;
 };

@@ -92,7 +92,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
     void Update();
 
-	UFUNCTION(BlueprintCallable, Category = "Component Update")// todo 
+	UFUNCTION(BlueprintCallable, Category = "Component Update")
     void SetUpdate() { IsDirty = true; }
 	UFUNCTION(BlueprintCallable, Category = "Component Update")
     void UnSetUpdate() { IsDirty = false; }

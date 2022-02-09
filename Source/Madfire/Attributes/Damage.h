@@ -4,7 +4,8 @@
 
 #include "Engine/UserDefinedStruct.h"
 #include "GameFramework/DamageType.h"
-#include "Rules/GameRules.h"
+#include "../Rules/GameRules.h"
+#include "Engine/EngineTypes.h"
 
 #include "Damage.generated.h"
 
@@ -38,8 +39,7 @@ class UPhysicDamage : public UDamageBase
 {
     GENERATED_BODY()
 public:
-    UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite)
-    float Force;
+
 };
 
 
@@ -50,4 +50,12 @@ class UMagicDamage : public UDamageBase
 public:
     UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite)
     EMagicSchool MagicSchool;
+};
+
+struct FForceDamageEvent : public FDamageEvent
+{
+    explicit FForceDamageEvent(TSubclassOf<class UDamageType> InDamageTypeClass, float force)
+        : FDamageEvent(InDamageTypeClass), Force(force) {}
+    
+    float Force;
 };
