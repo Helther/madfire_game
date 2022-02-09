@@ -1,4 +1,4 @@
-#include "Barrier.h"
+﻿#include "Barrier.h"
 
 
 float UBarrier::TakeDamage(float DamageAmount, UDamageType *DamageType, AActor *DamageCauser)

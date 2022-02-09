@@ -1,4 +1,4 @@
-#include "CombatComponent.h"
+ï»¿#include "CombatComponent.h"
 
 #include "../CharacterCreature.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -275,7 +275,7 @@ void UCombatComponent::InitCombatFSM()
     });
     CombatFSM.addLink(ECombatState::Block, ECombatState::Idle, req);
     req.Unbind();
-    req.BindLambda([&]() // check if stance has parry (Note: êóëà÷íûé áîé íå äîëæåí èìåòü ïàððè)
+    req.BindLambda([&]() // check if stance has parry (Note: ÃªÃ³Ã«Ã Ã·Ã­Ã»Ã© Ã¡Ã®Ã© Ã­Ã¥ Ã¤Ã®Ã«Ã¦Ã¥Ã­ Ã¨Ã¬Ã¥Ã²Ã¼ Ã¯Ã Ã°Ã°Ã¨)
     {
         bool hasStanceAnims = CurrentCombatStance->CurrentParryAnim != nullptr;
         bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;

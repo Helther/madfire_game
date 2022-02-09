@@ -1,4 +1,4 @@
-#include "CharacterCreature.h"
+п»ї#include "CharacterCreature.h"
 #include "CharacterAnimInstance.h"
 
 
@@ -13,7 +13,7 @@ ACharacterCreature::ACharacterCreature(const FObjectInitializer &ObjectInitializ
     CCInterruptDelegates.Emplace(ECCState::LossOfBalance, &ACharacterCreature::CCLOBEnded);
     CCInterruptDelegates.Emplace(ECCState::Stun, &ACharacterCreature::CCStunEnded);
     CCInterruptDelegates.Emplace(ECCState::KnockDown, &ACharacterCreature::CCKnockDownEnded);
-    // TODO продумать колбэки для всех режимов
+    // TODO ГЇГ°Г®Г¤ГіГ¬Г ГІГј ГЄГ®Г«ГЎГЅГЄГЁ Г¤Г«Гї ГўГ±ГҐГµ Г°ГҐГ¦ГЁГ¬Г®Гў
     KnockDownBaseTime = 5.f;
     KnockDownModBase = 0.1f;
     KnockDownWeightModBase = 1.f;
@@ -36,7 +36,7 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
     int32 strMod = UAttributeSetHelper::GetModifier(AttributeComponent->Attributes, EAttributes::Str);
     int32 balanceSkill = USkillHelper::GetValue(AttributeComponent->Skills, ESkill::Balance);
     UE_LOG(LogTemp, Warning, TEXT("take damage before block %f"), DamageAmount);
-    // TODO добавить проверку на паррирование
+    // TODO Г¤Г®ГЎГ ГўГЁГІГј ГЇГ°Г®ГўГҐГ°ГЄГі Г­Г  ГЇГ Г°Г°ГЁГ°Г®ГўГ Г­ГЁГҐ
     if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Block)
     {
         // check if had shield and what kind
@@ -46,7 +46,7 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
         else if (CombatComponent->CurrentWeaponMainH != nullptr && CombatComponent->CurrentWeaponMainH->WeaponType != EWeaponType::Unarmed)
             shield = CombatComponent->CurrentWeaponMainH;
         bool hasShield = shield != nullptr;
-        // рассчитаем угол между направлениями бойцов
+        // Г°Г Г±Г±Г·ГЁГІГ ГҐГ¬ ГіГЈГ®Г« Г¬ГҐГ¦Г¤Гі Г­Г ГЇГ°Г ГўГ«ГҐГ­ГЁГїГ¬ГЁ ГЎГ®Г©Г¶Г®Гў
         if (hasShield && UCombatComponent::GetAngleBetweenAttackerAndDefender(DamageCauser, this) < CombatComponent->MaxFacingAngle)
         {
             balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, shield->Weight);
@@ -250,7 +250,7 @@ void ACharacterCreature::BeginPlay()
 
 void ACharacterCreature::CCStunEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
-    // todo зациклить анимацию, выводить по таймеру
+    // todo Г§Г Г¶ГЁГЄГ«ГЁГІГј Г Г­ГЁГ¬Г Г¶ГЁГѕ, ГўГ»ГўГ®Г¤ГЁГІГј ГЇГ® ГІГ Г©Г¬ГҐГ°Гі
     UE_LOG(LogTemp, Warning, TEXT("CCEnd: Stun"));
     CCStateManager.ResetCCMode(ECCState::Stun);
 }

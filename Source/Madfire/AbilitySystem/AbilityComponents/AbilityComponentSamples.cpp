@@ -1,4 +1,4 @@
-#include "AbilityComponentSamples.h"
+﻿#include "AbilityComponentSamples.h"
 #include "Character/CharacterCreature.h"
 
 #ifdef _MSC_VER

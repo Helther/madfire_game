@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "AbilitySystem/CastedAbility.h"
 #include "AbilitySystem/ChannelAbility.h"

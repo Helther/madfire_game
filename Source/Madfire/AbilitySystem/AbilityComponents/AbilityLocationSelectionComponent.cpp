@@ -1,4 +1,4 @@
-#include "AbilityLocationSelectionComponent.h"
+﻿#include "AbilityLocationSelectionComponent.h"
 #include "Character/Components/CombatComponent.h"
 
 void UAbilityLocationSelection::ComponentInit(UAbstractAbility *parent)

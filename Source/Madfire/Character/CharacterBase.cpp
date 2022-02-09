@@ -1,4 +1,4 @@
-#include "CharacterBase.h"
+﻿#include "CharacterBase.h"
 
 
 ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) : 

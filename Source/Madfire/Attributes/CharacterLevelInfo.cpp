@@ -1,4 +1,4 @@
-#include "CharacterLevelInfo.h"
+﻿#include "CharacterLevelInfo.h"
 
 FCharacterLevelInfo::FCharacterLevelInfo() :
     HealthBonus(DefaultHPBonus)

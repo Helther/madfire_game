@@ -1,4 +1,4 @@
-#include "EquipmentSlot.h"
+﻿#include "EquipmentSlot.h"
 
 bool FEquipmentSlot::Equip(UItem *Item)
 {
