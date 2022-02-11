@@ -13,7 +13,7 @@ ACharacterCreature::ACharacterCreature(const FObjectInitializer &ObjectInitializ
     CCInterruptDelegates.Emplace(ECCState::LossOfBalance, &ACharacterCreature::CCLOBEnded);
     CCInterruptDelegates.Emplace(ECCState::Stun, &ACharacterCreature::CCStunEnded);
     CCInterruptDelegates.Emplace(ECCState::KnockDown, &ACharacterCreature::CCKnockDownEnded);
-    // TODO ïðîäóìàòü êîëáýêè äëÿ âñåõ ðåæèìîâ
+    // TODO add other callbacks
     KnockDownBaseTime = 5.f;
     KnockDownModBase = 0.1f;
     KnockDownWeightModBase = 1.f;
@@ -27,6 +27,9 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
                                  class AController *EventInstigator,
                                  AActor *DamageCauser)
 {
+    if (Cheats.Invulnerable)
+        return AttributeComponent->Health->CurrentValue;
+
     const auto DamageType = DamageEvent.DamageTypeClass.GetDefaultObject();
     const auto Type = Cast<UDamageBase>(DamageType)->Type;
     bool isAbsolute = Cast<UAbsoluteDamage>(DamageType) != nullptr;
@@ -36,7 +39,7 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
     int32 strMod = UAttributeSetHelper::GetModifier(AttributeComponent->Attributes, EAttributes::Str);
     int32 balanceSkill = USkillHelper::GetValue(AttributeComponent->Skills, ESkill::Balance);
     UE_LOG(LogTemp, Warning, TEXT("take damage before block %f"), DamageAmount);
-    // TODO äîáàâèòü ïðîâåðêó íà ïàððèðîâàíèå
+    // TODO add parry
     if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Block)
     {
         // check if had shield and what kind
@@ -46,7 +49,7 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
         else if (CombatComponent->CurrentWeaponMainH != nullptr && CombatComponent->CurrentWeaponMainH->WeaponType != EWeaponType::Unarmed)
             shield = CombatComponent->CurrentWeaponMainH;
         bool hasShield = shield != nullptr;
-        // ðàññ÷èòàåì óãîë ìåæäó íàïðàâëåíèÿìè áîéöîâ
+        // check block and actors directions
         if (hasShield && UCombatComponent::GetAngleBetweenAttackerAndDefender(DamageCauser, this) < CombatComponent->MaxFacingAngle)
         {
             balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, shield->Weight);
@@ -250,7 +253,7 @@ void ACharacterCreature::BeginPlay()
 
 void ACharacterCreature::CCStunEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
-    // todo çàöèêëèòü àíèìàöèþ, âûâîäèòü ïî òàéìåðó
+    // todo reset some armor debuffs
     UE_LOG(LogTemp, Warning, TEXT("CCEnd: Stun"));
     CCStateManager.ResetCCMode(ECCState::Stun);
 }

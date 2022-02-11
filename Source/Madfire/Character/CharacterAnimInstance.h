@@ -41,6 +41,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
     void OnParriableActivation(bool activate);
 
+    UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
+    void OnDodgeInvulnerable(bool activate);
+
     UFUNCTION(BlueprintCallable)
     bool IsMovementAllowed() const;
 

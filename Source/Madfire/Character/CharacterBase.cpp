@@ -7,6 +7,9 @@ ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) :
     PrimaryActorTick.bCanEverTick = true;
     AttributeComponent = CreateDefaultSubobject<UAttributeComponent>("AttributeComponent");
     EffectComponent = CreateDefaultSubobject<UEffectComponent>("EffectComponent");
+
+    Cheats.Invulnerable = false;
+    Cheats.InvulnerableToHit = false;
 }
 
 float ACharacterBase::TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent,

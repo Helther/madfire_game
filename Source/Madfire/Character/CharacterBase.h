@@ -8,6 +8,14 @@
 
 #include "CharacterBase.generated.h"
 
+// container of character cheats that might be applied to it
+struct FCheats
+{
+    unsigned int Invulnerable : 1;
+    unsigned int InvulnerableToHit : 1;
+};
+
+
 /**
  * Obvious Class Decription
  */
@@ -28,4 +36,6 @@ public:
     UAttributeComponent *AttributeComponent;
     UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
     UEffectComponent *EffectComponent;
+
+    FCheats Cheats;
 };

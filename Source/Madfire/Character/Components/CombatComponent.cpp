@@ -275,12 +275,13 @@ void UCombatComponent::InitCombatFSM()
     });
     CombatFSM.addLink(ECombatState::Block, ECombatState::Idle, req);
     req.Unbind();
-    req.BindLambda([&]() // check if stance has parry (Note: êóëà÷íûé áîé íå äîëæåí èìåòü ïàððè)
+    req.BindLambda([&]() // check if stance has parry (Note: not for unarmed)
     {
+        bool canParry = CurrentWeaponMainH != nullptr && CurrentWeaponMainH->WeaponType != EWeaponType::Unarmed;
         bool hasStanceAnims = CurrentCombatStance->CurrentParryAnim != nullptr;
         bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;
         const auto state = CombatFSM.state(ECombatState::Block);
-        return hasStanceAnims && state->Info.CheckAnimInfo(ECombatStateAnimInfo::BlockOrParryActive) && AttackPressed && hasStamina; 
+        return canParry && hasStanceAnims && state->Info.CheckAnimInfo(ECombatStateAnimInfo::BlockOrParryActive) && AttackPressed && hasStamina; 
     });
     CombatFSM.addLink(ECombatState::Block, ECombatState::Parry, req);
     req.Unbind();
@@ -482,8 +483,15 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
             auto hitCharacter = Cast<ACharacterBase>(hitActor);
             if (hitCharacter)
             {
+                if (hitCharacter->Cheats.InvulnerableToHit)
+                {
+                    if (ShowDebugInfo)
+                        UE_LOG(LogTemp, Warning, TEXT("OnBeginOverlap: invul character!"));
+                    return;
+                }
                 if (ShowDebugInfo)
-                    UE_LOG(LogTemp, Warning, TEXT("OnBeginOverlap Hit character!"));
+                    UE_LOG(LogTemp, Warning, TEXT("OnBeginOverlap: Hit character!"));
+
                 int32 strMod = UAttributeSetHelper::GetModifier(hitCharacter->AttributeComponent->Attributes, EAttributes::Str);
                 const float damage = CalculateWeaponDamage(activeWeapon, CombatFSM.state(ECombatState::Attack)->Info.AttackInfo->DamageMod, strMod);
                 float force = CalculateHitForce(activeWeapon->Weight, strMod, info.AttackInfo->PowerMod); // Use Force, Luke

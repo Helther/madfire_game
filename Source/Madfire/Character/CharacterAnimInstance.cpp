@@ -80,10 +80,20 @@ void UCharacterAnimInstance::OnParriableActivation(bool activate)
 
 bool UCharacterAnimInstance::IsMovementAllowed() const
 {
-    if(CharacterInstance != nullptr && CharacterInstance->CombatComponent != nullptr && CharacterInstance->CombatComponent->CombatFSM.currentState())
+    if (CharacterInstance != nullptr && CharacterInstance->CombatComponent != nullptr && CharacterInstance->CombatComponent->CombatFSM.currentState())
     {
         const auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.currentState()->Info;
         return !stateInfo.CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked);
     }
     return false;
+}
+
+
+void UCharacterAnimInstance::OnDodgeInvulnerable(bool activate)
+{
+    if (CharacterInstance != nullptr && CharacterInstance->GetMovementComponent()->MovementMode == MOVE_Custom && 
+        CharacterInstance->GetMovementComponent()->CustomMovementMode == ECustomMovementMode::Dodge)
+    {
+        CharacterInstance->Cheats.InvulnerableToHit = activate;
+    }
 }

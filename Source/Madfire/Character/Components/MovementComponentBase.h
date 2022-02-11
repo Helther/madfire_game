@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TraceFunctional/TraceFunctional.h"
+#include "../../Attributes/Damage.h"
 
 #include "MovementComponentBase.generated.h"
 
@@ -173,8 +174,9 @@ protected:
     float fallLocationHeight{};
     //проверка на получение урона от падения
     bool FallDamageCheck();
-    //нанесение урона от падения
-    void ApplyFallDamage(float FallDistance);
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    TSubclassOf<UAbsoluteDamage> FallDamageType;
 
     /////////////////======= Fall damage END ========//////////////////
 

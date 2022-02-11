@@ -41,8 +41,8 @@ UHumanoidMovementComponent::UHumanoidMovementComponent(
 
     JumpWallZVelocityBase      = 400;
     JumpWallXYVelocityBase     = 200;
-    MinFallHeightThresholdBase = 100;
-    MaxfallHeightThresholdBase = 500;
+    MinFallHeightThresholdBase = 300;
+    MaxfallHeightThresholdBase = 600;
 
     AirControlBase                 = 0.05f;
     JumpZVelocityBase              = 400.f;
@@ -874,7 +874,7 @@ void UHumanoidMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
     if (prevMode == MOVE_Falling && MovementMode == MOVE_Walking)
     {
 
-        if (!bFallDamageInvul)
+        if (!bFallDamageInvul && !Character->Cheats.Invulnerable)
             FallDamageCheck();
     }
     if (prevMode == MOVE_Walking)
@@ -1067,26 +1067,27 @@ void UHumanoidMovementComponent::PhysCustom(
 }
 
 //проверка получит ли персонаж урон от падения и сколько
-//TODO добавить реализацию получения урона
 bool UHumanoidMovementComponent::FallDamageCheck()
 {
-    const float difference = fallLocationHeight - Character->GetActorLocation().Z;
-    fallLocationHeight     = 0;
-    if (MinFallHeightThreshold < difference)
+    if (Character->Cheats.Invulnerable)
+        return false;
+
+    const float FallDistance = fallLocationHeight - Character->GetActorLocation().Z;
+    fallLocationHeight = 0; // reset location
+    if (MinFallHeightThreshold < FallDistance)
     {
-        ApplyFallDamage(difference);
+        check(MinFallHeightThreshold != 0.f && "ApplyFallDamage: div by zero")
+        float damage = Character->AttributeComponent->Health->GetMaxValue();
+        if (FallDistance < MaxfallHeightThreshold)
+            damage *= (FallDistance - MinFallHeightThreshold) / MinFallHeightThreshold;
+        damage *= FallDamageMod;
+        Character->ACharacterBase::TakeDamage(damage, FDamageEvent(FallDamageType), Character->GetController(), Character);
+        if (ShowDebugInfo)
+            UE_LOG(LogTemp, Warning, TEXT("received fall damage: %f"), damage);
         return true;
     }
     else
         return false;
-}
-
-void UHumanoidMovementComponent::ApplyFallDamage(float FallDistance)
-{
-    check(MinFallHeightThreshold && "ApplyFallDamage: div by zero")
-    float damage = Character->AttributeComponent->Health->GetMaxValue();
-    if (FallDistance < MaxfallHeightThreshold)
-        damage *= (FallDistance - MinFallHeightThreshold) / MinFallHeightThreshold;
 }
 
 void UHumanoidMovementComponent::TransitionStart(const FVector &EndLoc,
@@ -1257,12 +1258,15 @@ void UHumanoidMovementComponent::BeginPlay()
 void UHumanoidMovementComponent::NotifyJumpApex()
 {
     /*
-    // todo действие при достижении вершины прыжка
+    // действие при достижении вершины прыжка
     UE_LOG(LogTemp, Warning, TEXT("Movement component Test"));
     FVector start = GetOwner()->GetActorLocation();
     FVector end = start + FVector(0, 1000, -5000);
     DrawDebugLine(GetOwner()->GetWorld(),start,end,FColor::Red,false,4.f);
     */
+    // if was jumping use it's height for fall damage calculaiton
+    if (fallLocationHeight < Character->GetActorLocation().Z)
+        fallLocationHeight = Character->GetActorLocation().Z;
 }
 
 void UHumanoidMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
@@ -1482,5 +1486,5 @@ void UHumanoidMovementComponent::OnDodgeEnded(UAnimMontage *animMontage, bool bI
         else
             UE_LOG(LogTemp, Warning, TEXT("DodgeFinishedNormally"))
     }
-    // todo disable invul
+    Character->Cheats.InvulnerableToHit = false;
 }
