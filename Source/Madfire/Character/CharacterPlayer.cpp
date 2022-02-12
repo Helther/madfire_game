@@ -29,12 +29,12 @@ void ACharacterPlayer::OnWalkingOffLedge_Implementation(
   const FVector &PreviousLocation,
   float TimeDelta)
 {
-    UE_LOG(LogTemp, Warning, TEXT("OnWalkingOffLedge"));
+    Logger.Log(this,*FString::Printf(TEXT("OnWalkingOffLedge")));
     APlayerCharController *PlayerController =
       Cast<APlayerCharController>(GetController());
     if (PlayerController->IsActionKeyPressed(FInputKeyNames::ClimbDownTest))
     {
-        UE_LOG(LogTemp, Warning, TEXT("climb down"));
+        Logger.Log(this,*FString::Printf(TEXT("climb down")));
         GetMovementComponent()->ClimbDownWall();
     }
 }

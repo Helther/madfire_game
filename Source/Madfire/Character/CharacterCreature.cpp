@@ -21,6 +21,11 @@ ACharacterCreature::ACharacterCreature(const FObjectInitializer &ObjectInitializ
     MaxWeightModBase = 10.f;
     MaxWeight = MaxWeightBase;
     KnockDownTime = KnockDownBaseTime;
+
+    Logger.RegisterSubLogger(GetMovementComponent(), true);
+    Logger.RegisterSubLogger(CombatComponent, true);
+    Logger.RegisterSubLogger(EquipmentComponent, true);
+    Logger.RegisterSubLogger(InventoryComponent, true);
 }
 
 float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent,
@@ -38,7 +43,7 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
     float balance;
     int32 strMod = UAttributeSetHelper::GetModifier(AttributeComponent->Attributes, EAttributes::Str);
     int32 balanceSkill = USkillHelper::GetValue(AttributeComponent->Skills, ESkill::Balance);
-    UE_LOG(LogTemp, Warning, TEXT("take damage before block %f"), DamageAmount);
+    Logger.Log(this,*FString::Printf(TEXT("take damage before block %f"), DamageAmount));
     // TODO add parry
     if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Block)
     {
@@ -66,17 +71,20 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
                 auto attackerChar = Cast<ACharacterCreature>(DamageCauser);
                 if (attackerChar)
                     attackerChar->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::HitWall);
+                // TODO test block hit and make sure block's not interrupted
                 // apply blocked action to the defender
                 InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::BlockedAttack);
             }
             else
                 force *= CombatComponent->HitForceReductionMod;// force reduction from block attempt
         }
+        else
+            balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, 0);
     }
     else
         balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, 0);
-    UE_LOG(LogTemp, Warning, TEXT("force %f"), force);
-    UE_LOG(LogTemp, Warning, TEXT("balance %f"), balance);
+    Logger.Log(this,*FString::Printf(TEXT("force %f"), force));
+    Logger.Log(this,*FString::Printf(TEXT("balance %f"), balance));
     if (!blocked && (force > balance)) // check if block failed
     {
         if (CombatComponent->KnockdownThreshhold < force / balance) // the consequences
@@ -84,7 +92,7 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
         else
             InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::None);
     }
-    UE_LOG(LogTemp, Warning, TEXT("take damage after block %f"), DamageAmount);
+    Logger.Log(this,*FString::Printf(TEXT("take damage after block %f"), DamageAmount));
     if (DamageAmount <= 0)
         return AttributeComponent->Health->CurrentValue; 
     return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
@@ -130,9 +138,8 @@ void ACharacterCreature::InterruptAnimation(ECCState Source, ELossOfBalanceCCSub
         //check if highest order bit of source is lower than old
         if (FCCStateManager::GetHighestPriorityCC(1 << Source) < CCStateManager.CurrentCCPriority())
         {
-            UE_LOG(LogTemp,
-                   Warning,
-                   TEXT("InterruptAnimation: cant interrupt CC, low priority"))
+
+            Logger.Log(this, *FString::Printf(TEXT("InterruptAnimation: cant interrupt CC, low priority")));
             return;
         }
     }
@@ -244,6 +251,7 @@ void ACharacterCreature::BeginPlay()
     ACharacter::BeginPlay();
 
     CCStateManager.Init(this);
+    Logger.Init(this);
     // init components
     AttributeComponent->SetDirty();
     GetMovementComponent()->SetDirty();
@@ -254,21 +262,21 @@ void ACharacterCreature::BeginPlay()
 void ACharacterCreature::CCStunEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
     // todo reset some armor debuffs
-    UE_LOG(LogTemp, Warning, TEXT("CCEnd: Stun"));
+    Logger.Log(this,*FString::Printf(TEXT("CCEnd: Stun")));
     CCStateManager.ResetCCMode(ECCState::Stun);
 }
 
 void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
     // todo
-    UE_LOG(LogTemp, Warning, TEXT("CCEnd: Loss of balance"));
+    Logger.Log(this,*FString::Printf(TEXT("CCEnd: Loss of balance")));
     CCStateManager.ResetCCMode(ECCState::LossOfBalance);
 }
 
 void ACharacterCreature::CCKnockDownEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
     // todo reset some armor debuffs
-    UE_LOG(LogTemp, Warning, TEXT("CCEnd: KnockDown"));
+    Logger.Log(this,*FString::Printf(TEXT("CCEnd: KnockDown")));
     CCStateManager.ResetCCMode(ECCState::KnockDown);
 }
 
@@ -298,7 +306,7 @@ void FCCStateManager::SetCCMode(ECCState Mode, float *Time)
     if (Time != nullptr)
     {
         float duration = *Time * GetCCLockTimeModifier(Mode);
-        UE_LOG(LogTemp, Warning, TEXT("Setting CC with duration of %f"), duration);
+        Character->Logger.Log(Character,*FString::Printf(TEXT("Setting CC with duration of %f"), duration));
         FTimerDelegate CCDelegate = FTimerDelegate::CreateLambda([this, Mode]() 
         {
             auto animInstance = Character->GetMesh()->GetAnimInstance();

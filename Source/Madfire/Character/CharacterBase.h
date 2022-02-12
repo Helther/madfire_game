@@ -5,6 +5,7 @@
 #include "GameFramework/Character.h"
 #include "Components/AttributesComponent.h"
 #include "Components/EffectComponent.h"
+#include "Utils/ObjectLogger.h"
 
 #include "CharacterBase.generated.h"
 
@@ -38,4 +39,6 @@ public:
     UEffectComponent *EffectComponent;
 
     FCheats Cheats;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FObjectLogger Logger;
 };

@@ -23,7 +23,6 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitili
     UnarmedBaseDamage = 1.f;
     CastSpeed = 1.f;
     BlockStaminaRegenRateMod = 0.5f;
-    ShowDebugInfo = true;
     CombatModeRotationRate = 500.f;
     ActionRotationRate = 100.f;
     ChargeStartTime = 0.2f;
@@ -86,6 +85,7 @@ void UCombatComponent::BeginPlay()
     Super::BeginPlay();
     Character = Cast<ACharacterCreature>(GetOwner());
     check(Character != nullptr && "UCombatComponent: No pawn");
+    CombatFSM.setCurrentState(ECombatState::Idle);
     Character->GetMovementComponent()->OnMoveModeChanged.AddDynamic(this, &UCombatComponent::OnMovementModeChanged);
     // TODO temp, stance resolve this on new stance
     GetCurrentCombatStance()->CurrentCrouchLocomotion = GetCurrentCombatStance()->CustomCrouchLocomotion;
@@ -144,15 +144,13 @@ void UCombatComponent::InitCombatFSM()
     //=================================== IDLE =====================================//
     CombatFSM.state(ECombatState::Idle)->Info.OnEnter.BindLambda([&]()
     {
-        if (ShowDebugInfo)
-            UE_LOG(LogTemp, Warning, TEXT("idle enter: %s"),
-                IsWeaponDrawn ? TEXT("weapon on") : TEXT("weapon off"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("idle enter: %s"),
+                IsWeaponDrawn ? TEXT("weapon on") : TEXT("weapon off")));
     });
     CombatFSM.state(ECombatState::Idle)->Info.OnLeave.BindLambda([&]()
     {
         CombatFSM.state(ECombatState::Idle)->Info.ResetAnimInfo();
-        if (ShowDebugInfo)
-            UE_LOG(LogTemp, Warning, TEXT("idle leave"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("idle leave")));
     });
     FLinkReq req;
     req.BindLambda([&]()
@@ -213,8 +211,7 @@ void UCombatComponent::InitCombatFSM()
     //================================ WEAPON SWITCH ==============================//
     CombatFSM.state(ECombatState::WeaponSwitch)->Info.OnEnter.BindLambda([&]()
     {// TODO check stance resolve and set current anims
-        if (ShowDebugInfo)
-            UE_LOG(LogTemp, Warning, TEXT("weapon switch enter"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("weapon switch enter")));
         FOnMontageBlendingOutStarted callBack;
         callBack.BindUObject(this, &UCombatComponent::OnWeaponSwitchEnded);
         Character->StartAnimation(IsWeaponDrawn ? 
@@ -222,8 +219,7 @@ void UCombatComponent::InitCombatFSM()
     });
     CombatFSM.state(ECombatState::WeaponSwitch)->Info.OnLeave.BindLambda([&]()
     {
-        if (ShowDebugInfo)
-            UE_LOG(LogTemp, Warning, TEXT("weapon switch leave"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("weapon switch leave")));
         if (IsWeaponDrawn)// in combat mode
         {
             Character->GetMovementComponent()->maxSpeedBlock = true;
@@ -251,8 +247,7 @@ void UCombatComponent::InitCombatFSM()
     //=================================== Block =====================================//
     CombatFSM.state(ECombatState::Block)->Info.OnEnter.BindLambda([&]()
     {
-        if (ShowDebugInfo)
-            UE_LOG(LogTemp, Warning, TEXT("block enter"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("block enter")));
         CalculateMaxBlockingSpeed(Character->GetMovementComponent()->GetSpeedModifier());
         Character->AttributeComponent->Stamina->RegenCoef += BlockStaminaRegenRateMod; // slowing down stamina regen rate
         FOnMontageBlendingOutStarted callBack;
@@ -261,8 +256,7 @@ void UCombatComponent::InitCombatFSM()
     });
     CombatFSM.state(ECombatState::Block)->Info.OnLeave.BindLambda([&]()
     {
-        if (ShowDebugInfo)
-            UE_LOG(LogTemp, Warning, TEXT("block leave"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("block leave")));
         CalculateMaxCombatSpeeds();
         Character->AttributeComponent->Stamina->RegenCoef -= BlockStaminaRegenRateMod; // reseting stamina regen rate
         CombatFSM.state(ECombatState::Block)->Info.ResetAnimInfo();
@@ -289,8 +283,7 @@ void UCombatComponent::InitCombatFSM()
     //=================================== Parry =====================================//
     CombatFSM.state(ECombatState::Parry)->Info.OnEnter.BindLambda([&]()
     {
-        if (ShowDebugInfo)
-            UE_LOG(LogTemp, Warning, TEXT("parry enter"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("parry enter")));
         FOnMontageBlendingOutStarted callBack;
         callBack.BindUObject(this, &UCombatComponent::OnParryEnded);
         Character->StartAnimation(CurrentCombatStance->CurrentParryAnim, callBack, AttackSpeed);
@@ -300,8 +293,7 @@ void UCombatComponent::InitCombatFSM()
     });
     CombatFSM.state(ECombatState::Parry)->Info.OnLeave.BindLambda([&]()
     {
-        if (ShowDebugInfo)
-            UE_LOG(LogTemp, Warning, TEXT("parry leave"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("parry leave")));
         ResetActionState(ECombatState::Parry);
     });
     req.BindLambda([&]()  // to idle after animation complete
@@ -333,8 +325,7 @@ void UCombatComponent::InitCombatFSM()
     //=================================== Attack ====================================//
     CombatFSM.state(ECombatState::Attack)->Info.OnEnter.BindLambda([&]()
     {
-        if (ShowDebugInfo)
-            UE_LOG(LogTemp, Warning, TEXT("attack enter"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("attack enter")));
         const FAttackInfo* currentAttack = CombatFSM.state(ECombatState::Attack)->Info.AttackInfo;
         FOnMontageBlendingOutStarted callBack;
         callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
@@ -350,8 +341,7 @@ void UCombatComponent::InitCombatFSM()
     });
     CombatFSM.state(ECombatState::Attack)->Info.OnLeave.BindLambda([&]()
     {
-        if (ShowDebugInfo)
-            UE_LOG(LogTemp, Warning, TEXT("attack leave"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("attack leave")));
         ResetActionState(ECombatState::Attack);
         CombatFSM.state(ECombatState::Attack)->Info.ChargeTime = 0.f;
         CombatFSM.state(ECombatState::Attack)->Info.AttackInfo = nullptr;
@@ -385,8 +375,7 @@ void UCombatComponent::InitCombatFSM()
     //=================================== Ability ====================================//
     CombatFSM.state(ECombatState::Ability)->Info.OnEnter.BindLambda([&]()
     {
-        if (ShowDebugInfo)
-            UE_LOG(LogTemp, Warning, TEXT("Ability enter"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("Ability enter")));
         if (!IsWeaponDrawn)// not in combat mode
         {
             Character->GetMovementComponent()->maxSpeedBlock = true;
@@ -401,8 +390,7 @@ void UCombatComponent::InitCombatFSM()
     });
     CombatFSM.state(ECombatState::Ability)->Info.OnLeave.BindLambda([&]()
     {
-        if (ShowDebugInfo)
-            UE_LOG(LogTemp, Warning, TEXT("Ability leave"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("Ability leave")));
         if (IsWeaponDrawn)// in combat mode
             CalculateMaxCombatSpeeds();
         else
@@ -422,8 +410,6 @@ void UCombatComponent::InitCombatFSM()
     });
     CombatFSM.addLink(ECombatState::Ability, ECombatState::Idle, req);
     req.Unbind();
-
-    CombatFSM.setCurrentState(ECombatState::Idle);
 }
 
 bool UCombatComponent::UpdateCombatFSM()
@@ -485,13 +471,10 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
             {
                 if (hitCharacter->Cheats.InvulnerableToHit)
                 {
-                    if (ShowDebugInfo)
-                        UE_LOG(LogTemp, Warning, TEXT("OnBeginOverlap: invul character!"));
+                    Character->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap: invul character!")));
                     return;
                 }
-                if (ShowDebugInfo)
-                    UE_LOG(LogTemp, Warning, TEXT("OnBeginOverlap: Hit character!"));
-
+                Character->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap: Hit character!")));
                 int32 strMod = UAttributeSetHelper::GetModifier(hitCharacter->AttributeComponent->Attributes, EAttributes::Str);
                 const float damage = CalculateWeaponDamage(activeWeapon, CombatFSM.state(ECombatState::Attack)->Info.AttackInfo->DamageMod, strMod);
                 float force = CalculateHitForce(activeWeapon->Weight, strMod, info.AttackInfo->PowerMod); // Use Force, Luke
@@ -501,14 +484,12 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
             {
                 if (SweepResult.GetComponent()->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic) // check if hit a wall and interrupt with loss of balance
                 {
-                    if (ShowDebugInfo)
-                        UE_LOG(LogTemp, Warning, TEXT("OnBeginOverlap Hit wall!"));
+                    Character->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap Hit wall!")));
                     Character->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::HitWall);
                 }
                 else // try to damage the actor
                 {
-                    if (ShowDebugInfo)
-                        UE_LOG(LogTemp, Warning, TEXT("OnBeginOverlap Hit actor!"));
+                    Character->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap Hit actor!")));
                     const float damage = CalculateWeaponDamage(activeWeapon, CombatFSM.state(ECombatState::Attack)->Info.AttackInfo->DamageMod, 0);
                     hitActor->TakeDamage(damage, FDamageEvent(activeWeapon->DamageType), Character->GetController(), Character);
                 }
@@ -525,9 +506,8 @@ void UCombatComponent::Update()
 
 void UCombatComponent::OnAttack(bool Started)
 {
-    if (ShowDebugInfo)
-        UE_LOG(LogTemp, Warning, TEXT("OnAttack %s"),
-            Started ? TEXT("pressed") : TEXT("released"));
+    Character->Logger.Log(this, *FString::Printf(TEXT("OnAttack %s"),
+            Started ? TEXT("pressed") : TEXT("released")));
     AttackPressed = Started;
     if (CombatFSM.currentState()->Id == ECombatState::Attack)
     {
@@ -589,9 +569,8 @@ void UCombatComponent::OnAttack(bool Started)
 
 void UCombatComponent::OnBlock(bool Started) 
 {
-    if (ShowDebugInfo)
-        UE_LOG(LogTemp, Warning, TEXT("OnBlock %s"),
-            Started ? TEXT("pressed") : TEXT("released"));
+    Character->Logger.Log(this, *FString::Printf(TEXT("OnBlock %s"),
+            Started ? TEXT("pressed") : TEXT("released")));
     BlockPressed = Started;
     if (!BlockPressed && CombatFSM.currentState()->Id == ECombatState::Block) // end block
     {
@@ -866,8 +845,7 @@ void UCombatComponent::SetCurrentAbility(UAbstractAbility *Ability)
         CurrentAbility->AbilitySetup(this);
     else
     {
-        if (ShowDebugInfo)
-            UE_LOG(AbilitySystemLog, Error, TEXT("AbilitySystem Component: Ability Is Null"));
+        Character->Logger.Log(this, *FString::Printf(TEXT("AbilitySystem Component: Ability Is Null")));
     }
 }
 

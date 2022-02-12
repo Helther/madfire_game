@@ -46,7 +46,7 @@ float UAttributeComponent::TakeDamage(float DamageAmount, UDamageType *DamageTyp
     if(AbsoluteD)
     {
         Health->Consume(DamageAmount);
-        UE_LOG(LogTemp, Warning, TEXT("take damage after attributes %f"), DamageAmount);
+        GetCharacterOwner()->Logger.Log(this,*FString::Printf(TEXT("take damage after attributes %f"), DamageAmount));
         return Health->CurrentValue;
     }
 
@@ -75,7 +75,7 @@ float UAttributeComponent::TakeDamage(float DamageAmount, UDamageType *DamageTyp
         DamageAmount = DamageAmount * (100 - DamageResistance.DamageMap[(int32)Type]) / 100;
         Health->Consume(DamageAmount);
     }
-    UE_LOG(LogTemp, Warning, TEXT("take damage after attributes %f"), DamageAmount);
+    GetCharacterOwner()->Logger.Log(this,*FString::Printf(TEXT("take damage after attributes %f"), DamageAmount));
     return Health->CurrentValue;
 }
 

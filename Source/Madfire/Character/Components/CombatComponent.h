@@ -136,8 +136,6 @@ public:
     UPROPERTY(BlueprintReadOnly)
     uint8 SpecialDirections = 0u;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool ShowDebugInfo;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float BlockStaminaCost;
     // max ratio of hit power to character balance to not get kd
     // should be higher than 1

@@ -10,6 +10,9 @@ ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) :
 
     Cheats.Invulnerable = false;
     Cheats.InvulnerableToHit = false;
+
+    Logger.RegisterSubLogger(AttributeComponent, true);
+    Logger.RegisterSubLogger(EffectComponent, true);
 }
 
 float ACharacterBase::TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent,
@@ -38,6 +41,7 @@ void ACharacterBase::BeginPlay()
 {
     Super::BeginPlay();
 
+    Logger.Init(this);
     // init components
     AttributeComponent->SetDirty();
     Update(FCharacterLevelInfo());

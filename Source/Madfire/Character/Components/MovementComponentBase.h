@@ -472,9 +472,6 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Component Update")
     bool IsUpdateNeeded() { return IsDirty; }
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
-    bool ShowDebugInfo;
-
     FMovementModeChanged OnMoveModeChanged;
     FParkourModeChanged OnParkourModeChanged;
 

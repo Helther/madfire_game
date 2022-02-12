@@ -90,7 +90,7 @@ AAbilityComponent *FAbilityComponentSpawnParameters::Spawn(AActor *Caster, int p
 UAbilityComponent::UAbilityComponent(const FObjectInitializer &f) :
     Super(f)
 {
-    UE_LOG(AbilitySystemLog, Error, TEXT("AbilityComponent: Construction"));
+    UE_LOG(AbilitySystemLog, Warning, TEXT("AbilityComponent: Construction"));
 }
 
 void UAbilityComponent::ComponentInit(UAbstractAbility *parent)
@@ -102,7 +102,7 @@ void UAbilityComponent::ComponentInit(UAbstractAbility *parent)
 
 bool UAbilityComponent::ComponentSetup(UCombatComponent *Component)
 {
-    UE_LOG(AbilitySystemLog, Error, TEXT("AbilityComponent: Setup"));
+    UE_LOG(AbilitySystemLog, Warning, TEXT("AbilityComponent: Setup"));
 
     CombatComponent = Component;
     OnComponentSetup();
