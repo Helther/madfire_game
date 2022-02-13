@@ -1,5 +1,5 @@
 ﻿#include "CharacterBase.h"
-
+#include "Components/PawnNoiseEmitterComponent.h"
 
 ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) : 
     Super(ObjectInitializer)
@@ -7,7 +7,7 @@ ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) :
     PrimaryActorTick.bCanEverTick = true;
     AttributeComponent = CreateDefaultSubobject<UAttributeComponent>("AttributeComponent");
     EffectComponent = CreateDefaultSubobject<UEffectComponent>("EffectComponent");
-
+    NoiseEmitterComponent = CreateDefaultSubobject<UPawnNoiseEmitterComponent>("NoiseEmitterComponent");
     Cheats.Invulnerable = false;
     Cheats.InvulnerableToHit = false;
 

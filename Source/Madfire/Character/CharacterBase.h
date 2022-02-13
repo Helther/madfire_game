@@ -9,13 +9,15 @@
 
 #include "CharacterBase.generated.h"
 
+
+class UPawnNoiseEmitterComponent;
+
 // container of character cheats that might be applied to it
 struct FCheats
 {
     unsigned int Invulnerable : 1;
     unsigned int InvulnerableToHit : 1;
 };
-
 
 /**
  * Obvious Class Decription
@@ -37,6 +39,8 @@ public:
     UAttributeComponent *AttributeComponent;
     UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
     UEffectComponent *EffectComponent;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
+	UPawnNoiseEmitterComponent* NoiseEmitterComponent;
 
     FCheats Cheats;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)

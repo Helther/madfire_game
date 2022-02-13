@@ -4,6 +4,9 @@
 
 #include "CharacterPlayer.generated.h"
 
+class UCameraComponent;
+class USpringArmComponent;
+
 /**
  * 
  */
@@ -20,6 +23,19 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character Animation")
     void animTest(UAnimMontage* AnimMontage) {StartAnimation(AnimMontage, FOnMontageBlendingOutStarted(),1); }
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
+	UCameraComponent* CameraComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
+	USpringArmComponent* SpringArmComponent;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    float CameraDistanceMin;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    float CameraDistanceMax;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    float CameraZoomStep;
+
 protected:
     // Called to bind functionality to input
     virtual void SetupPlayerInputComponent(class UInputComponent *PlayerInputComponent) override;
@@ -28,4 +44,6 @@ protected:
                                        const FVector &PreviousFloorContactNormal,
                                        const FVector &PreviousLocation,
                                        float TimeDelta) override;
+
+    float CameraDistanceDefault;
 };

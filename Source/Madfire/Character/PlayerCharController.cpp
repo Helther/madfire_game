@@ -20,6 +20,8 @@ const FName FInputKeyNames::Block         = "Block";
 const FName FInputKeyNames::DrawWeapon    = "Draw weapon";
 const FName FInputKeyNames::UseAbility    = "UseAbility";
 const FName FInputKeyNames::ClimbDownTest = "ClimbDownTest";
+const FName FInputKeyNames::CameraIn      = "Camera zoom in";
+const FName FInputKeyNames::CameraOut     = "Camera zoom out";
 
 APlayerCharController::APlayerCharController() 
 {
@@ -132,6 +134,10 @@ void APlayerCharController::SetupInputComponent()
             FInputKeyNames::UseAbility, IE_Pressed, this, &APlayerCharController::AbilityOn);
         InputComponent->BindAction(
             FInputKeyNames::UseAbility, IE_Released, this, &APlayerCharController::AilityOff);
+        InputComponent->BindAction(
+            FInputKeyNames::CameraIn, IE_Pressed, this, &APlayerCharController::CameraDistanceIn);
+        InputComponent->BindAction(
+            FInputKeyNames::CameraOut, IE_Pressed, this, &APlayerCharController::CameraDistanceOut);
     }
 }
 
@@ -636,6 +642,28 @@ void APlayerCharController::AilityOff()
         case (EPawnGameplayState::InWorld): {
             if (!Player->CCStateManager.HasCC())
                 Player->CombatComponent->OnUseAbility(false);
+        }
+    }
+}
+
+void APlayerCharController::CameraDistanceIn()
+{
+    switch (CurrentGameplayState)    //todo учесть другие состояния
+    {
+        case (EPawnGameplayState::InWorld): {
+            float Length = Player->SpringArmComponent->TargetArmLength - Player->CameraZoomStep;
+            Player->SpringArmComponent->TargetArmLength = FMath::Max(Length, Player->CameraDistanceMin);
+        }
+    }
+}
+
+void APlayerCharController::CameraDistanceOut()
+{
+    switch (CurrentGameplayState)    //todo учесть другие состояния
+    {
+        case (EPawnGameplayState::InWorld): {
+            float Length = Player->SpringArmComponent->TargetArmLength + Player->CameraZoomStep;
+            Player->SpringArmComponent->TargetArmLength = FMath::Min(Length, Player->CameraDistanceMax);
         }
     }
 }

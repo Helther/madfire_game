@@ -65,6 +65,8 @@ void UCharacterAnimInstance::OnCollisionActivation(bool mainHand, bool activate)
     {
         auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CollisionOn, activate);
+        if (activate)
+            stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, false);
         CharacterInstance->CombatComponent->SetCurrentWeaponCollision(mainHand, activate);// TODO separate norifies for main and off hand
     }
 }

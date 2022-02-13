@@ -655,6 +655,7 @@ void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
         animInstance->OnMovementAllowed(false);
         stateInfo.AttackInfo = nextAttackInfo;
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+        stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, true);
         FOnMontageBlendingOutStarted callBack;
         callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
         Character->StartAnimation(stateInfo.AttackInfo->AttackMontage, callBack, AttackSpeed, stateInfo.AttackInfo->AnimSectionName);

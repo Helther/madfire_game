@@ -1,14 +1,23 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "CharacterPlayer.h"
+﻿#include "CharacterPlayer.h"
 
 #include "PlayerCharController.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 
 ACharacterPlayer::ACharacterPlayer(const FObjectInitializer &ObjectInitializer)
   : Super(ObjectInitializer)
 {
+    SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
+    CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
+    SpringArmComponent->bUsePawnControlRotation = true;
+    SpringArmComponent->SetupAttachment(RootComponent);
+    CameraComponent->SetupAttachment(SpringArmComponent);
 
+    CameraDistanceDefault = 400;
+    CameraDistanceMin = 100;
+    CameraDistanceMax = 500;
+    CameraZoomStep = 30;
+    SpringArmComponent->TargetArmLength = CameraDistanceDefault;
 }
 
 // Called to bind functionality to input

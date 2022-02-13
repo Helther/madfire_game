@@ -24,6 +24,8 @@ struct FInputKeyNames
     static const FName DrawWeapon;
     static const FName UseAbility;
     static const FName ClimbDownTest;
+    static const FName CameraIn;
+    static const FName CameraOut;
 };
 
 //состояние персонажа с точки зрения режима контроллера
@@ -94,6 +96,9 @@ class MADFIRE_API APlayerCharController : public APlayerController
     void AbilityOn();
     // stop activating current ability
     void AilityOff();
+
+    void CameraDistanceIn();
+    void CameraDistanceOut();
 
     ACharacterPlayer *Player;
 
