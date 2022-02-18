@@ -39,10 +39,10 @@ public:
     void animTest(UAnimMontage* AnimMontage) {StartAnimation(AnimMontage, FOnMontageBlendingOutStarted(),1); }
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
-	UCameraComponent* CameraComponent;
+    UCameraComponent* CameraComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
-	USpringArmComponent* SpringArmComponent;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
+    USpringArmComponent* SpringArmComponent;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
     float CameraDistanceMin;

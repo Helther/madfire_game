@@ -71,9 +71,11 @@ void ACharacterPlayer::BeginPlay()
 void ACharacterPlayer::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
-    //if (CurrentGameplayState == EPawnGameplayState::InWorld
-    //    && IsActionKeyPressed(FInputKeyNames::Jump))
-    //    JumpRepAction();
+    if (!Controller || !Controller->InputComponent)
+        return;
+    if (CurrentGameplayState == EPawnGameplayState::InWorld
+        && IsActionKeyPressed(FInputKeyNames::Jump))
+        JumpRepAction();
 }
 
 // Called to bind functionality to input

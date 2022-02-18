@@ -89,9 +89,9 @@ TScriptInterface<IInteractableInterface> UPlayerInteractComponent::GetInteractab
 }
 
 void UPlayerInteractComponent::CheckForInteractable()
-{/*
-    check(Owner != nullptr);
-    check(Owner->Controller != nullptr);
+{
+    if (!Owner || !Owner->Controller)
+        return;
 
     auto interactable = GetInteractableInView();
 
@@ -112,5 +112,5 @@ void UPlayerInteractComponent::CheckForInteractable()
 
         HasNewFocus = true;
     }
-    */
+    
 }
