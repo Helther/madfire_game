@@ -5,6 +5,7 @@
 
 const FName FAnimSectionNames::Start = "Start";
 const FName FAnimSectionNames::End = "End";
+const FName FAnimSectionNames::Loop = "Loop";
 const FName FAnimSectionNames::Cancel = "Cancel";
 
 
@@ -572,6 +573,9 @@ void UCombatComponent::OnBlock(bool Started)
     Character->Logger.Log(this, *FString::Printf(TEXT("OnBlock %s"),
             Started ? TEXT("pressed") : TEXT("released")));
     BlockPressed = Started;
+    if (Character->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && 
+        Character->CCStateManager.IsInCCSubMode(BlockedAttack))
+        return;
     if (!BlockPressed && CombatFSM.currentState()->Id == ECombatState::Block) // end block
     {
         CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
@@ -795,6 +799,7 @@ void UCombatComponent::WeaponSetup(UItemWeapon* weapon, AItemActor* actor, bool 
     {
         actor->ItemCollision->OnComponentBeginOverlap.RemoveDynamic(this, &UCombatComponent::OnWeaponOverlap);
     }
+    actor->ItemCollision->SetGenerateOverlapEvents(false); // disable equipped weapon collision
     actor->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, slot);
 }
 

@@ -44,18 +44,27 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
     int32 strMod = UAttributeSetHelper::GetModifier(AttributeComponent->Attributes, EAttributes::Str);
     int32 balanceSkill = USkillHelper::GetValue(AttributeComponent->Skills, ESkill::Balance);
     Logger.Log(this,*FString::Printf(TEXT("take damage before block %f"), DamageAmount));
-    // TODO add parry
+    auto attackerChar = Cast<ACharacterCreature>(DamageCauser);
+    // check if had shield and what kind
+    UItemWeapon* shield = nullptr;
+    if (CombatComponent->CurrentWeaponOffH != nullptr && CombatComponent->CurrentWeaponOffH->WeaponType == EWeaponType::Shield)
+        shield = CombatComponent->CurrentWeaponOffH;
+    else if (CombatComponent->CurrentWeaponMainH != nullptr && CombatComponent->CurrentWeaponMainH->WeaponType != EWeaponType::Unarmed)
+        shield = CombatComponent->CurrentWeaponMainH;
+    bool hasShield = shield != nullptr;
+    // check actors directions
+    bool isFacingAttacker = UCombatComponent::GetAngleBetweenAttackerAndDefender(DamageCauser, this) < CombatComponent->MaxFacingAngle;
+    // check parry
+    if (hasShield && isFacingAttacker && attackerChar && (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Parry) &&
+        CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::BlockOrParryActive) &&
+        attackerChar->CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::CanBeParried))
+    {
+        attackerChar->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::WasParried);
+        return AttributeComponent->Health->CurrentValue; 
+    }
     if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Block)
     {
-        // check if had shield and what kind
-        UItemWeapon* shield = nullptr;
-        if (CombatComponent->CurrentWeaponOffH != nullptr && CombatComponent->CurrentWeaponOffH->WeaponType == EWeaponType::Shield)
-            shield = CombatComponent->CurrentWeaponOffH;
-        else if (CombatComponent->CurrentWeaponMainH != nullptr && CombatComponent->CurrentWeaponMainH->WeaponType != EWeaponType::Unarmed)
-            shield = CombatComponent->CurrentWeaponMainH;
-        bool hasShield = shield != nullptr;
-        // check block and actors directions
-        if (hasShield && UCombatComponent::GetAngleBetweenAttackerAndDefender(DamageCauser, this) < CombatComponent->MaxFacingAngle)
+        if (hasShield && isFacingAttacker)
         {
             balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, shield->Weight);
             // check if block succeeded
@@ -68,11 +77,10 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
                 }
                 blocked = true;
                 // apply blocked action to the attacker
-                auto attackerChar = Cast<ACharacterCreature>(DamageCauser);
                 if (attackerChar)
                     attackerChar->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::HitWall);
-                // TODO test block hit and make sure block's not interrupted
                 // apply blocked action to the defender
+                CombatComponent->CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
                 InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::BlockedAttack);
             }
             else
@@ -130,7 +138,7 @@ void ACharacterCreature::StartAnimation(UAnimMontage *AnimMontage,
     montageInstance->OnMontageBlendingOutStarted = EndCallBack;
 }
 
-void ACharacterCreature::InterruptAnimation(ECCState Source, ELossOfBalanceCCSubState SubMode)
+void ACharacterCreature::InterruptAnimation(ECCState Source, int SubMode)
 {
     // already controlled
     if (CCStateManager.HasCC())
@@ -194,14 +202,14 @@ void ACharacterCreature::InterruptAnimation(ECCState Source, ELossOfBalanceCCSub
     }
     // TODO devise other times
     if (Source == ECCState::KnockDown)
-        CCStateManager.SetCCMode(Source, &KnockDownTime);
+        CCStateManager.SetCCMode(Source, SubMode, &KnockDownTime);
     else
-        CCStateManager.SetCCMode(Source);
+        CCStateManager.SetCCMode(Source, SubMode);
     FOnMontageBlendingOutStarted callBack;
     callBack.BindUObject(this,
         CCInterruptDelegates[static_cast<ECCState>(CCStateManager.CurrentCCPriority())]);  
     if (Source == ECCState::LossOfBalance && SubMode != ELossOfBalanceCCSubState::None)
-        StartAnimation(CCLOBAnims[SubMode], callBack, 1.f);
+        StartAnimation(CCLOBAnims[static_cast<ELossOfBalanceCCSubState>(SubMode)], callBack, 1.f);
     else
         StartAnimation(CCAnims[Source], callBack, 1.f); 
 }
@@ -268,8 +276,22 @@ void ACharacterCreature::CCStunEnded(UAnimMontage *animMontage, bool bInterrupte
 
 void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
-    // todo
+    // todo 
     Logger.Log(this,*FString::Printf(TEXT("CCEnd: Loss of balance")));
+    if (CCStateManager.IsInCCSubMode(BlockedAttack))
+    {
+        if (CombatComponent->IsBlockButtonPressed())
+        {
+            FOnMontageBlendingOutStarted callBack;
+            callBack.BindUObject(CombatComponent, &UCombatComponent::OnBlockEnded);
+            StartAnimation(CombatComponent->GetCurrentCombatStance()->CurrentBlockAnim, callBack, CombatComponent->AttackSpeed, FAnimSectionNames::Loop);
+        }
+        else
+        {
+            CombatComponent->CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::AnimEnded, true);
+            CombatComponent->UpdateCombatFSM();
+        }
+    }
     CCStateManager.ResetCCMode(ECCState::LossOfBalance);
 }
 
@@ -298,7 +320,7 @@ FCCStateManager::FCCStateManager()
     CurrentCCState = ECCState::NoCC;
 }
 
-void FCCStateManager::SetCCMode(ECCState Mode, float *Time)
+void FCCStateManager::SetCCMode(ECCState Mode, unsigned int SubMode, float *Time)
 {
     Character->GetWorld()->GetTimerManager().ClearTimer(CCLocks[Mode].Key.StunLockTimer);
     FTimerDelegate lockDelegate = FTimerDelegate::CreateLambda([this, Mode]() { ResetCCLock(Mode); });
@@ -316,14 +338,16 @@ void FCCStateManager::SetCCMode(ECCState Mode, float *Time)
         Character->GetWorld()->GetTimerManager().SetTimer(CCLocks[Mode].Key.CCTimer, CCDelegate, duration, false);
     }
     CCLocks[Mode].Value++;
-    CurrentCCState |= 1 << Mode;
+    CurrentCCState |= 1u << Mode;
+    CurrentCCSubState |= 1u << SubMode;
 }
 
 void FCCStateManager::ResetCCMode(ECCState Mode)
 {
     if (IsInCCMode(Mode))
     {
-        CurrentCCState &= ~(1 << Mode);
+        CurrentCCState &= ~(1u << Mode);
+        CurrentCCSubState = 0u;
         FTimerDelegate lockDelegate = FTimerDelegate::CreateLambda([this, Mode]() { ResetCCLock(Mode); });
         Character->GetWorld()->GetTimerManager().SetTimer(CCLocks[Mode].Key.StunLockTimer, lockDelegate, CCLockTime, false );
     }

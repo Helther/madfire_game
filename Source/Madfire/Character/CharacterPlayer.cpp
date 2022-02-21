@@ -636,9 +636,13 @@ void ACharacterPlayer::BlockOnAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (!CCStateManager.HasCC() && !GetMovementComponent()->IsCrouching() &&
+            if (!GetMovementComponent()->IsCrouching() &&
                 GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
-                CombatComponent->OnBlock(true);
+            {
+                if (!CCStateManager.HasCC() ||
+                    (CCStateManager.IsInCCMode(ECCState::LossOfBalance) && CCStateManager.IsInCCSubMode(BlockedAttack)))
+                    CombatComponent->OnBlock(true);
+            }
         }
     }
 }
@@ -648,8 +652,12 @@ void ACharacterPlayer::BlockOffAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (!CCStateManager.HasCC() && !GetMovementComponent()->IsCrouching())
-                CombatComponent->OnBlock(false);
+            if (!GetMovementComponent()->IsCrouching())
+            {
+                if (!CCStateManager.HasCC() ||
+                    (CCStateManager.IsInCCMode(ECCState::LossOfBalance) && CCStateManager.IsInCCSubMode(BlockedAttack)))
+                    CombatComponent->OnBlock(false);
+            }
         }
     }
 }

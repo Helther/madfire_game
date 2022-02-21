@@ -16,6 +16,7 @@ struct FAnimSectionNames
 {
     static const FName Start;
     static const FName End;
+    static const FName Loop;
     static const FName Cancel;
 };
 
@@ -130,6 +131,7 @@ public:
     // TODO add stance change logic
     void OnStanceChanged();
     UCombatStance *GetCurrentCombatStance() const;
+    FORCEINLINE bool IsBlockButtonPressed() const { return BlockPressed; }
 
 
     // current active directions for special moves
