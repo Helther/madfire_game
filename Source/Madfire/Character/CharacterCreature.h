@@ -53,9 +53,10 @@ struct FCCStateManager
     static int GetHighestPriorityCC(int bitmask);
 
     FORCEINLINE bool HasCC() const { return CurrentCCState != ECCState::NoCC; }
-    FORCEINLINE bool IsInCCMode(ECCState Mode) const { return CurrentCCState & (1 << Mode); }
+    FORCEINLINE bool IsInCCMode(ECCState Mode) const { return CurrentCCState & (1u << Mode); }
+    FORCEINLINE bool IsInCCSubMode(unsigned int SubMode) const { return CurrentCCSubState & (1u << SubMode); }
     // sets flag, starts cc timer and stunLock timer, time in seconds (time null means anim driven time)
-    void SetCCMode(ECCState Mode, float *Time = nullptr);
+    void SetCCMode(ECCState Mode, unsigned int SubMode, float *Time = nullptr);
     void ResetCCMode(ECCState Mode);
     FORCEINLINE int CurrentCCPriority() const { return GetHighestPriorityCC(CurrentCCState); }
 
@@ -80,7 +81,8 @@ private:
     ACharacterCreature* Character;
     // массив пар таймер-счетчик станлока, где индекс соответствует енуму ECCState
     TPair<FCCTimers,int> CCLocks[ECCState::NumOfModes];
-    int CurrentCCState; 
+    unsigned int CurrentCCState; 
+    unsigned int CurrentCCSubState;
 };
 
 
@@ -103,7 +105,7 @@ public:
                         FName StartSectionName = NAME_None);
 
     UFUNCTION(BlueprintCallable, Category = "Character Animation")
-    void InterruptAnimation(ECCState Source, ELossOfBalanceCCSubState SubMode = ELossOfBalanceCCSubState::None);
+    void InterruptAnimation(ECCState Source, int SubMode = 0);
 
     UHumanoidMovementComponent* GetMovementComponent() const override;
 
