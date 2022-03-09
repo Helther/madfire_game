@@ -82,6 +82,7 @@ UHumanoidMovementComponent::UHumanoidMovementComponent(
     SpeedModStrafe = 0.85f;
     SpeedModBackwards = 0.5f;
     DodgeAbilityMod = 10.f;
+    DefaultRotationRate = 800.f;
 
     //MoveAbilitiesCurent &= ~ (EMoveAbilities::CanCrouch | EMoveAbilities::CanJump);
 

@@ -136,6 +136,9 @@ public:
     float MaxRunSpeedCrouched{};
     // blocks max run speed update inside this component
     bool maxSpeedBlock;
+    // character orientation to movement speed while not in combat mode
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Movement")
+    float DefaultRotationRate;
     // для обновления максимальных скоростей
     void CalculateMaxSpeeds(float SpeedModifier);
     float GetSpeedModifier() const;

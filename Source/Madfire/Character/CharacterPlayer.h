@@ -38,6 +38,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character Animation")
     void animTest(UAnimMontage* AnimMontage) {StartAnimation(AnimMontage, FOnMontageBlendingOutStarted(),1); }
 
+    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Interact")
+    void OnInteract();
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
     UCameraComponent* CameraComponent;
 
