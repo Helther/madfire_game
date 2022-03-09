@@ -45,6 +45,10 @@ void UCharacterAnimInstance::OnRotationAllowed(bool activate)
     auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.currentState()->Info;
     stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::RotationBlocked, !activate);
     RootMotionMode = activate ? ERootMotionMode::IgnoreRootMotion : ERootMotionMode::RootMotionFromMontagesOnly;
+    if (activate)
+        CharacterInstance->CombatComponent->ResetRotationRate();
+    else
+        CharacterInstance->GetMovementComponent()->RotationRate.Yaw = 0; // remove rotation speed for animations that don't have root motion
 }
 
 void UCharacterAnimInstance::OnComboCanContinue()

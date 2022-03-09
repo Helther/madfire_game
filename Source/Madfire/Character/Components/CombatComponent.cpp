@@ -147,11 +147,13 @@ void UCombatComponent::InitCombatFSM()
     {
         Character->Logger.Log(this, *FString::Printf(TEXT("idle enter: %s"),
                 IsWeaponDrawn ? TEXT("weapon on") : TEXT("weapon off")));
+        ResetRotationRate();
     });
     CombatFSM.state(ECombatState::Idle)->Info.OnLeave.BindLambda([&]()
     {
         CombatFSM.state(ECombatState::Idle)->Info.ResetAnimInfo();
         Character->Logger.Log(this, *FString::Printf(TEXT("idle leave")));
+        ResetRotationRate();
     });
     FLinkReq req;
     req.BindLambda([&]()
@@ -499,6 +501,11 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
     }
 }
 
+bool UCombatComponent::IsInActionState() const
+{
+    return CombatFSM.currentState()->Id == ECombatState::Attack || CombatFSM.currentState()->Id == ECombatState::Parry;
+}
+
 void UCombatComponent::Update()
 {
     // TODO check stance validity, call stanceresolver, update speeds if needed
@@ -528,24 +535,21 @@ void UCombatComponent::OnAttack(bool Started)
                 if (info.ChargeStage != -1 && info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed))
                 {
                     bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;
-                    if (Character->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling)// uncharging in air
-                    {
-                        auto airAttack = CurrentCombatStance->GetAttackInfoForSpecial(ESpecialType::Air);
-                        if (hasStamina && airAttack != nullptr)
-                        {
-                            info.AttackInfo = CurrentCombatStance->GetAttackInfoForSpecial(ESpecialType::Air);
-                            info.ResetAnimInfo();
-                            info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
-                            Character->AttributeComponent->Stamina->Consume(info.AttackInfo->StaminaCost);
-                            FOnMontageBlendingOutStarted callBack;
-                            callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
-                            Character->StartAnimation(info.AttackInfo->AttackMontage, callBack, AttackSpeed);
-                        }
+                    auto airAttack = CurrentCombatStance->GetAttackInfoForSpecial(ESpecialType::Air);
+                    if (Character->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling && hasStamina && airAttack != nullptr)
+                    { // uncharging in air
+                        info.AttackInfo = CurrentCombatStance->GetAttackInfoForSpecial(ESpecialType::Air);
+                        info.ResetAnimInfo();
+                        info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+                        Character->AttributeComponent->Stamina->Consume(info.AttackInfo->StaminaCost);
+                        FOnMontageBlendingOutStarted callBack;
+                        callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
+                        Character->StartAnimation(info.AttackInfo->AttackMontage, callBack, AttackSpeed);
                         return;
                     }
                     else if (hasStamina && currentAttack->AttackMontage && info.ChargeTime >=
                         CurrentCombatStance->ComboAttacks[CurrentCombatStance->CurrentCombo].ChargeAttackStages[CombatFSM.currentState()->Info.ChargeStage].ChargeTimeNeeded)
-                    {// uncharging on ground
+                    { // uncharging on ground
                         Character->AttributeComponent->Stamina->Consume(currentAttack->StaminaCost);
                         info.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, false);
                         info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
@@ -744,6 +748,19 @@ UCombatStance *UCombatComponent::GetCurrentCombatStance() const
     return CurrentCombatStance;
 }
 
+void UCombatComponent::ResetRotationRate()
+{
+    if (WeaponDrawn())
+    {
+        if (IsInActionState())
+            Character->GetMovementComponent()->RotationRate.Yaw = ActionRotationRate;
+        else
+            Character->GetMovementComponent()->RotationRate.Yaw = CombatModeRotationRate;
+    }
+    else
+        Character->GetMovementComponent()->RotationRate.Yaw = Character->GetMovementComponent()->DefaultRotationRate;
+}
+
 void UCombatComponent::OnStanceChanged()
 {
     if (IsWeaponDrawn)    // TODO call update
@@ -767,8 +784,7 @@ void UCombatComponent::CalculateMaxBlockingSpeed(float SpeedModifier)
 bool UCombatComponent::CanBeInterruptedWithBlock(int CurrentState) const
 {
     const auto state = CombatFSM.state(CurrentState);
-    bool pass = !state->Info.CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked) && BlockPressed;
-    return pass;
+    return !state->Info.CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked) && BlockPressed;
 }
 
 void UCombatComponent::WeaponsSetup(bool draw)

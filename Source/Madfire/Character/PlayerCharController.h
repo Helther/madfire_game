@@ -26,6 +26,7 @@ struct FInputKeyNames
     static const FName ClimbDownTest;
     static const FName CameraIn;
     static const FName CameraOut;
+    static const FName Interact;
 };
 
 //состояние персонажа с точки зрения режима контроллера
@@ -99,6 +100,7 @@ class MADFIRE_API APlayerCharController : public APlayerController
 
     void CameraDistanceIn();
     void CameraDistanceOut();
+
 
     ACharacterPlayer *Player;
 

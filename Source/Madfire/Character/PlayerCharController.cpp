@@ -1,3 +1,4 @@
+#include "PlayerCharController.h"
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PlayerCharController.h"
@@ -22,6 +23,8 @@ const FName FInputKeyNames::UseAbility    = "UseAbility";
 const FName FInputKeyNames::ClimbDownTest = "ClimbDownTest";
 const FName FInputKeyNames::CameraIn      = "Camera zoom in";
 const FName FInputKeyNames::CameraOut     = "Camera zoom out";
+const FName FInputKeyNames::Interact      = "Interact";
+
 
 APlayerCharController::APlayerCharController() 
 {
@@ -138,6 +141,8 @@ void APlayerCharController::SetupInputComponent()
             FInputKeyNames::CameraIn, IE_Pressed, this, &APlayerCharController::CameraDistanceIn);
         InputComponent->BindAction(
             FInputKeyNames::CameraOut, IE_Pressed, this, &APlayerCharController::CameraDistanceOut);
+        InputComponent->BindAction(
+            FInputKeyNames::Interact, IE_Pressed, this, &APlayerCharController::InteractAction);
     }
 }
 
@@ -664,6 +669,16 @@ void APlayerCharController::CameraDistanceOut()
         case (EPawnGameplayState::InWorld): {
             float Length = Player->SpringArmComponent->TargetArmLength + Player->CameraZoomStep;
             Player->SpringArmComponent->TargetArmLength = FMath::Min(Length, Player->CameraDistanceMax);
+        }
+    }
+}
+
+void APlayerCharController::InteractAction()
+{
+    switch (CurrentGameplayState)    //todo учесть другие состояния
+    {
+        case (EPawnGameplayState::InWorld): {
+            Player->OnInteract();
         }
     }
 }

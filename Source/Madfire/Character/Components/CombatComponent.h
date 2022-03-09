@@ -132,6 +132,7 @@ public:
     void OnStanceChanged();
     UCombatStance *GetCurrentCombatStance() const;
     FORCEINLINE bool IsBlockButtonPressed() const { return BlockPressed; }
+    void ResetRotationRate();
 
 
     // current active directions for special moves
@@ -210,6 +211,7 @@ protected:
     void OnMovementModeChanged(int oldMode, int newMode);
     UFUNCTION()
     void OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
+    bool IsInActionState() const;
 
     // character orientation to movement speed while weapon is drawn
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
