@@ -47,9 +47,9 @@ public:
     FDamageResistance DamageResistance;  //!< Базовое снижение урона (в процентах)
 
     //Primary Attributes
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Character Attributes")
     UDynamicAttribute *Health;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = "Character Attributes")
     UDynamicAttribute *Stamina;
 
     //Experience
