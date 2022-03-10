@@ -23,6 +23,7 @@ struct FInputKeyNames
     static const FName ClimbDownTest;
     static const FName CameraIn;
     static const FName CameraOut;
+    static const FName Interact;
 };
 
 const FName FInputKeyNames::MoveForward   = "MoveForward";
@@ -41,6 +42,7 @@ const FName FInputKeyNames::UseAbility    = "UseAbility";
 const FName FInputKeyNames::ClimbDownTest = "ClimbDownTest";
 const FName FInputKeyNames::CameraIn      = "Camera zoom in";
 const FName FInputKeyNames::CameraOut     = "Camera zoom out";
+const FName FInputKeyNames::Interact      = "Interact";
 
 
 ACharacterPlayer::ACharacterPlayer(const FObjectInitializer &ObjectInitializer)
@@ -125,6 +127,8 @@ void ACharacterPlayer::SetupPlayerInputComponent(UInputComponent *PlayerInputCom
         FInputKeyNames::CameraIn, IE_Pressed, this, &ACharacterPlayer::CameraDistanceIn);
     InputComponent->BindAction(
         FInputKeyNames::CameraOut, IE_Pressed, this, &ACharacterPlayer::CameraDistanceOut);
+    InputComponent->BindAction(
+        FInputKeyNames::Interact, IE_Pressed, this, &ACharacterPlayer::InteractAction);
 }
 
 void ACharacterPlayer::OnJumped_Implementation()
@@ -713,6 +717,16 @@ void ACharacterPlayer::CameraDistanceOut()
         case (EPawnGameplayState::InWorld): {
             float Length = SpringArmComponent->TargetArmLength + CameraZoomStep;
             SpringArmComponent->TargetArmLength = FMath::Min(Length, CameraDistanceMax);
+        }
+    }
+}
+
+void ACharacterPlayer::InteractAction()
+{
+    switch (CurrentGameplayState)    //todo учесть другие состояния
+    {
+        case (EPawnGameplayState::InWorld): {
+            OnInteract();
         }
     }
 }
