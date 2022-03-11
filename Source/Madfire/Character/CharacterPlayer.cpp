@@ -618,7 +618,8 @@ void ACharacterPlayer::AttackOnAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
     case (EPawnGameplayState::InWorld): {
-        if (!CCStateManager.HasCC())
+        if (!CCStateManager.HasCC() ||
+            (CCStateManager.IsInCCMode(ECCState::LossOfBalance) && CCStateManager.IsInCCSubMode(Chamber)))
             CombatComponent->OnAttack(true); // TODO check if ability is busy
     }
     }
@@ -629,7 +630,8 @@ void ACharacterPlayer::AttackOffAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (!CCStateManager.HasCC())
+            if (!CCStateManager.HasCC() ||
+            (CCStateManager.IsInCCMode(ECCState::LossOfBalance) && CCStateManager.IsInCCSubMode(Chamber)))
                 CombatComponent->OnAttack(false);
         }
     }

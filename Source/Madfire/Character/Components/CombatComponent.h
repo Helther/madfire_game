@@ -52,7 +52,8 @@ enum ECombatStateAnimInfo
     AnimEnded = 256,
     UserInterrupt = 512, // is set before restarting current montage at different section, to not trigger normal interrupt
     RotationBlocked = 1024, // is set in sync with MovementBlocked, but for combo anims, resets just before ComboCanContinue is set, to allow character to realign with camera
-    ChargeAllowed = 2048 // is set when starting combo attack and has chargable atacks, unset when released attack
+    ChargeAllowed = 2048, // is set when starting combo attack and has chargable atacks, unset when released attack
+    CanCounterChamber = 4096 // is set during chamber to indicate that character can attack again, unset after exit chamber mode
 };
 
 // directions of special attack moves
@@ -144,6 +145,11 @@ public:
     // should be higher than 1
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float KnockdownThreshhold;
+    // max ratio between characters attack powers during chamber 
+    // (if ration is lower than max, then both charactera enter chamber mode)
+    // should be higher than 1 and lower than KnockdownThreshhold
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float ChamberThreshhold;
     // should be in range 0-1
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float HitForceReductionMod;
@@ -182,9 +188,9 @@ public:
 
     float CalculateWeaponDamage(const UItemWeapon* weapon, float attackInfoDamageMod, float strMod);
     // для расчета возможности применения блока или паррирования
-    static float GetAngleBetweenAttackerAndDefender(AActor *Attacker, AActor *Defender);
+    static float GetAngleBetweenAttackerAndDefender(const AActor *Attacker, const  AActor *Defender);
     // для расчета разницы направлений
-    static float GetAngleBetweenActors(AActor *First, AActor *Second);
+    static float GetAngleBetweenActors(const AActor *First, const AActor *Second);
 
     FORCEINLINE static float CalculateHitForce(float weaponWeight, float strMod, float mod) 
         { return FMath::Max(weaponWeight + strMod, 1.f) * mod; } // TODO улучшить при балансировке
@@ -195,6 +201,12 @@ public:
     static FName GetSlotFromWeaponType(EWeaponType type, bool draw, bool mainHand);
 
 protected:
+    enum class EChamberRes
+    {
+        ContinueAttack, // this character force has overwhelmed the enemy and he went on with attack
+        ChamberState    // this character bounced back from collision with enemy weapon
+    };
+
     void BeginPlay() override;
     void TickComponent(float DeltaTime, ELevelTick TickType,
                                FActorComponentTickFunction *ThisTickFunction) override;
@@ -212,6 +224,8 @@ protected:
     UFUNCTION()
     void OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
     bool IsInActionState() const;
+    bool IsChamberValid(const AActor* HitActor, const UItemWeapon* ActiveWeapon) const;
+    EChamberRes ResolveChamber(AActor* HitActor, const UItemWeapon* OwnerActiveWeapon);
 
     // character orientation to movement speed while weapon is drawn
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
