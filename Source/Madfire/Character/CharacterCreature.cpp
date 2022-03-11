@@ -197,8 +197,14 @@ void ACharacterCreature::InterruptAnimation(ECCState Source, int SubMode)
     if (CCStateManager.IsInCCMode(Source))
     {// if already in this mode then remove end callback before restart
         auto animInstance    = GetMesh()->GetAnimInstance();
-        auto montageInstance = animInstance->GetActiveInstanceForMontage((CCAnims[Source]));
-        montageInstance->OnMontageBlendingOutStarted.Unbind();
+        FAnimMontageInstance* montageInstance = nullptr;
+        if (Source == ECCState::LossOfBalance && SubMode != ELossOfBalanceCCSubState::None)
+            if (CCStateManager.IsInCCSubMode(SubMode))
+                montageInstance = animInstance->GetActiveInstanceForMontage((CCLOBAnims[static_cast<ELossOfBalanceCCSubState>(SubMode)]));
+        else
+            montageInstance = animInstance->GetActiveInstanceForMontage((CCAnims[Source]));
+        if (montageInstance)
+            montageInstance->OnMontageBlendingOutStarted.Unbind();
     }
     // TODO devise other times
     if (Source == ECCState::KnockDown)
@@ -291,6 +297,11 @@ void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted
             CombatComponent->CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::AnimEnded, true);
             CombatComponent->UpdateCombatFSM();
         }
+    }
+    else if (CCStateManager.IsInCCSubMode(Chamber))
+    {
+        CombatComponent->CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::AnimEnded, true);
+        CombatComponent->UpdateCombatFSM();
     }
     CCStateManager.ResetCCMode(ECCState::LossOfBalance);
 }

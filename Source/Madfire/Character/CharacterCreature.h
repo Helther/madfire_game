@@ -27,7 +27,6 @@ enum ECCState
     NumOfModes
 };
 
-// TODO реализовать
 UENUM(BlueprintType)
 // Combat oriented Character Control sub CC modes (value represents priority order(the more the better))
 enum ELossOfBalanceCCSubState
@@ -59,6 +58,7 @@ struct FCCStateManager
     void SetCCMode(ECCState Mode, unsigned int SubMode, float *Time = nullptr);
     void ResetCCMode(ECCState Mode);
     FORCEINLINE int CurrentCCPriority() const { return GetHighestPriorityCC(CurrentCCState); }
+    FORCEINLINE int CurrentCCSubPriority() const { return GetHighestPriorityCC(CurrentCCSubState); }
 
     // во сколько раз уменьшается время повторного контроля
     UPROPERTY(EditAnywhere, meta = (ClampMin = "1.0", UIMin = "1.0"))

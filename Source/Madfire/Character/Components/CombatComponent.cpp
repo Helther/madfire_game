@@ -29,6 +29,7 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitili
     ChargeStartTime = 0.2f;
     BlockStaminaCost = 10.f;
     KnockdownThreshhold = 1.5f;
+    ChamberThreshhold = 1.3f;
     HitForceReductionMod = 0.8f;
     MaxFacingAngle = 45.f;
     // end temp
@@ -467,7 +468,7 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
         if (info.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && !HasAlreadyHitTarget(hitActor))
         {
             CharactersHit.Emplace(hitActor);
-            // check witch hand has active collision
+            // check which hand has active collision
             auto activeWeapon = CurrentMainWeaponActor->ItemCollision->GetGenerateOverlapEvents() ? CurrentWeaponMainH : CurrentWeaponOffH;
             auto hitCharacter = Cast<ACharacterBase>(hitActor);
             if (hitCharacter)
@@ -477,7 +478,14 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
                     Character->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap: invul character!")));
                     return;
                 }
-                Character->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap: Hit character!")));
+                // check for chamber scenario
+                if (IsChamberValid(hitActor, activeWeapon))
+                {
+                    EChamberRes res = ResolveChamber(hitActor, activeWeapon);
+                    if (res == EChamberRes::ChamberState)
+                        return;
+                }
+                Character->Logger.Log(this, "OnBeginOverlap: Hit character!");
                 int32 strMod = UAttributeSetHelper::GetModifier(hitCharacter->AttributeComponent->Attributes, EAttributes::Str);
                 const float damage = CalculateWeaponDamage(activeWeapon, CombatFSM.state(ECombatState::Attack)->Info.AttackInfo->DamageMod, strMod);
                 float force = CalculateHitForce(activeWeapon->Weight, strMod, info.AttackInfo->PowerMod); // Use Force, Luke
@@ -487,12 +495,12 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
             {
                 if (SweepResult.GetComponent()->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic) // check if hit a wall and interrupt with loss of balance
                 {
-                    Character->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap Hit wall!")));
+                    Character->Logger.Log(this, "OnBeginOverlap Hit wall!");
                     Character->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::HitWall);
                 }
                 else // try to damage the actor
                 {
-                    Character->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap Hit actor!")));
+                    Character->Logger.Log(this, "OnBeginOverlap Hit actor!");
                     const float damage = CalculateWeaponDamage(activeWeapon, CombatFSM.state(ECombatState::Attack)->Info.AttackInfo->DamageMod, 0);
                     hitActor->TakeDamage(damage, FDamageEvent(activeWeapon->DamageType), Character->GetController(), Character);
                 }
@@ -504,6 +512,81 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
 bool UCombatComponent::IsInActionState() const
 {
     return CombatFSM.currentState()->Id == ECombatState::Attack || CombatFSM.currentState()->Id == ECombatState::Parry;
+}
+
+bool UCombatComponent::IsChamberValid(const AActor* HitActor, const UItemWeapon* ActiveWeapon) const
+{
+    auto hitCharacter = Cast<ACharacterCreature>(HitActor);
+    if (hitCharacter && ActiveWeapon->WeaponType != EWeaponType::Unarmed)
+    {
+        if (hitCharacter->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
+        {
+            auto& attackInfo = hitCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
+            if (attackInfo.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && GetAngleBetweenActors(Character, HitActor) <= MaxFacingAngle)
+            {
+                auto enemyActiveWeapon = hitCharacter->CombatComponent->CurrentMainWeaponActor->ItemCollision->GetGenerateOverlapEvents() ? hitCharacter->CombatComponent->CurrentWeaponMainH : 
+                    hitCharacter->CombatComponent->CurrentWeaponOffH;
+
+                return enemyActiveWeapon && enemyActiveWeapon->WeaponType != EWeaponType::Unarmed;
+            }
+        }
+    }
+
+    return false;
+}
+
+UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(AActor* HitActor, const UItemWeapon* OwnerActiveWeapon)
+{
+    Character->Logger.Log(this, "Chamber: enter!");
+    auto hitCharacter = Cast<ACharacterCreature>(HitActor);
+    auto enemyActiveWeapon = hitCharacter->CombatComponent->CurrentMainWeaponActor->ItemCollision->GetGenerateOverlapEvents() ? hitCharacter->CombatComponent->CurrentWeaponMainH : 
+        hitCharacter->CombatComponent->CurrentWeaponOffH;
+    // calculate characters attack powers
+    int32 strMod = UAttributeSetHelper::GetModifier(Character->AttributeComponent->Attributes, EAttributes::Str);
+    auto& characterAttackInfo = Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
+    float force = CalculateHitForce(OwnerActiveWeapon->Weight, strMod, characterAttackInfo.AttackInfo->PowerMod);
+    int32 enemyStrMod = UAttributeSetHelper::GetModifier(hitCharacter->AttributeComponent->Attributes, EAttributes::Str);
+    auto& enemyAttackInfo = hitCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
+    float enemyForce = CalculateHitForce(enemyActiveWeapon->Weight, enemyStrMod, enemyAttackInfo.AttackInfo->PowerMod);
+    bool enemyStronger = enemyForce > force;
+    float forceRatio = enemyStronger ? enemyForce / force : force / enemyForce;
+    EChamberRes state;
+
+    if (forceRatio > ChamberThreshhold)
+    { // one is stronger than other
+        auto staggeredCharacter = enemyStronger ? Character : hitCharacter;
+        staggeredCharacter->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::None);
+        Character->Logger.Log(this, "Chamber: staggered enemy!");
+        if (forceRatio <= KnockdownThreshhold)
+        { // but not much stronger...
+            auto attackingCharacter = enemyStronger ? hitCharacter : Character;
+            attackingCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ResetAnimInfo();
+            attackingCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+            attackingCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
+            attackingCharacter->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::Chamber);
+            state = EChamberRes::ChamberState;
+            Character->Logger.Log(this, "Chamber: chamber anim!");
+        } // else continue with attack
+        else
+        {
+            state = enemyStronger ? EChamberRes::ChamberState : EChamberRes::ContinueAttack;
+            Character->Logger.Log(this, "Chamber: continue with attack!");
+        }
+    }
+    else
+    { // both in chamber
+        characterAttackInfo.ResetAnimInfo();
+        enemyAttackInfo.ResetAnimInfo();
+        characterAttackInfo.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+        characterAttackInfo.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
+        enemyAttackInfo.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+        enemyAttackInfo.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
+        Character->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::Chamber);
+        hitCharacter->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::Chamber);
+        Character->Logger.Log(this, "Chamber: chamber for both!");
+        state = EChamberRes::ChamberState;
+    }
+    return state;
 }
 
 void UCombatComponent::Update()
@@ -521,6 +604,12 @@ void UCombatComponent::OnAttack(bool Started)
     {
         auto &info = CombatFSM.state(ECombatState::Attack)->Info;
         const FAttackInfo* currentAttack = info.AttackInfo;
+        if (Character->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && Character->CCStateManager.IsInCCSubMode(Chamber))
+        {
+            if (!info.CheckAnimInfo(CanCounterChamber)) // check if not ready to strike while in chamber
+                return;
+            StartNextComboAttack(false);
+        }
         if (currentAttack->Special == ESpecialType::None)// can check combo if not special move
         { 
             if (AttackPressed)
@@ -677,16 +766,16 @@ bool UCombatComponent::HasAlreadyHitTarget(AActor *Target) const
     return false;
 }
 
-float UCombatComponent::GetAngleBetweenAttackerAndDefender(AActor *Attacker, AActor *Defender)
+float UCombatComponent::GetAngleBetweenAttackerAndDefender(const AActor *Attacker, const AActor *Defender)
 {
-    check(Attacker != nullptr && Defender != nullptr && "GetAngleBetweenActors: invalid arg");
+    check(Attacker != nullptr && Defender != nullptr && "GetAngleBetweenAttackerAndDefender: invalid arg");
     const FVector defenderV = FRotator(0, Defender->GetActorRotation().Yaw, 0).Vector();
     const FVector attackerV = UKismetMathLibrary::GetDirectionUnitVector(Attacker->GetActorLocation(), Defender->GetActorLocation());
     float direction = FVector::DotProduct(attackerV, defenderV);
     return FMath::Abs(acos(direction) * 180.f / PI - 180.f);
 }
 
-float UCombatComponent::GetAngleBetweenActors(AActor *First, AActor *Second)
+float UCombatComponent::GetAngleBetweenActors(const AActor *First, const AActor *Second)
 {
     check(First != nullptr && Second != nullptr && "GetAngleBetweenActors: invalid arg");
     const FVector firstV = FRotator(0, First->GetActorRotation().Yaw, 0).Vector();
