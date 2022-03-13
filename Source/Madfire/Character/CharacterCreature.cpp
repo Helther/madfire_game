@@ -57,14 +57,17 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
     // check parry
     if (hasShield && isFacingAttacker && attackerChar && (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Parry) &&
         CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::BlockOrParryActive) &&
-        attackerChar->CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::CanBeParried))
+        attackerChar->CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::CanBeParried) &&
+        !attackerChar->CombatComponent->CombatFSM.currentState()->Info.AttackInfo->IsNotParriable)
     {
         attackerChar->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::WasParried);
         return AttributeComponent->Health->CurrentValue; 
     }
     if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Block)
     {
-        if (hasShield && isFacingAttacker)
+        bool attackisInterruptable = attackerChar && !attackerChar->CombatComponent->CombatFSM.currentState()->Info.AttackInfo->IsNotInterruptable;
+        bool attackisBlockable = attackerChar && !attackerChar->CombatComponent->CombatFSM.currentState()->Info.AttackInfo->IsNotBlockable;
+        if (hasShield && isFacingAttacker && attackisBlockable)
         {
             balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, shield->Weight);
             // check if block succeeded
@@ -77,14 +80,12 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
                 }
                 blocked = true;
                 // apply blocked action to the attacker
-                if (attackerChar)
+                if (attackisInterruptable)
                     attackerChar->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::HitWall);
                 // apply blocked action to the defender
                 CombatComponent->CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
                 InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::BlockedAttack);
             }
-            else
-                force *= CombatComponent->HitForceReductionMod;// force reduction from block attempt
         }
         else
             balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, 0);
@@ -93,7 +94,9 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
         balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, 0);
     Logger.Log(this,*FString::Printf(TEXT("force %f"), force));
     Logger.Log(this,*FString::Printf(TEXT("balance %f"), balance));
-    if (!blocked && (force > balance)) // check if block failed
+    bool isNotInterruptable = CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack &&
+        CombatComponent->CombatFSM.currentState()->Info.AttackInfo->IsNotInterruptable;
+    if (!blocked && (force > balance) && !isNotInterruptable) // check if block failed and can be interrupted
     {
         if (CombatComponent->KnockdownThreshhold < force / balance) // the consequences
             InterruptAnimation(ECCState::KnockDown);
@@ -300,8 +303,11 @@ void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted
     }
     else if (CCStateManager.IsInCCSubMode(Chamber))
     {
-        CombatComponent->CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::AnimEnded, true);
-        CombatComponent->UpdateCombatFSM();
+        if ((CombatComponent->CombatFSM.currentState()->Id != ECombatState::Attack) || !CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::UserInterrupt))
+        { // check if starting new attack from chamber then don't interrupt
+            CombatComponent->CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::AnimEnded, true);
+            CombatComponent->UpdateCombatFSM();
+        }
     }
     CCStateManager.ResetCCMode(ECCState::LossOfBalance);
 }

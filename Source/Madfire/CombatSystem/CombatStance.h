@@ -41,11 +41,11 @@ struct FAttackInfo
     UPROPERTY(EditAnywhere)
     float StaminaCost;
     UPROPERTY(EditAnywhere)
-    bool IsBlockable;
+    bool IsNotBlockable;
     UPROPERTY(EditAnywhere)
-    bool IsParriable;
+    bool IsNotParriable;
     UPROPERTY(EditAnywhere)
-    bool IsInterruptable;
+    bool IsNotInterruptable;
     UPROPERTY(EditAnywhere)
     ESpecialType Special;
 

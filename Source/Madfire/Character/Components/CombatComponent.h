@@ -41,19 +41,20 @@ enum ECombatState
 
 enum ECombatStateAnimInfo
 {// Set in anim callBacks (for the most part)
-    CollisionOn = 1, // currentWeapon collision
-    ComboSaved = 2,
-    PauseComboSaved = 4, // is set when saving combo after ComboCanContinue is set and ComboSaved not
-    MovementBlocked = 8, // is set at the start of action and reset close to finish
-    CanBeParried = 16,
-    ComboCanContinue = 32, // is set when saved previously combo should play out
-    BlockOrParryActive = 64,
-    WeaponGrabbed = 128, // is set at the moment of weapon switch when character reaches his weapon
-    AnimEnded = 256,
-    UserInterrupt = 512, // is set before restarting current montage at different section, to not trigger normal interrupt
-    RotationBlocked = 1024, // is set in sync with MovementBlocked, but for combo anims, resets just before ComboCanContinue is set, to allow character to realign with camera
-    ChargeAllowed = 2048, // is set when starting combo attack and has chargable atacks, unset when released attack
-    CanCounterChamber = 4096 // is set during chamber to indicate that character can attack again, unset after exit chamber mode
+    CollisionOn        = 0x0001, // currentWeapon collision
+    ComboSaved         = 0x0002,
+    PauseComboSaved    = 0x0004, // is set when saving combo after ComboCanContinue is set and ComboSaved not
+    MovementBlocked    = 0x0008, // is set at the start of action and reset close to finish
+    CanBeParried       = 0x0010,
+    ComboCanContinue   = 0x0020, // is set when saved previously combo should play out
+    BlockOrParryActive = 0x0040,
+    WeaponGrabbed      = 0x0080, // is set at the moment of weapon switch when character reaches his weapon
+    AnimEnded          = 0x0100,
+    UserInterrupt      = 0x0200, // is set before restarting current montage at different section, to not trigger normal interrupt
+    RotationBlocked    = 0x0400, // is set in sync with MovementBlocked, but for combo anims, resets just before ComboCanContinue is set, to allow character to realign with camera
+    ChargeAllowed      = 0x0800, // is set when starting combo attack and has chargable atacks, unset when released attack
+    CanCounterChamber  = 0x1000, // is set during chamber to indicate that character can attack again, unset after exit chamber mode
+    CheckedForChamber  = 0x2000  // is set during chamber to indicate that there is no need to check
 };
 
 // directions of special attack moves
@@ -226,6 +227,7 @@ protected:
     bool IsInActionState() const;
     bool IsChamberValid(const AActor* HitActor, const UItemWeapon* ActiveWeapon) const;
     EChamberRes ResolveChamber(AActor* HitActor, const UItemWeapon* OwnerActiveWeapon);
+    void EnterChamberState(ACharacterCreature* Character);
 
     // character orientation to movement speed while weapon is drawn
     UPROPERTY(EditAnywhere, BlueprintReadWrite)

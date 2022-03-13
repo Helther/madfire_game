@@ -521,8 +521,11 @@ bool UCombatComponent::IsChamberValid(const AActor* HitActor, const UItemWeapon*
     {
         if (hitCharacter->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
         {
-            auto& attackInfo = hitCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
-            if (attackInfo.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && GetAngleBetweenActors(Character, HitActor) <= MaxFacingAngle)
+            auto& enemyAttackInfo = hitCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
+            auto& attackInfo = Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
+            bool shouldResolveChamber = !enemyAttackInfo.CheckAnimInfo(ECombatStateAnimInfo::CheckedForChamber) &&
+                !attackInfo.CheckAnimInfo(ECombatStateAnimInfo::CheckedForChamber);
+            if (shouldResolveChamber && enemyAttackInfo.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && GetAngleBetweenActors(Character, HitActor) <= MaxFacingAngle)
             {
                 auto enemyActiveWeapon = hitCharacter->CombatComponent->CurrentMainWeaponActor->ItemCollision->GetGenerateOverlapEvents() ? hitCharacter->CombatComponent->CurrentWeaponMainH : 
                     hitCharacter->CombatComponent->CurrentWeaponOffH;
@@ -549,44 +552,63 @@ UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(AActor* HitActor,
     auto& enemyAttackInfo = hitCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
     float enemyForce = CalculateHitForce(enemyActiveWeapon->Weight, enemyStrMod, enemyAttackInfo.AttackInfo->PowerMod);
     bool enemyStronger = enemyForce > force;
-    float forceRatio = enemyStronger ? enemyForce / force : force / enemyForce;
+    float forceRatio = enemyStronger ? enemyForce/force : force/enemyForce;
+
+    characterAttackInfo.ChangeAnimInfo(ECombatStateAnimInfo::CheckedForChamber, true);
+    enemyAttackInfo.ChangeAnimInfo(ECombatStateAnimInfo::CheckedForChamber, true);
+    bool characterIsInterruptable = !characterAttackInfo.AttackInfo->IsNotInterruptable;
+    bool enemyIsInterruptable = !enemyAttackInfo.AttackInfo->IsNotInterruptable;
     EChamberRes state;
 
     if (forceRatio > ChamberThreshhold)
     { // one is stronger than other
-        auto staggeredCharacter = enemyStronger ? Character : hitCharacter;
-        staggeredCharacter->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::None);
-        Character->Logger.Log(this, "Chamber: staggered enemy!");
+        // apply reaction to weaker one
+        auto staggeredCharacter = enemyStronger ? (characterIsInterruptable ? Character : nullptr) : (enemyIsInterruptable ? hitCharacter : nullptr);
+        if (staggeredCharacter)
+        {
+            staggeredCharacter->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::None);
+            staggeredCharacter->Logger.Log(this, "Chamber: got staggered!");
+        }
+        // apply reaction to stronger one
+        auto strongerCharacter = enemyStronger ? (enemyIsInterruptable ? hitCharacter : nullptr) : (characterIsInterruptable ? Character : nullptr);
         if (forceRatio <= KnockdownThreshhold)
         { // but not much stronger...
-            auto attackingCharacter = enemyStronger ? hitCharacter : Character;
-            attackingCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ResetAnimInfo();
-            attackingCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
-            attackingCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
-            attackingCharacter->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::Chamber);
-            state = EChamberRes::ChamberState;
-            Character->Logger.Log(this, "Chamber: chamber anim!");
+            if (strongerCharacter)
+            {
+                EnterChamberState(strongerCharacter);
+                strongerCharacter->Logger.Log(this, "Chamber: chamber anim!");
+            }
         } // else continue with attack
         else
-        {
-            state = enemyStronger ? EChamberRes::ChamberState : EChamberRes::ContinueAttack;
-            Character->Logger.Log(this, "Chamber: continue with attack!");
-        }
+            enemyStronger ? hitCharacter->Logger.Log(hitCharacter->CombatComponent, "Chamber: continue with attack!") : Character->Logger.Log(this, "Chamber: continue with attack!");
+        // define chamber state for this character
+        if (strongerCharacter == Character || staggeredCharacter == Character)
+            state = EChamberRes::ChamberState;
+        else
+            state = EChamberRes::ContinueAttack;
     }
     else
     { // both in chamber
-        characterAttackInfo.ResetAnimInfo();
-        enemyAttackInfo.ResetAnimInfo();
-        characterAttackInfo.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
-        characterAttackInfo.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
-        enemyAttackInfo.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
-        enemyAttackInfo.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
-        Character->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::Chamber);
-        hitCharacter->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::Chamber);
-        Character->Logger.Log(this, "Chamber: chamber for both!");
-        state = EChamberRes::ChamberState;
+        if (characterIsInterruptable)
+        {
+            EnterChamberState(Character);
+            state = EChamberRes::ChamberState;
+        }
+        else
+            state = EChamberRes::ContinueAttack;
+        if (enemyIsInterruptable)
+            EnterChamberState(hitCharacter);
+        Character->Logger.Log(this, "Chamber: should be chamber for both!");
     }
     return state;
+}
+
+void UCombatComponent::EnterChamberState(ACharacterCreature* Character)
+{
+    Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ResetAnimInfo();
+    Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+    Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
+    Character->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::Chamber);
 }
 
 void UCombatComponent::Update()
@@ -608,7 +630,11 @@ void UCombatComponent::OnAttack(bool Started)
         {
             if (!info.CheckAnimInfo(CanCounterChamber)) // check if not ready to strike while in chamber
                 return;
-            StartNextComboAttack(false);
+            if (AttackPressed)
+            {
+                StartNextComboAttack(false);
+                return;
+            }
         }
         if (currentAttack->Special == ESpecialType::None)// can check combo if not special move
         { 
