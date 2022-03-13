@@ -18,8 +18,7 @@ enum class ESpecialType : uint8
     Left,
     Right,
     Sprint,
-    Crouch,
-    CounterAttack
+    Crouch
 };
 ENUM_CLASS_FLAGS(ESpecialType)
 

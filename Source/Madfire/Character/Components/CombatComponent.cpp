@@ -30,7 +30,6 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitili
     BlockStaminaCost = 10.f;
     KnockdownThreshhold = 1.5f;
     ChamberThreshhold = 1.3f;
-    HitForceReductionMod = 0.8f;
     MaxFacingAngle = 45.f;
     // end temp
 
@@ -317,14 +316,6 @@ void UCombatComponent::InitCombatFSM()
     });
     CombatFSM.addLink(ECombatState::Parry, ECombatState::Block, req);
     req.Unbind();
-    req.BindLambda([&]()// TODO finish counter attack check, check if was parried (no special counter atttacks planned at the moment)
-    {
-        auto newAttackInfo = CurrentCombatStance->GetAttackInfoForSpecial(ESpecialType::CounterAttack);
-        CombatFSM.state(ECombatState::Attack)->Info.AttackInfo = newAttackInfo;
-        return newAttackInfo != nullptr && 0;// TODO temp noop
-    });
-    CombatFSM.addLink(ECombatState::Parry, ECombatState::Attack, req);
-    req.Unbind();
     
     //=================================== Attack ====================================//
     CombatFSM.state(ECombatState::Attack)->Info.OnEnter.BindLambda([&]()
@@ -606,8 +597,8 @@ UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(AActor* HitActor,
 void UCombatComponent::EnterChamberState(ACharacterCreature* Character)
 {
     Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ResetAnimInfo();
+    Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::CheckedForChamber, true);
     Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
-    Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
     Character->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::Chamber);
 }
 
@@ -632,6 +623,7 @@ void UCombatComponent::OnAttack(bool Started)
                 return;
             if (AttackPressed)
             {
+                info.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
                 StartNextComboAttack(false);
                 return;
             }
@@ -768,6 +760,7 @@ void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
     }
     if (nextAttackInfo != nullptr)
     {
+        bool isAttackFromChamber = stateInfo.CheckAnimInfo(ECombatStateAnimInfo::CanCounterChamber);
         ++CurrentCombatStance->CurrentCombo;
         Character->AttributeComponent->Stamina->Consume(nextAttackInfo->StaminaCost);
         stateInfo.ResetAnimInfo();
@@ -777,7 +770,10 @@ void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
         auto animInstance = Cast<UCharacterAnimInstance>(Character->GetMesh()->GetAnimInstance());
         animInstance->OnMovementAllowed(false);
         stateInfo.AttackInfo = nextAttackInfo;
-        stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+        if (isAttackFromChamber)
+            stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanCounterChamber, true);
+        else
+            stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, true);
         FOnMontageBlendingOutStarted callBack;
         callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
