@@ -151,9 +151,6 @@ public:
     // should be higher than 1 and lower than KnockdownThreshhold
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float ChamberThreshhold;
-    // should be in range 0-1
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float HitForceReductionMod;
     // значение относительно нормы (коэффициент)
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float AttackSpeed;

@@ -303,11 +303,15 @@ void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted
     }
     else if (CCStateManager.IsInCCSubMode(Chamber))
     {
-        if ((CombatComponent->CombatFSM.currentState()->Id != ECombatState::Attack) || !CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::UserInterrupt))
+        auto& stateInfo = CombatComponent->CombatFSM.currentState()->Info;
+        bool startedAttack = !stateInfo.CheckAnimInfo(ECombatStateAnimInfo::CheckedForChamber) && stateInfo.CheckAnimInfo(ECombatStateAnimInfo::CanCounterChamber);
+        if (!startedAttack)
         { // check if starting new attack from chamber then don't interrupt
-            CombatComponent->CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::AnimEnded, true);
+            stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::AnimEnded, true);
             CombatComponent->UpdateCombatFSM();
         }
+        else
+            stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanCounterChamber, false);
     }
     CCStateManager.ResetCCMode(ECCState::LossOfBalance);
 }

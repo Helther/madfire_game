@@ -106,9 +106,6 @@ void UCharacterAnimInstance::OnDodgeInvulnerable(bool activate)
 
 void UCharacterAnimInstance::OnCounterChamber(bool activate)
 {
-    if (activate)
-    {
-        auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.currentState()->Info;
-        stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanCounterChamber, true);
-    }
+    auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.currentState()->Info;
+    stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanCounterChamber, activate);
 }
