@@ -54,7 +54,7 @@ struct FAttackInfo
 };
 
 USTRUCT(BlueprintType)
-struct FChargeAttackIngo
+struct FChargeAttackInfo
 {
     GENERATED_BODY()
 
@@ -70,7 +70,7 @@ struct FComboInfo
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<FChargeAttackIngo> ChargeAttackStages;
+    TArray<FChargeAttackInfo> ChargeAttackStages;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FAttackInfo NormalAttack;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -119,7 +119,7 @@ public:
     TArray<FAttackInfo> SpecialAttacks;
     // custom equipment specific animations for unique stances
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UAnimMontage *CustomBlockAnim;// TODO modify anim speed according to shield type after stance resolve
+    UAnimMontage *CustomBlockAnim;// TODO modify anim speed according to shield weight after stance resolve
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
     UAnimMontage *CustomParryAnim;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
@@ -138,8 +138,5 @@ public:
     UAnimMontage *CurrentDrawAnim;
     UAnimMontage *CurrentSheathAnim;
     
-    // TODO for testing
-    UPROPERTY(EditAnywhere, BlueprintReadOnly)
     int CurrentCombo = 0;
-
 };

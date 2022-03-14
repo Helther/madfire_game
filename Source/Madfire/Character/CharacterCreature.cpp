@@ -51,11 +51,11 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
         shield = CombatComponent->CurrentWeaponOffH;
     else if (CombatComponent->CurrentWeaponMainH != nullptr && CombatComponent->CurrentWeaponMainH->WeaponType != EWeaponType::Unarmed)
         shield = CombatComponent->CurrentWeaponMainH;
-    bool hasShield = shield != nullptr;
+    bool hasProperShield = (shield != nullptr) && (shield->WeaponType != EWeaponType::Unarmed);
     // check actors directions
     bool isFacingAttacker = UCombatComponent::GetAngleBetweenAttackerAndDefender(DamageCauser, this) < CombatComponent->MaxFacingAngle;
     // check parry
-    if (hasShield && isFacingAttacker && attackerChar && (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Parry) &&
+    if (hasProperShield && isFacingAttacker && attackerChar && (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Parry) &&
         CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::BlockOrParryActive) &&
         attackerChar->CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::CanBeParried) &&
         !attackerChar->CombatComponent->CombatFSM.currentState()->Info.AttackInfo->IsNotParriable)
@@ -67,7 +67,7 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
     {
         bool attackisInterruptable = attackerChar && !attackerChar->CombatComponent->CombatFSM.currentState()->Info.AttackInfo->IsNotInterruptable;
         bool attackisBlockable = attackerChar && !attackerChar->CombatComponent->CombatFSM.currentState()->Info.AttackInfo->IsNotBlockable;
-        if (hasShield && isFacingAttacker && attackisBlockable)
+        if (hasProperShield && isFacingAttacker && attackisBlockable)
         {
             balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, shield->Weight);
             // check if block succeeded

@@ -54,7 +54,7 @@ enum ECombatStateAnimInfo
     RotationBlocked    = 0x0400, // is set in sync with MovementBlocked, but for combo anims, resets just before ComboCanContinue is set, to allow character to realign with camera
     ChargeAllowed      = 0x0800, // is set when starting combo attack and has chargable atacks, unset when released attack
     CanCounterChamber  = 0x1000, // is set during chamber to indicate that character can attack again, unset after exit chamber mode
-    CheckedForChamber  = 0x2000  // is set during chamber to indicate that there is no need to check
+    CheckedForChamber  = 0x2000  // is set during chamber to indicate that there is no need to check again with same character
 };
 
 // directions of special attack moves
