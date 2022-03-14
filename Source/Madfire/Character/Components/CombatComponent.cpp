@@ -272,9 +272,9 @@ void UCombatComponent::InitCombatFSM()
     });
     CombatFSM.addLink(ECombatState::Block, ECombatState::Idle, req);
     req.Unbind();
-    req.BindLambda([&]() // check if stance has parry (Note: not for unarmed)
+    req.BindLambda([&]() // check if stance has parry
     {
-        bool canParry = CurrentWeaponMainH != nullptr && CurrentWeaponMainH->WeaponType != EWeaponType::Unarmed;
+        bool canParry = CurrentWeaponMainH != nullptr;
         bool hasStanceAnims = CurrentCombatStance->CurrentParryAnim != nullptr;
         bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;
         const auto state = CombatFSM.state(ECombatState::Block);
@@ -508,20 +508,22 @@ bool UCombatComponent::IsInActionState() const
 bool UCombatComponent::IsChamberValid(const AActor* HitActor, const UItemWeapon* ActiveWeapon) const
 {
     auto hitCharacter = Cast<ACharacterCreature>(HitActor);
-    if (hitCharacter && ActiveWeapon->WeaponType != EWeaponType::Unarmed)
+    if (hitCharacter)
     {
         if (hitCharacter->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
         {
             auto& enemyAttackInfo = hitCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
             auto& attackInfo = Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
-            bool shouldResolveChamber = !enemyAttackInfo.CheckAnimInfo(ECombatStateAnimInfo::CheckedForChamber) &&
+            bool shouldResolveChamber = !enemyAttackInfo.CheckAnimInfo(ECombatStateAnimInfo::CheckedForChamber) ||
                 !attackInfo.CheckAnimInfo(ECombatStateAnimInfo::CheckedForChamber);
             if (shouldResolveChamber && enemyAttackInfo.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && GetAngleBetweenActors(Character, HitActor) <= MaxFacingAngle)
             {
-                auto enemyActiveWeapon = hitCharacter->CombatComponent->CurrentMainWeaponActor->ItemCollision->GetGenerateOverlapEvents() ? hitCharacter->CombatComponent->CurrentWeaponMainH : 
+                auto enemyActiveWeapon = hitCharacter->CombatComponent->CurrentMainWeaponActor->ItemCollision->GetGenerateOverlapEvents() ? hitCharacter->CombatComponent->CurrentWeaponMainH :
                     hitCharacter->CombatComponent->CurrentWeaponOffH;
-
-                return enemyActiveWeapon && enemyActiveWeapon->WeaponType != EWeaponType::Unarmed;
+                check(ActiveWeapon && enemyActiveWeapon && "Characters should have default weapons set");
+                // check if both characters have simililar weapon types
+                return (enemyActiveWeapon->WeaponType != EWeaponType::Unarmed) ? ActiveWeapon->WeaponType != EWeaponType::Unarmed :
+                    ActiveWeapon->WeaponType == EWeaponType::Unarmed;
             }
         }
     }
