@@ -9,9 +9,10 @@ class USpringArmComponent;
 
 
 //состояние персонажа с точки зрения режима контроллера
-enum class EPawnGameplayState
+UENUM(BlueprintType)
+enum class EGameplayReturnState : uint8
 {
-    InWorld = 0,
+    InWorld,
     InTrade,
     InDialogue,
     InInventory,
@@ -19,9 +20,18 @@ enum class EPawnGameplayState
     InContextMenu,
     InMountMode,
 
-    MAX    //dlc stuff
+    MAX  //UMETA(Hidden)
 };
 
+UENUM(BlueprintType)
+enum class EKeyState : uint8
+{
+    Pressed,
+    Released
+};
+
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCharacterInput, EGameplayReturnState, ReturnState, EKeyState, KeyState);
 /**
  * 
  */
@@ -77,7 +87,7 @@ protected:
     float CameraDistanceDefault;
 
     // текущий режим контроллера чарактера
-    EPawnGameplayState CurrentGameplayState;
+    EGameplayReturnState CurrentGameplayState;
     // in seconds
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float NewDirectionTime; 
