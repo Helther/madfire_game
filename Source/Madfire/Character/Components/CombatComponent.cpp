@@ -3,17 +3,6 @@
 #include "../CharacterCreature.h"
 #include "Kismet/KismetMathLibrary.h"
 
-const FName FAnimSectionNames::Start = "Start";
-const FName FAnimSectionNames::End = "End";
-const FName FAnimSectionNames::Loop = "Loop";
-const FName FAnimSectionNames::Cancel = "Cancel";
-
-
-const FName FWeaponSlotNames::Main = "WeaponMainSlot";
-const FName FWeaponSlotNames::Off = "WeaponOffSlot";
-const FName FWeaponSlotNames::SheathMain = "WeaponSheathMainSlot";
-const FName FWeaponSlotNames::SheathOff = "WeaponSheathOffSlot";
-const FName FWeaponSlotNames::Back = "WeaponSheathBackSlot";
 
 UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitilizer)
   : Super(ObjectInitilizer)
@@ -40,7 +29,7 @@ FName UCombatComponent::GetSlotFromWeaponType(EWeaponType type, bool draw, bool 
 {
     if (draw)
     {
-        return mainHand ? FWeaponSlotNames::Main : FWeaponSlotNames::Off;
+        return mainHand ? FEquipmentSlotNames::WeaponMain : FEquipmentSlotNames::WeaponOff;
     }
     else
     {
@@ -57,9 +46,9 @@ FName UCombatComponent::GetSlotFromWeaponType(EWeaponType type, bool draw, bool 
         case EWeaponType::Longbow:
         case EWeaponType::Shortbow:
         case EWeaponType::Shield:
-            return FWeaponSlotNames::Back;
+            return FEquipmentSlotNames::SheathBack;
         default:
-            return mainHand ? FWeaponSlotNames::SheathMain : FWeaponSlotNames::SheathOff;
+            return mainHand ? FEquipmentSlotNames::SheathMain : FEquipmentSlotNames::SheathOff;
         }
     }
 }
@@ -96,11 +85,8 @@ void UCombatComponent::BeginPlay()
     GetCurrentCombatStance()->CurrentDrawAnim = GetCurrentCombatStance()->CustomDrawAnim;
     GetCurrentCombatStance()->CurrentSheathAnim = GetCurrentCombatStance()->CustomSheathAnim;
     /////
-    // TODO temp weapon spawn, instead should spawn when setting in equipment
-    CurrentWeaponMainH = DefaultWeaponMainH;
-    auto actor = GetWorld()->SpawnActor(CurrentWeaponMainH->ItemActor);
-    CurrentMainWeaponActor = Cast<AItemActor>(actor);
-    CurrentMainWeaponActor->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FWeaponSlotNames::SheathMain);
+    // TODO temp default weapon, instead should spawn when setting in equipment
+    // CurrentWeaponMainH = DefaultWeaponMainH;
 }
 
 // Called every frame
@@ -159,7 +145,7 @@ void UCombatComponent::InitCombatFSM()
     req.BindLambda([&]()
     {
         bool hasStanceAnim = CurrentCombatStance->CurrentDrawAnim != nullptr && CurrentCombatStance->CurrentSheathAnim != nullptr;
-        return hasStanceAnim && CombatFSM.currentState()->Id == ECombatState::Idle && WeaponSwitchPressed;
+        return CurrentWeaponMainH && hasStanceAnim && CombatFSM.currentState()->Id == ECombatState::Idle && WeaponSwitchPressed;
     });
     CombatFSM.addLink(ECombatState::Idle, ECombatState::WeaponSwitch, req);
     req.Unbind();
@@ -604,6 +590,52 @@ void UCombatComponent::EnterChamberState(ACharacterCreature* Character)
     Character->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::Chamber);
 }
 
+void UCombatComponent::OnEquipmentUpdate(UEquipmentComponent* Component, EItemSlot Slot)
+{
+    auto item = Component->GetEquipmentFromSlot(Slot);
+    if (!item.Item)
+        return;
+
+    auto weapon = Cast<UItemWeapon>(item.Item->ItemBase);
+    if (weapon)
+    {
+        bool isMainHand = Slot == EItemSlot::MainWeaponSlot;
+        if (isMainHand)
+        {
+            CurrentWeaponMainH = weapon;
+            CurrentMainWeaponActor = item.Item;
+        }
+        else
+        {
+            CurrentWeaponOffH = weapon;
+            CurrentOffWeaponActor = item.Item;
+        }
+        WeaponSetup(weapon, item.Item, IsWeaponDrawn, isMainHand);
+    }
+}
+
+void UCombatComponent::OnEquipmentSwap(UEquipmentComponent* Component, EItemSlot SlotL, EItemSlot SlotR)
+{
+    auto itemL = Component->GetEquipmentFromSlot(SlotL);
+    auto itemR = Component->GetEquipmentFromSlot(SlotR);
+    if (!itemL.Item || !itemR.Item)
+        return;
+    auto weaponL = Cast<UItemWeapon>(itemL.Item->ItemBase);
+    auto weaponR = Cast<UItemWeapon>(itemR.Item->ItemBase);
+    if (weaponL && weaponR)
+    {
+        bool isMainHandL = SlotL == EItemSlot::MainWeaponSlot;
+        CurrentWeaponMainH = isMainHandL ? weaponL : weaponR;
+        CurrentMainWeaponActor = isMainHandL ? itemL.Item : itemR.Item;
+        CurrentWeaponOffH = isMainHandL ? weaponR : weaponL;
+        CurrentOffWeaponActor = isMainHandL ? itemR.Item : itemL.Item;
+        const FName socketL = UCombatComponent::GetSlotFromWeaponType(weaponL->WeaponType, IsWeaponDrawn, isMainHandL);
+        itemL.Item->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, socketL);
+        const FName socketR = UCombatComponent::GetSlotFromWeaponType(weaponR->WeaponType, IsWeaponDrawn, !isMainHandL);
+        itemR.Item->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, socketR);
+    }
+}
+
 void UCombatComponent::Update()
 {
     // TODO check stance validity, call stanceresolver, update speeds if needed
@@ -921,7 +953,7 @@ void UCombatComponent::WeaponSetup(UItemWeapon* weapon, AItemActor* actor, bool 
     const FName slot = UCombatComponent::GetSlotFromWeaponType(weapon->WeaponType, draw, mainHand);
     if (draw)
     {
-        actor->ItemCollision->OnComponentBeginOverlap.AddDynamic(this, &UCombatComponent::OnWeaponOverlap);
+        actor->ItemCollision->OnComponentBeginOverlap.AddUniqueDynamic(this, &UCombatComponent::OnWeaponOverlap);
         actor->ItemCollision->SetCollisionProfileName("OverlapAll");
     }
     else
@@ -940,6 +972,7 @@ void UCombatComponent::SetCurrentWeaponCollision(bool main, bool enable)
         // other options
         //SetCollisionObjectType
         //SetCollisionResponseToChannel
+        //SetCollisionEnabled
     }
     else if (CurrentOffWeaponActor != nullptr)
     {

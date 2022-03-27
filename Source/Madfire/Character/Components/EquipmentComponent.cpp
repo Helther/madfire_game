@@ -4,6 +4,7 @@
 
 #include "TraceFunctional/TraceDefines.h"
 #include "Character/CharacterCreature.h"
+#include "Character/CharacterAnimInstance.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -28,16 +29,17 @@ void UEquipmentComponent::Update()
 UEquipmentComponent::UEquipmentComponent(const FObjectInitializer &ObjectInitializer)
 {
     Slot[(int32)EItemSlot::MainWeaponSlot].ItemClass = TSubclassOf<UItemWeapon>();
-    Slot[(int32)EItemSlot::MainWeaponSlot].SocketName = "WeaponMainSlot";
+    Slot[(int32)EItemSlot::MainWeaponSlot].SocketName = FEquipmentSlotNames::WeaponMain;
     Slot[(int32)EItemSlot::OffMeaponSlot].ItemClass = TSubclassOf<UItemWeapon>();
-    Slot[(int32)EItemSlot::OffMeaponSlot].SocketName = "WeaponOffSlot";
+    Slot[(int32)EItemSlot::OffMeaponSlot].SocketName = FEquipmentSlotNames::WeaponOff;
     Slot[(int32)EItemSlot::MainWeaponSlotSet2].ItemClass = TSubclassOf<UItemWeapon>();
-    Slot[(int32)EItemSlot::MainWeaponSlotSet2].SocketName = "WeaponMainSlot";
+    Slot[(int32)EItemSlot::MainWeaponSlotSet2].SocketName = FEquipmentSlotNames::WeaponMain;
     Slot[(int32)EItemSlot::OffWeaponSlotSet2].ItemClass = TSubclassOf<UItemWeapon>();
-    Slot[(int32)EItemSlot::OffWeaponSlotSet2].SocketName = "WeaponOffSlot";
+    Slot[(int32)EItemSlot::OffWeaponSlotSet2].SocketName = FEquipmentSlotNames::WeaponOff;
+    Slot[(int32)EItemSlot::AmmoSlot].SocketName = FEquipmentSlotNames::Ammo;
 
-    Slot[(int32)EItemSlot::HeadSlot].ItemClass = UItemArmor::StaticClass();
-    Slot[(int32)EItemSlot::HeadSlot].SocketName = "S_EquipHead";
+    Slot[(int32)EItemSlot::HeadSlot].ItemClass = TSubclassOf<UItemArmor>();
+    Slot[(int32)EItemSlot::HeadSlot].SocketName = FEquipmentSlotNames::Head;
 }
 
 void UEquipmentComponent::OnComponentCreated()
@@ -58,7 +60,10 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
 
     if(!Item)
     {
-        return Unequip(SlotName);
+        auto tmp = Unequip(SlotName);
+        EquipmentSlotUpdated.Broadcast(this, SlotName);
+        check(tmp && "EquipToSlot: No item");
+        return tmp;
     }
 
     if(!Item->IsA(slot.ItemClass))
@@ -73,14 +78,16 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
     itemActor->ItemBase = Item;
     Item->ItemActor = itemActor->GetClass();
 
-    itemActor->DisableComponentsSimulatePhysics();
-
-    //TODO: SET Physics preset for Equipment
+    itemActor->ItemMesh->SetSimulatePhysics(false);
+    itemActor->ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    itemActor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+    itemActor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, ECollisionResponse::ECR_Ignore);
 
     auto tmp = Unequip(SlotName);
 
     Slot[(int32)SlotName].Item = itemActor;
     EquipAttach(SlotName);
+    EquipmentSlotUpdated.Broadcast(this, SlotName);
 
     return tmp;
 }
@@ -125,7 +132,7 @@ bool UEquipmentComponent::SwapItems(EItemSlot lhs, EItemSlot rhs)
 
         EquipAttach(lhs);
         EquipAttach(rhs);
-
+        EquipmentSwaped.Broadcast(this, lhs, rhs);
         return true;
     }
 

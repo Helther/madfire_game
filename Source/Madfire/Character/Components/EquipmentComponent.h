@@ -14,6 +14,9 @@
 #include "EquipmentComponent.generated.h"
 
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEquipmentSlotEvent, class UEquipmentComponent*, Equipment, EItemSlot, Slot);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEquipmentSwapEvent, class UEquipmentComponent*, Equipment, EItemSlot, SlotL, EItemSlot, SlotR);
+
 
 USTRUCT(BlueprintType)
 struct FEquipmentSlot
@@ -86,6 +89,12 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "Equipment Component")
     FEquipmentSlot Slot[(int32)EItemSlot::Max];
+
+    UPROPERTY(BlueprintAssignable, Category = "Equipment Component")
+    FEquipmentSlotEvent EquipmentSlotUpdated;
+
+    UPROPERTY(BlueprintAssignable, Category = "Equipment Component")
+    FEquipmentSwapEvent EquipmentSwaped;
 
 private:
     bool IsDirty = false;

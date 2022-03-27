@@ -4,6 +4,7 @@
 
 #include "TraceFunctional/TraceDefines.h"
 #include "Character/CharacterBase.h"
+#include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
@@ -419,20 +420,24 @@ bool UInventoryComponent::DropItem(int32 index, int32 amount)
 
     auto &slot = GetSlotByIndex(index);
 
-    if(!slot.Item)
+    if (!slot.Item)
     {
-        //TODO: Print Something
+        UE_LOG(LogTemp, Display, TEXT("No item to drop"));
         return false;
     }
     slot.Count -= amount;
     auto item = slot.Item;
-    if(slot.Count <= 0)
+    if (slot.Count <= 0)
     {
         slot.Count = 0;
         slot.Item = nullptr;
     }
 
-    AItemActor *actor = Cast<AItemActor>(GetWorld()->SpawnActor(item->ItemActor,&owner->GetTransform()));
+    AItemActor *actor = Cast<AItemActor>(GetWorld()->SpawnActor(item->ItemActor, &owner->GetTransform()));
+    actor->ItemMesh->SetSimulatePhysics(true);
+    actor->ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    actor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+    actor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, ECollisionResponse::ECR_Block);
     actor->ItemBase = item;
 
     return true;
