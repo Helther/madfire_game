@@ -40,6 +40,11 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction")
     bool drawTrace = false;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+    float SphereRadius = 20;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+    float CorrectionValue = 400;
 
     TScriptInterface<IInteractableInterface> GetInteractableInView();
 

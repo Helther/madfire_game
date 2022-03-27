@@ -8,6 +8,10 @@ UAttributeComponent::UAttributeComponent(const FObjectInitializer& ObjectInitial
     Super(ObjectInitializer)
 {
     PrimaryComponentTick.bCanEverTick = true;
+
+    Health = ObjectInitializer.CreateDefaultSubobject<UDynamicAttribute>(this,"Health",false);
+    Stamina = ObjectInitializer.CreateDefaultSubobject<UDynamicAttribute>(this,"Stamina",false);
+
     CharacterRace = ObjectInitializer.CreateDefaultSubobject<URaceInfo>(this,"Race",false);
 }
 

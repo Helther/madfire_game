@@ -7,13 +7,31 @@
 #include "Items/ItemArmor.h"
 #include "Items/ItemBase.h"
 #include "Items/ItemWeapon.h"
-#include "Items/EquipmentSlot.h"
 #include "AbilitySystem/EffectBase.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 
 #include "EquipmentComponent.generated.h"
 
+
+
+USTRUCT(BlueprintType)
+struct FEquipmentSlot
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, Category = "Equipment Slot")
+    TSubclassOf<UItem> ItemClass;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment Slot")
+    FName SocketName;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equipment Slot")
+    FTransform RelativeTransform;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Slot")
+    AItemActor *Item;
+};
 
 
 
@@ -27,9 +45,18 @@ public:
 
     void OnComponentCreated() override;
 
+    UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     UItem *Equip(UItem *Item);
+    UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     UItem *EquipToSlot(UItem *Item, EItemSlot SlotName);
-    FEquipmentSlot* GetEquipmentFromSlot(EItemSlot SlotName);
+    UFUNCTION(BlueprintCallable, Category = "Equipment Component")
+    UItem *Unequip(EItemSlot SlotName);
+
+    UFUNCTION(BlueprintPure, Category = "Equipment Component")
+    FEquipmentSlot &GetEquipmentFromSlot(EItemSlot SlotName);
+
+    UFUNCTION(BlueprintCallable, Category = "Equipment Component")
+    bool SwapItems(EItemSlot lhs, EItemSlot rhs);
 
     UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FSkillList EquipmentSkills;
@@ -57,17 +84,13 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Component Update")
     bool IsUpdateNeeded() { return IsDirty; }
 
-
-    // TODO test functions
-    UFUNCTION(BlueprintCallable, Category = "Equipment Component")
-    void UpWeight();
-    UFUNCTION(BlueprintCallable, Category = "Equipment Component")
-    void DownWeight();
+    UPROPERTY(EditAnywhere, Category = "Equipment Component")
+    FEquipmentSlot Slot[(int32)EItemSlot::Max];
 
 private:
-    class ACharacterCreature *Owner = nullptr;
-    FEquipmentSlot Slot[(int32)EItemSlot::Max];
     bool IsDirty = false;
+
+    void EquipAttach(EItemSlot SlotName);
 
 private:    //Methods
     bool EquipHeadItem(UItemArmor *item);

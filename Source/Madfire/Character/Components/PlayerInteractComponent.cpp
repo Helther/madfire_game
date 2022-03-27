@@ -52,7 +52,9 @@ TScriptInterface<IInteractableInterface> UPlayerInteractComponent::GetInteractab
     FVector startTrace = Owner->GetActorLocation();
     startTrace.Z += 50;
     FVector direction = cameraRotation.Vector();
-    FVector endTrace  = startTrace + (direction * MaxInteractionDistance);
+    float cv = FMath::Abs(sin((cameraRotation.Pitch/180)*PI));
+
+    FVector endTrace  = startTrace + (direction * (MaxInteractionDistance + CorrectionValue*cv));
 
     FTraceParams traceParams;
     traceParams.isDebug = drawTrace;
@@ -66,14 +68,22 @@ TScriptInterface<IInteractableInterface> UPlayerInteractComponent::GetInteractab
     FHitResult hit(ForceInit);
     check(GetWorld() != nullptr && "Interactable Component: No world");
 
-    UTraceManager::LineTraceSingleByChannel(GetWorld(), traceParams, traceSpawnParams,
-                                            hit, ECollisionChannel::ECC_Visibility);
+    if(UTraceManager::LineTraceSingleByChannel(GetWorld(), traceParams, traceSpawnParams, hit, ECollisionChannel::ECC_Visibility))
+    {
+        traceSpawnParams.End = startTrace + ((direction) * hit.Distance);
+    }
+
+
+    hit = FHitResult(ForceInit);
+
+    UTraceManager::SphereTraceSingleByChannel(GetWorld(),SphereRadius,traceParams, traceSpawnParams, hit,EInteractChannel);
 
     TScriptInterface<IInteractableInterface> result;
 
     //auto interactable = Cast<IInteractableInterface*>(hit.GetActor()); //old Version
 
     const auto actor = hit.GetActor();
+
 
     if (actor != nullptr)
     {

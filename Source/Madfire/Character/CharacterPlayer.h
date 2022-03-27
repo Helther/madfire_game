@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "CharacterCreature.h"
-
+#include "CoreMinimal.h"
 #include "CharacterPlayer.generated.h"
 
 class UCameraComponent;
@@ -38,8 +38,8 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character Animation")
     void animTest(UAnimMontage* AnimMontage) {StartAnimation(AnimMontage, FOnMontageBlendingOutStarted(),1); }
 
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Interact")
-    void OnInteract();
+    UFUNCTION(BlueprintImplementableEvent, Category = "Interact", Meta = (ExpandEnumAsExecs = "Branches"))
+    void OnInteract(EGameplayReturnState Branches, EKeyState KeyState);
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
     UCameraComponent* CameraComponent;
@@ -56,6 +56,10 @@ public:
     // temp value for min input amount to register
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float MovementDeadZone;
+
+
+    void UseAimComponent(class UAbilityAimComponent *) override;
+
 
 protected:
     // Called to bind functionality to input

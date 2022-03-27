@@ -68,9 +68,9 @@ float UCombatComponent::CalculateWeaponDamage(const UItemWeapon* weapon, float a
 {
     if (weapon->WeaponType == EWeaponType::Unarmed)
     {
-        auto gloves = Character->EquipmentComponent->GetEquipmentFromSlot(EItemSlot::HandsSlot)->Item;
+        auto gloves = Character->EquipmentComponent->GetEquipmentFromSlot(EItemSlot::HandsSlot).Item;
         if (gloves)
-            return (UnarmedBaseDamage + gloves->Weight) * strMod;
+            return (UnarmedBaseDamage + gloves->ItemBase->Weight) * strMod;
         else
             return UnarmedBaseDamage * strMod;
     }
@@ -975,6 +975,11 @@ void UCombatComponent::RemoveAbility(UAbstractAbility *Ability)
 
 void UCombatComponent::SetCurrentAbility(UAbstractAbility *Ability)
 {
+    if(CurrentAbility)
+    {
+        CurrentAbility->CancelAbility();
+    }
+
     CurrentAbility = Ability;
     if(CurrentAbility)
         CurrentAbility->AbilitySetup(this);
@@ -987,4 +992,9 @@ void UCombatComponent::SetCurrentAbility(UAbstractAbility *Ability)
 void UCombatComponent::CalculateMaxCastingSpeed(float SpeedModifier)
 {
     Character->GetMovementComponent()->MaxRunSpeed = MaxSpeedWhileCasting * SpeedModifier;
+}
+
+void UCombatComponent::UseAimComponent(class UAbilityAimComponent *Component)
+{
+    Character->UseAimComponent(Component);
 }
