@@ -42,6 +42,8 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
 	UPawnNoiseEmitterComponent* NoiseEmitterComponent;
 
+    virtual void UseAimComponent(class UAbilityAimComponent *) {}
+
     FCheats Cheats;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FObjectLogger Logger;

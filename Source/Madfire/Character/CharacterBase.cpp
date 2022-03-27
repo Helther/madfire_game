@@ -46,3 +46,5 @@ void ACharacterBase::BeginPlay()
     AttributeComponent->SetDirty();
     Update(FCharacterLevelInfo());
 }
+
+

@@ -17,6 +17,8 @@ enum class EInteractType : uint8
     Steal      = 16,
     Move       = 32,
     DisarmTrap = 64,
+    Something1 = 128
+
     /// Some other actions
 };
 ENUM_CLASS_FLAGS(EInteractType)
@@ -38,6 +40,9 @@ public:
 
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Interactable")
     uint8 GetInteractFlags() const;
+
+    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Interactable")
+    FText GetInteractableName() const;
 
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Interactable")
     bool OnBeginFocus();

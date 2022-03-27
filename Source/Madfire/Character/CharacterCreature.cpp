@@ -202,8 +202,10 @@ void ACharacterCreature::InterruptAnimation(ECCState Source, int SubMode)
         auto animInstance    = GetMesh()->GetAnimInstance();
         FAnimMontageInstance* montageInstance = nullptr;
         if (Source == ECCState::LossOfBalance && SubMode != ELossOfBalanceCCSubState::None)
+        {
             if (CCStateManager.IsInCCSubMode(SubMode))
                 montageInstance = animInstance->GetActiveInstanceForMontage((CCLOBAnims[static_cast<ELossOfBalanceCCSubState>(SubMode)]));
+        }
         else
             montageInstance = animInstance->GetActiveInstanceForMontage((CCAnims[Source]));
         if (montageInstance)
@@ -330,7 +332,7 @@ int FCCStateManager::GetHighestPriorityCC(int bitmask)
     _BitScanReverse(&index, bitmask);
     return index;
 #else
-    return ffs(bitmask);
+    return ffs(bitmask)-1;
 #endif
 }
 

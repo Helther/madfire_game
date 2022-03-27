@@ -136,6 +136,7 @@ public:
     FORCEINLINE bool IsBlockButtonPressed() const { return BlockPressed; }
     void ResetRotationRate();
 
+    void UseAimComponent(class UAbilityAimComponent *);
 
     // current active directions for special moves
     UPROPERTY(BlueprintReadOnly)

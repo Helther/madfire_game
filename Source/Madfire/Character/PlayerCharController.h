@@ -43,7 +43,6 @@ enum class EPawnGameplayState
     MAX    //dlc stuff
 };
 
-
 UCLASS()
 class MADFIRE_API APlayerCharController : public APlayerController
 {

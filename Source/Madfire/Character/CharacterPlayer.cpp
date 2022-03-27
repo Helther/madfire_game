@@ -3,6 +3,7 @@
 #include "PlayerCharController.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "AbilitySystem/AbilityComponents/AbilityAimComponent.h"
 
 ACharacterPlayer::ACharacterPlayer(const FObjectInitializer &ObjectInitializer)
   : Super(ObjectInitializer)
@@ -46,5 +47,12 @@ void ACharacterPlayer::OnWalkingOffLedge_Implementation(
         Logger.Log(this,*FString::Printf(TEXT("climb down")));
         GetMovementComponent()->ClimbDownWall();
     }
+}
+
+void ACharacterPlayer::UseAimComponent(UAbilityAimComponent *AimComp)
+{
+    if(!AimComp) return;
+
+    AimComp->ActivateComponent();
 }
 

@@ -77,7 +77,7 @@ struct FObjectLogger
         return FString();
     }
     /* 
-    for constructing string literal Message analogous with UE_LOG 
+      for constructing string literal Message analogous with UE_LOG
       use *FString::Printf(TEXT("Your text format"),...Args)
       like so: Log(this, *FString::Printf(TEXT("skill val %d"), number));
     */

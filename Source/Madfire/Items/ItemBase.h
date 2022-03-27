@@ -28,6 +28,10 @@ public:
     uint8 GetInteractableFlags_Implementation() const;
 
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interactable Interface")
+    FText GetInteractableName() const;
+    FText GetInteractableName_Implementation() const;
+
+    UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interactable Interface")
     bool OnBeginFocus();
     bool OnBeginFocus_Implementation();
 
@@ -36,7 +40,7 @@ public:
     bool OnEndFocus_Implementation();
 
 protected:
-    UPROPERTY(BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EItemFlags"), Category = "Interactable Interface")
+    UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "EInteractType"), Category = "Interactable Interface")
     uint8 InteractFlags;
 
 
@@ -51,6 +55,9 @@ public:
     //Item Info
     //UPROPERTY(BlueprintReadOnly, Category = "Item Info")
     //EItemType
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    UTexture2D *ItemIcon;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EItemFlags"), Category = "Item Info")
     uint8 ItemFlags;
@@ -97,6 +104,10 @@ public:
     uint8 GetInteractableFlags_Implementation() const;
 
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interactable Interface")
+    FText GetInteractableName() const;
+    FText GetInteractableName_Implementation() const;
+
+    UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interactable Interface")
     bool OnBeginFocus();
     bool OnBeginFocus_Implementation();
 
@@ -121,7 +132,7 @@ public:
     UItem *ItemBase = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
-    UStaticMeshComponent *ItemMesh;
+    UMeshComponent *ItemMesh;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
     UBoxComponent *ItemCollision;

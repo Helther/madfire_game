@@ -7,6 +7,8 @@
 #include "GameFramework/PlayerInput.h"
 #include "Kismet/KismetMathLibrary.h"
 
+#include "Character/CharacterPlayer.h"
+
 const FName FInputKeyNames::MoveForward   = "MoveForward";
 const FName FInputKeyNames::MoveRight     = "MoveRight";
 const FName FInputKeyNames::Run           = "Run";
@@ -100,49 +102,49 @@ void APlayerCharController::SetupInputComponent()
     if (InputComponent)
     {
         InputComponent->BindAction(
-          FInputKeyNames::Run, IE_Pressed, this, &APlayerCharController::RunAction);
+          FInputKeyNames::Run, IE_Pressed, this, &APlayerCharController::RunAction).bConsumeInput = false;
         InputComponent->BindAction(
-          FInputKeyNames::Sprint, IE_Pressed, this, &APlayerCharController::SprintAction);
+          FInputKeyNames::Sprint, IE_Pressed, this, &APlayerCharController::SprintAction).bConsumeInput = false;
         InputComponent->BindAction(FInputKeyNames::Sprint,
                                    IE_Released,
                                    this,
-                                   &APlayerCharController::UnSprintAction);
+                                   &APlayerCharController::UnSprintAction).bConsumeInput = false;
         InputComponent->BindAction(
-          FInputKeyNames::Crouch, IE_Pressed, this, &APlayerCharController::CrouchAction);
+          FInputKeyNames::Crouch, IE_Pressed, this, &APlayerCharController::CrouchAction).bConsumeInput = false;
         InputComponent->BindAction(
-          FInputKeyNames::Jump, IE_Pressed, this, &APlayerCharController::JumpAction);
+          FInputKeyNames::Jump, IE_Pressed, this, &APlayerCharController::JumpAction).bConsumeInput = false;
         InputComponent->BindAction(
-          FInputKeyNames::Jump, IE_Released, this, &APlayerCharController::UnJumpAction);
+          FInputKeyNames::Jump, IE_Released, this, &APlayerCharController::UnJumpAction).bConsumeInput = false;
         InputComponent->BindAction(
-          FInputKeyNames::Dodge, IE_Pressed, this, &APlayerCharController::DodgeAction);
+          FInputKeyNames::Dodge, IE_Pressed, this, &APlayerCharController::DodgeAction).bConsumeInput = false;
         InputComponent->BindAxis(
-          FInputKeyNames::MoveForward, this, &APlayerCharController::MoveForward);
+          FInputKeyNames::MoveForward, this, &APlayerCharController::MoveForward).bConsumeInput = false;
         InputComponent->BindAxis(
-          FInputKeyNames::MoveRight, this, &APlayerCharController::MoveRight);
+          FInputKeyNames::MoveRight, this, &APlayerCharController::MoveRight).bConsumeInput = false;
         InputComponent->BindAxis(
-          FInputKeyNames::CameraPitch, this, &APlayerCharController::CameraPitch);
+          FInputKeyNames::CameraPitch, this, &APlayerCharController::CameraPitch).bConsumeInput = false;
         InputComponent->BindAxis(
-          FInputKeyNames::CameraYaw, this, &APlayerCharController::CameraYaw);
+          FInputKeyNames::CameraYaw, this, &APlayerCharController::CameraYaw).bConsumeInput = false;
         InputComponent->BindAction(
-            FInputKeyNames::Attack, IE_Pressed, this, &APlayerCharController::AttackOnAction);
+            FInputKeyNames::Attack, IE_Pressed, this, &APlayerCharController::AttackOnAction).bConsumeInput = false;
         InputComponent->BindAction(
-            FInputKeyNames::Attack, IE_Released, this, &APlayerCharController::AttackOffAction);
+            FInputKeyNames::Attack, IE_Released, this, &APlayerCharController::AttackOffAction).bConsumeInput = false;
         InputComponent->BindAction(
-            FInputKeyNames::Block, IE_Pressed, this, &APlayerCharController::BlockOnAction);
+            FInputKeyNames::Block, IE_Pressed, this, &APlayerCharController::BlockOnAction).bConsumeInput = false;
         InputComponent->BindAction(
-            FInputKeyNames::Block, IE_Released, this, &APlayerCharController::BlockOffAction);
+            FInputKeyNames::Block, IE_Released, this, &APlayerCharController::BlockOffAction).bConsumeInput = false;
         InputComponent->BindAction(
-            FInputKeyNames::DrawWeapon, IE_Pressed, this, &APlayerCharController::WeaponAction);
+            FInputKeyNames::DrawWeapon, IE_Pressed, this, &APlayerCharController::WeaponAction).bConsumeInput = false;
         InputComponent->BindAction(
-            FInputKeyNames::UseAbility, IE_Pressed, this, &APlayerCharController::AbilityOn);
+            FInputKeyNames::UseAbility, IE_Pressed, this, &APlayerCharController::AbilityOn).bConsumeInput = false;
         InputComponent->BindAction(
-            FInputKeyNames::UseAbility, IE_Released, this, &APlayerCharController::AilityOff);
+            FInputKeyNames::UseAbility, IE_Released, this, &APlayerCharController::AilityOff).bConsumeInput = false;
         InputComponent->BindAction(
-            FInputKeyNames::CameraIn, IE_Pressed, this, &APlayerCharController::CameraDistanceIn);
+            FInputKeyNames::CameraIn, IE_Pressed, this, &APlayerCharController::CameraDistanceIn).bConsumeInput = false;
         InputComponent->BindAction(
-            FInputKeyNames::CameraOut, IE_Pressed, this, &APlayerCharController::CameraDistanceOut);
+            FInputKeyNames::CameraOut, IE_Pressed, this, &APlayerCharController::CameraDistanceOut).bConsumeInput = false;
         InputComponent->BindAction(
-            FInputKeyNames::Interact, IE_Pressed, this, &APlayerCharController::InteractAction);
+            FInputKeyNames::Interact, IE_Pressed, this, &APlayerCharController::InteractAction).bConsumeInput = false;
     }
 }
 
@@ -678,7 +680,7 @@ void APlayerCharController::InteractAction()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            Player->OnInteract();
+            //Player->OnInteract(EGameplayReturnState::InWorld);
         }
     }
 }

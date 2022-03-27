@@ -17,6 +17,7 @@ bool UItem::OnInteract_Implementation(EInteractType EInteractType, ACharacter *c
 }
 
 uint8 UItem::GetInteractableFlags_Implementation() const { return InteractFlags; }
+FText UItem::GetInteractableName_Implementation() const { return ItemName; }
 
 bool UItem::OnBeginFocus_Implementation() { return true; }
 
@@ -59,6 +60,13 @@ uint8 AItemActor::GetInteractableFlags_Implementation() const
     if (IsValid(ItemBase))
         return ItemBase->GetInteractableFlags_Implementation() | (uint8)EInteractType::Pickup;
     return 0;
+}
+
+FText AItemActor::GetInteractableName_Implementation() const
+{
+    if (IsValid(ItemBase))
+        return ItemBase->GetInteractableName_Implementation();
+    return FText();
 }
 
 bool AItemActor::OnBeginFocus_Implementation() { return true; }

@@ -1,11 +1,36 @@
 ﻿#pragma once
 
 #include "CharacterCreature.h"
-
+#include "CoreMinimal.h"
 #include "CharacterPlayer.generated.h"
 
 class UCameraComponent;
 class USpringArmComponent;
+
+
+UENUM(BlueprintType)
+enum class EGameplayReturnState : uint8
+{
+    InWorld,
+    InTrade,
+    InDialogue,
+    InInventory,
+    InMenu,
+    InContextMenu,
+    InMountMode,
+
+    MAX  //UMETA(Hidden)
+};
+
+UENUM(BlueprintType)
+enum class EKeyState : uint8
+{
+    Pressed,
+    Released
+};
+
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCharacterInput, EGameplayReturnState, ReturnState, EKeyState, KeyState);
 
 /**
  * 
@@ -23,8 +48,8 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character Animation")
     void animTest(UAnimMontage* AnimMontage) {StartAnimation(AnimMontage, FOnMontageBlendingOutStarted(),1); }
 
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Interact")
-    void OnInteract();
+    UFUNCTION(BlueprintImplementableEvent, Category = "Interact", Meta = (ExpandEnumAsExecs = "Branches"))
+    void OnInteract(EGameplayReturnState Branches, EKeyState KeyState);
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
 	UCameraComponent* CameraComponent;
@@ -39,6 +64,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
     float CameraZoomStep;
 
+
+    void UseAimComponent(class UAbilityAimComponent *) override;
+
+
 protected:
     // Called to bind functionality to input
     virtual void SetupPlayerInputComponent(class UInputComponent *PlayerInputComponent) override;
@@ -48,5 +77,6 @@ protected:
                                        const FVector &PreviousLocation,
                                        float TimeDelta) override;
 
-    float CameraDistanceDefault;
+    float CameraDistanceDefault;    
+
 };

@@ -15,7 +15,7 @@ struct FInventorySlot
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory Slot")
-    uint8 Count = 0;
+    int32 Count = 0;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory Slot")
     UItem *Item = nullptr;
 };
@@ -61,7 +61,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Inventory Component")
     bool GetEmptySlot(FInventorySlot &outSlot, int32 &foundIndex);
 
-
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
     bool InitializeInventory(int32 SlotsCount);
 
@@ -88,6 +87,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory Component")
     float CurrentWeight;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory Component")
+    TArray<FInventorySlot> Inventory;
 		
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
     void Update();
@@ -98,9 +100,13 @@ public:
     void UnSetUpdate() { IsDirty = false; }
 	UFUNCTION(BlueprintCallable, Category = "Component Update")
     bool IsUpdateNeeded() { return IsDirty; }
+
+    UFUNCTION(BlueprintCallable, Category = "Inventory Component")
+    bool DropItem(int32 index, int32 amount);
+
     // clang-format on
 private:
-    TArray<FInventorySlot> Inventory;
+
 
     static float WeightOfSlot(FInventorySlot &Slot);
 

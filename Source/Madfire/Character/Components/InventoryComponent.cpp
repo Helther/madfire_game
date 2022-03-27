@@ -225,26 +225,31 @@ bool UInventoryComponent::SwapStacks(int32 indexA, int32 indexB)
     return true;
 }
 
-
 bool UInventoryComponent::AddToInventory(UItem *Item, int32 amount, bool addNewStack)
 {
     bool result;
     int32 foundStack = -1;
 
     if (amount <= 0 || Item == nullptr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Add empty item"));
         return false;
+    }
 
     const int32 stackSize = Item->MaxCount;
 
     if (!addNewStack)
-    {
+    {        
         FInventorySlot slot;
         result = GetStackByClass(Item->GetClass(), slot, foundStack);
 
         if (result)    //if inventory already contain item of that class
         {
+            UE_LOG(LogTemp, Display, TEXT("Found item"));
             if (stackSize < slot.Count + amount)    // if not enough space in slot
             {
+                UE_LOG(LogTemp, Display, TEXT("Not enough space in slot"));
+
                 int32 Remainder             = Item->MaxCount - slot.Count;
                 Remainder                   = amount - Remainder;
                 Inventory[foundStack].Count = stackSize;
@@ -256,14 +261,19 @@ bool UInventoryComponent::AddToInventory(UItem *Item, int32 amount, bool addNewS
             }
             else    //if we have enough space in slot
             {
+                UE_LOG(LogTemp, Display, TEXT("Add item to founded slot"));
+
                 Inventory[foundStack].Count += amount;
                 return true;
             }
         }
         else    // if not we create new stack
         {
+            UE_LOG(LogTemp, Display, TEXT("Not Found item"));
             if (amount > stackSize)    //if we have more item then slot can contain
             {
+                UE_LOG(LogTemp, Display, TEXT("Not enough space in one slot"));
+
                 const int32 freeSlots = GetFreeInventorySlotsCount();
 
                 if (StacksFromAmount(stackSize, amount))
@@ -287,22 +297,26 @@ bool UInventoryComponent::AddToInventory(UItem *Item, int32 amount, bool addNewS
                 return true;
             }
             else    //otherwise
-            {
-                FInventorySlot itemSlot;
-                result = GetStackByClass(Item->GetClass(), itemSlot, foundStack, true);
+            {                
+                UE_LOG(LogTemp, Display, TEXT("Need to Add new stack"));
+                //FInventorySlot itemSlot;
+                //result = GetStackByClass(Item->GetClass(), itemSlot, foundStack, true);
 
-                if (!result)
-                    return false;
+                //if (!result)
+                {
+                    //return false;
+                }
 
-                Inventory[foundStack].Count = amount;
-                Inventory[foundStack].Item  = Item;
+                //Inventory[foundStack].Count = amount;
+                //Inventory[foundStack].Item  = Item;
 
-                return true;
+                return AddToInventory(Item, amount, true);
             }
         }
     }
     else    //if add new stack
     {
+        UE_LOG(LogTemp, Display, TEXT("Add new stack"));
         int32 freeSlots = GetFreeInventorySlotsCount();
 
         if (StacksFromAmount(stackSize, amount) > freeSlots)
@@ -396,4 +410,30 @@ void UInventoryComponent::CalculateWeight()
     CurrentWeight = 0;
     for (auto &slot : Inventory)
         CurrentWeight += WeightOfSlot(slot);
+}
+
+bool UInventoryComponent::DropItem(int32 index, int32 amount)
+{
+    auto owner = GetOwner();
+    check(owner != nullptr && "UInventoryComponent: No owner");
+
+    auto &slot = GetSlotByIndex(index);
+
+    if(!slot.Item)
+    {
+        //TODO: Print Something
+        return false;
+    }
+    slot.Count -= amount;
+    auto item = slot.Item;
+    if(slot.Count <= 0)
+    {
+        slot.Count = 0;
+        slot.Item = nullptr;
+    }
+
+    AItemActor *actor = Cast<AItemActor>(GetWorld()->SpawnActor(item->ItemActor,&owner->GetTransform()));
+    actor->ItemBase = item;
+
+    return true;
 }
