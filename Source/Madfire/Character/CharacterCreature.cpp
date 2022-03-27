@@ -14,6 +14,8 @@ ACharacterCreature::ACharacterCreature(const FObjectInitializer &ObjectInitializ
     CCInterruptDelegates.Emplace(ECCState::Stun, &ACharacterCreature::CCStunEnded);
     CCInterruptDelegates.Emplace(ECCState::KnockDown, &ACharacterCreature::CCKnockDownEnded);
     // TODO add other callbacks
+    EquipmentComponent->EquipmentSlotUpdated.AddDynamic(CombatComponent, &UCombatComponent::OnEquipmentUpdate);
+    EquipmentComponent->EquipmentSwaped.AddDynamic(CombatComponent, &UCombatComponent::OnEquipmentSwap);
     KnockDownBaseTime = 5.f;
     KnockDownModBase = 0.1f;
     KnockDownWeightModBase = 1.f;

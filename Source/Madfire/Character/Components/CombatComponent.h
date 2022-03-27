@@ -11,23 +11,6 @@
 // use it to bind callbacks from related component to link them
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCombatStateChanged, int, OldState, int, NewState);
 
-// Used for anims with loop sections
-struct FAnimSectionNames
-{
-    static const FName Start;
-    static const FName End;
-    static const FName Loop;
-    static const FName Cancel;
-};
-
-struct FWeaponSlotNames
-{
-    static const FName Main;
-    static const FName Off;
-    static const FName SheathMain;
-    static const FName SheathOff;
-    static const FName Back;
-};
 
 enum ECombatState
 {
@@ -81,6 +64,8 @@ struct CombatStateInfo : public StateInfoBase
 private:
     uint16 AnimInfo = 0u;
 };
+
+class UEquipmentComponent;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class MADFIRE_API UCombatComponent : public UActorComponent
@@ -137,6 +122,12 @@ public:
     void ResetRotationRate();
 
     void UseAimComponent(class UAbilityAimComponent *);
+    
+    UFUNCTION()
+    void OnEquipmentUpdate(UEquipmentComponent* Component, EItemSlot Slot);
+
+    UFUNCTION()
+    void OnEquipmentSwap(UEquipmentComponent* Component, EItemSlot SlotL, EItemSlot SlotR);
 
     // current active directions for special moves
     UPROPERTY(BlueprintReadOnly)

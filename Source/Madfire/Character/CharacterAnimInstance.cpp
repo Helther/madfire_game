@@ -2,6 +2,25 @@
 
 #include "Character/CharacterCreature.h"
 
+const FName FAnimSectionNames::Start = "Start";
+const FName FAnimSectionNames::End = "End";
+const FName FAnimSectionNames::Loop = "Loop";
+const FName FAnimSectionNames::Cancel = "Cancel";
+
+const FName FEquipmentSlotNames::WeaponMain = "S_WeaponMain";
+const FName FEquipmentSlotNames::WeaponOff = "S_WeaponOff";
+const FName FEquipmentSlotNames::SheathMain = "S_WeaponSheathMain";
+const FName FEquipmentSlotNames::SheathOff = "S_WeaponSheathOff";
+const FName FEquipmentSlotNames::SheathBack = "S_WeaponSheathBack";
+const FName FEquipmentSlotNames::Ammo = "S_Ammo";
+const FName FEquipmentSlotNames::Head = "S_EquipHead";
+const FName FEquipmentSlotNames::Chest = "S_EquipChest";
+const FName FEquipmentSlotNames::Leg = "S_EquipLeg";
+const FName FEquipmentSlotNames::Neck = "S_EquipNeck";
+const FName FEquipmentSlotNames::RingLeft = "S_EquipRingLeft";
+const FName FEquipmentSlotNames::RingRight = "S_EquiRingRight";
+
+
 void UCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
     CharacterInstance = Cast<ACharacterCreature>(GetOwningActor());

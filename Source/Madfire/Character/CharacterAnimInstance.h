@@ -6,6 +6,31 @@
 #include "CharacterAnimInstance.generated.h"
 
 
+// Used for anims with loop sections
+struct FAnimSectionNames
+{
+    static const FName Start;
+    static const FName End;
+    static const FName Loop;
+    static const FName Cancel;
+};
+
+struct FEquipmentSlotNames
+{
+    static const FName WeaponMain;
+    static const FName WeaponOff;
+    static const FName SheathMain;
+    static const FName SheathOff;
+    static const FName SheathBack;
+    static const FName Ammo;
+    static const FName Head;
+    static const FName Chest;
+    static const FName Leg;
+    static const FName Neck;
+    static const FName RingLeft;
+    static const FName RingRight;
+};
+
 
 UCLASS()
 class MADFIRE_API UCharacterAnimInstance : public UCharacterAnimInstanceBase
