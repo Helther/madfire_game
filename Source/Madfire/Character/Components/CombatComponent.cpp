@@ -15,12 +15,14 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitili
     BlockStaminaRegenRateMod = 0.5f;
     CombatModeRotationRate = 500.f;
     ActionRotationRate = 100.f;
-    ChargeStartTime = 0.2f;
+    ChargeStartTime = 0.3f;
     BlockStaminaCost = 10.f;
     KnockdownThreshhold = 1.5f;
     ChamberThreshhold = 1.3f;
     MaxFacingAngle = 45.f;
     // end temp
+
+    AbilityPanel.SetNum(10);
 
     RangedWeaponTypes.Emplace(EWeaponType::Crossbow);
     RangedWeaponTypes.Emplace(EWeaponType::Longbow);
@@ -191,7 +193,7 @@ void UCombatComponent::InitCombatFSM()
     {
         bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;
         bool globalCool = GetWorld()->GetTimerManager().IsTimerActive(GlobalCooldownTimer);
-        return AbilityPressed && hasStamina && CurrentAbility != nullptr && !CurrentAbility->bIsCooldown && !globalCool;
+        return AbilityPressed && hasStamina && CurrentAbility.IsValid() && !CurrentAbility->bIsCooldown && !globalCool;
     });
     CombatFSM.addLink(ECombatState::Idle, ECombatState::Ability, req);
     req.Unbind();
@@ -602,7 +604,7 @@ void UCombatComponent::SetupDefaultWeapon(bool IsMainHand, bool Equip)
             IsMainHand ? CurrentWeaponMainH = defaultWeapon : CurrentWeaponOffH = defaultWeapon;
             auto actor = Cast<AItemActor>(GetWorld()->SpawnActor(defaultWeapon->ItemActor));
             IsMainHand ? CurrentMainWeaponActor = actor : CurrentOffWeaponActor = actor;
-            UInventoryComponent::SetupItemActorCollision(actor, false);
+            ACharacterBase::SetupItemActorCollision(actor, false);
             WeaponSetup(defaultWeapon, actor, IsWeaponDrawn, IsMainHand);
         }
         else

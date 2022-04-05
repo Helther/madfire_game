@@ -5,7 +5,6 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TraceFunctional/TraceFunctional.h"
 #include "../../Attributes/Damage.h"
-
 #include "MovementComponentBase.generated.h"
 
 // bind these from related component to link them

@@ -135,9 +135,9 @@ bool UInventoryComponent::GetStackByClass(UClass *ItemClass, FInventorySlot &out
     return false;
 }
 
-bool UInventoryComponent::GetEmptySlot(FInventorySlot &outSlot, int32 &foundIndex)
+bool UInventoryComponent::GetEmptySlot(FInventorySlot &outSlot, int32 &foundIndex) const
 {
-    for (auto Iterator(Inventory.CreateIterator()); Iterator; ++Iterator)
+    for (auto Iterator(Inventory.CreateConstIterator()); Iterator; ++Iterator)
     {
         if (Iterator->Item == nullptr)
         {
@@ -399,13 +399,7 @@ bool UInventoryComponent::RemoveFromStack(int32 index, int32 amount,
     }
 }
 
-void UInventoryComponent::SetupItemActorCollision(AItemActor* InActor, bool Enable)
-{
-    InActor->ItemMesh->SetSimulatePhysics(Enable);
-    InActor->ItemMesh->SetCollisionEnabled(Enable ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::QueryOnly);
-    InActor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
-    InActor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
-}
+
 
 void UInventoryComponent::Update()
 {
@@ -421,29 +415,36 @@ void UInventoryComponent::CalculateWeight()
         CurrentWeight += WeightOfSlot(slot);
 }
 
-bool UInventoryComponent::DropItem(int32 index, int32 amount)
+bool UInventoryComponent::DropItem(int32 index, int32 amount, FTransform transform)
 {
-    auto owner = GetOwner();
+    auto owner = Cast<ACharacterBase>(GetOwner());
     check(owner != nullptr && "UInventoryComponent: No owner");
 
     auto &slot = GetSlotByIndex(index);
 
-    if (!slot.Item)
+    if (!IsValid(slot.Item))
     {
         UE_LOG(LogTemp, Display, TEXT("No item to drop"));
         return false;
     }
+
     slot.Count -= amount;
     auto item = slot.Item;
+
     if (slot.Count <= 0)
     {
         slot.Count = 0;
         slot.Item = nullptr;
     }
 
-    AItemActor *actor = Cast<AItemActor>(GetWorld()->SpawnActor(item->ItemActor, &owner->GetTransform()));
-    SetupItemActorCollision(actor, true);
-    actor->ItemBase = item;
+    owner->DropItem(item,amount,transform);
 
     return true;
+}
+
+bool UInventoryComponent::IsFull() const
+{
+    FInventorySlot slot;
+    int id;
+    return !GetEmptySlot(slot,id);
 }

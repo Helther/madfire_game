@@ -21,6 +21,10 @@ public:
 
     void OnComponentCreated() override;
 
+    UFUNCTION(BlueprintPure, Category = "Interact Helpers")
+    static TArray<EInteractType> InteractList(uint8 interactFlags);
+
+
 protected:
     // Called when the game starts
     virtual void BeginPlay() override;

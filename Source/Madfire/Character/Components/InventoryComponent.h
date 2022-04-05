@@ -22,16 +22,15 @@ struct FInventorySlot
 
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class MADFIRE_API UInventoryComponent : public UActorComponent
+class UInventoryComponent : public UActorComponent
 {
     GENERATED_BODY()
 
 public:
-    // Sets default values for this component's properties
     UInventoryComponent();
     void OnComponentCreated() override;
-    // clang-format off
-	//Slots helper
+
+
 	UFUNCTION(BlueprintPure, Category = "Inventory Slot")
     static bool SlotIsEmpty(UPARAM(ref) FInventorySlot &slot) { return slot.Item == nullptr; }
 
@@ -59,7 +58,7 @@ public:
     bool GetStackByClass(UClass *itemClass, FInventorySlot &outSlot, int32 &foundIndex, bool returnFullStacks = false);
 
 	UFUNCTION(BlueprintPure, Category = "Inventory Component")
-    bool GetEmptySlot(FInventorySlot &outSlot, int32 &foundIndex);
+    bool GetEmptySlot(FInventorySlot &outSlot, int32 &foundIndex) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
     bool InitializeInventory(int32 SlotsCount);
@@ -85,8 +84,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
     bool RemoveFromStack(int32 index, int32 amount, bool removeWholeStack);
 
-    UFUNCTION(BlueprintCallable, Category = "Inventory Component")
-    static void SetupItemActorCollision(AItemActor* InActor, bool Enable);
+    UFUNCTION(BlueprintPure, Category = "Inventory Component")
+    bool IsFull() const;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory Component")
     float CurrentWeight;
@@ -105,12 +104,9 @@ public:
     bool IsUpdateNeeded() { return IsDirty; }
 
     UFUNCTION(BlueprintCallable, Category = "Inventory Component")
-    bool DropItem(int32 index, int32 amount);
+    bool DropItem(int32 index, int32 amount, FTransform transform);
 
-    // clang-format on
 private:
-
-
     static float WeightOfSlot(FInventorySlot &Slot);
 
     void CalculateWeight();

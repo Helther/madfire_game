@@ -8,20 +8,16 @@
 #include "Rules/GameRules.h"
 #include "ItemBase.generated.h"
 
-
-
 UCLASS(config = Game, EditInlineNew, BlueprintType, Blueprintable)
 class UItem : public UObject, public IInteractableInterface
 {
     GENERATED_BODY()
 
 public:
-    UItem(const class FObjectInitializer &ObjectInititalizer);
-
     //Interaction Interface
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interactable Interface")
-    bool OnInteract(EInteractType EInteractType, ACharacter *controller);
-    bool OnInteract_Implementation(EInteractType EInteractType, ACharacter *controller);
+    bool OnInteract(EInteractType InteractType, ACharacter *controller);
+    bool OnInteract_Implementation(EInteractType InteractType, ACharacter *controller);
 
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interactable Interface")
     uint8 GetInteractableFlags() const;
@@ -39,54 +35,45 @@ public:
     bool OnEndFocus();
     bool OnEndFocus_Implementation();
 
-protected:
+    //Item Interaction
     UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "EInteractType"), Category = "Interactable Interface")
     uint8 InteractFlags;
 
 
-    //Item
 public:
-    virtual void TakeDamage(float, const struct FDamageEvent &, class AActor *EventInstigator);
+    UItem(const class FObjectInitializer &ObjectInititalizer);
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
-    TSubclassOf<class AItemActor> ItemActor;
-
-
-    //Item Info
-    //UPROPERTY(BlueprintReadOnly, Category = "Item Info")
-    //EItemType
+    UFUNCTION(BlueprintImplementableEvent, Category = "Item interface")
+    void TakeDamage(float DamageValue, const FDamageEvent &Event, AActor *DamageCauser);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
     UTexture2D *ItemIcon;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EItemFlags"), Category = "Item Info")
-    uint8 ItemFlags;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
-    float MaxDurability = 0;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
-    float CurrentDurability = 0;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
-    float Weight = 0;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
-    uint8 MaxCount = 1;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
-    int32 Cost;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
     FText ItemName;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
     FText ItemDescription;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    float MaxDurability = 0;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    float CurrentDurability = 0;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    float Weight = 0;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    uint8 MaxCount = 1;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    int32 Cost;    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EItemFlags"), Category = "Item Info")
+    uint8 ItemFlags;
 
-    //UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ItemStructure")
-    //TArray<Effect> bla bla bla... ///Stupid comment about item's effects
-
-private:
+    //Item spawn parameters
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    TSubclassOf<class AItemActor> ItemActor;
 };
 
 
 class UBoxComponent;
+
+//TODO: Basic Interract
 
 UCLASS(BlueprintType, Blueprintable)
 class AItemActor : public AActor, public IInteractableInterface
@@ -96,8 +83,8 @@ class AItemActor : public AActor, public IInteractableInterface
 public:
     //Interaction Interface
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interactable Interface")
-    bool OnInteract(EInteractType EInteractType, ACharacter *controller);
-    bool OnInteract_Implementation(EInteractType EInteractType, ACharacter *controller);
+    bool OnInteract(EInteractType InteractType, ACharacter *controller);
+    bool OnInteract_Implementation(EInteractType InteractType, ACharacter *controller);
 
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interactable Interface")
     uint8 GetInteractableFlags() const;
@@ -120,7 +107,7 @@ public:
     AItemActor();
 
     virtual void OnConstruction(const FTransform &Transform) override;
-
+    float TakeDamage(float DamageAmount, const FDamageEvent &DamageEvent, AController *EventInstigator, AActor *DamageCauser) override;
 protected:
     // Called when the game starts or when spawned
     virtual void BeginPlay() override;

@@ -5,6 +5,7 @@
 #include "GameFramework/Character.h"
 #include "Components/AttributesComponent.h"
 #include "Components/EffectComponent.h"
+#include "Items/ItemBase.h"
 #include "Utils/ObjectLogger.h"
 
 #include "CharacterBase.generated.h"
@@ -41,6 +42,11 @@ public:
     UEffectComponent *EffectComponent;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
 	UPawnNoiseEmitterComponent* NoiseEmitterComponent;
+    UFUNCTION(BlueprintCallable, Category = "Character Function")
+    void DropItem(UItem *item, int32 amount, FTransform transform);
+
+    UFUNCTION(BlueprintCallable, Category = "Character Function")
+    static void SetupItemActorCollision(AItemActor* InActor, bool Enable);
 
     virtual void UseAimComponent(class UAbilityAimComponent *) {}
 

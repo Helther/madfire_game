@@ -124,3 +124,17 @@ void UPlayerInteractComponent::CheckForInteractable()
     }
     
 }
+
+TArray<EInteractType> UPlayerInteractComponent::InteractList(uint8 interactFlags)
+{
+    TArray<EInteractType> result;
+    int counter = 0;
+    //TODO: It
+    for(uint8 flag = 1; flag < static_cast<uint8>(EInteractType::MAX); flag <<= 1)
+    {
+        if((interactFlags & flag) != 0)
+            result.Add(static_cast<EInteractType>(flag));
+        if(counter++ > 7) break;
+    }
+    return result;
+}

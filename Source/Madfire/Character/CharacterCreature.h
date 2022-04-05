@@ -112,6 +112,9 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character")
     void DoLevelUp(const FCharacterLevelInfo &levelInfo);
 
+    UFUNCTION(BlueprintCallable, Category = "Character")
+    bool PickupItem(AItemActor *ItemActor);
+
     // TODO уточнить при балансировке
     FORCEINLINE float CalculateMaxWeight() const
     { return MaxWeightBase + MaxWeightModBase * UAttributeSetHelper::GetModifier(AttributeComponent->Attributes, EAttributes::Str); }
