@@ -1,4 +1,6 @@
 ﻿#include "CharacterBase.h"
+#include "Components/BoxComponent.h"
+#include "TraceFunctional/TraceDefines.h"
 #include "Components/PawnNoiseEmitterComponent.h"
 
 ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) : 
@@ -47,4 +49,13 @@ void ACharacterBase::BeginPlay()
     Update(FCharacterLevelInfo());
 }
 
-
+void ACharacterBase::DropItem(UItem *item, int32 amount, FTransform transform)
+{
+    AItemActor *actor = Cast<AItemActor>(GetWorld()->SpawnActor(item->ItemActor, &transform));
+    actor->ItemMesh->SetSimulatePhysics(true);
+    actor->ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    actor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+    actor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, ECollisionResponse::ECR_Block);
+    actor->ItemBase = item;
+    actor->StackCount = amount;
+}

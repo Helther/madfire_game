@@ -38,7 +38,7 @@ UEquipmentComponent::UEquipmentComponent(const FObjectInitializer &ObjectInitial
     Slot[(int32)EItemSlot::OffWeaponSlotSet2].SocketName = FEquipmentSlotNames::WeaponOff;
     Slot[(int32)EItemSlot::AmmoSlot].SocketName = FEquipmentSlotNames::Ammo;
 
-    Slot[(int32)EItemSlot::HeadSlot].ItemClass = TSubclassOf<UItemArmor>();
+    Slot[(int32)EItemSlot::HeadSlot].ItemClass = TSubclassOf<UItemHelmet>();
     Slot[(int32)EItemSlot::HeadSlot].SocketName = FEquipmentSlotNames::Head;
 }
 
@@ -89,6 +89,10 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
     EquipAttach(SlotName);
     EquipmentSlotUpdated.Broadcast(this, SlotName);
 
+    //TODO: Check One Weapon MainHand only
+
+
+
     return tmp;
 }
 
@@ -115,6 +119,23 @@ UItem *UEquipmentComponent::Unequip(EItemSlot SlotName)
     return tmp;
 }
 
+bool UEquipmentComponent::DropItem(EItemSlot SlotName, FTransform transform)
+{
+    auto owner = Cast<ACharacterBase>(GetOwner());
+    check(owner != nullptr && "UInventoryComponent: No owner");
+
+    auto item = Unequip(SlotName);
+
+    if(!IsValid(item))
+    {
+        UE_LOG(LogTemp, Display, TEXT("No item to drop"));
+        return false;
+    }
+
+    owner->DropItem(item,1,transform);
+    return true;
+}
+
 FEquipmentSlot &UEquipmentComponent::GetEquipmentFromSlot(EItemSlot SlotName)
 {
     return Slot[(int32)SlotName];
@@ -137,11 +158,6 @@ bool UEquipmentComponent::SwapItems(EItemSlot lhs, EItemSlot rhs)
     }
 
     return false;
-}
-
-void UEquipmentComponent::SwapWeapons()
-{
-    //
 }
 
 void UEquipmentComponent::CalculateWeight()

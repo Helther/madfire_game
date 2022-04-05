@@ -103,7 +103,8 @@ void UChannelAbility::AbilityEnd()
 {
     GetWorld()->GetTimerManager().ClearTimer(FuzeTimerHandle);
     StopAnimation();
-    StartCooldown();
+    if(!bIsCooldown)
+        StartCooldown();
     bIsActivated = false;
 }
 

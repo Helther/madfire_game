@@ -129,7 +129,8 @@ void UCastedAbility::Cancel()
 {
     bIsCasted = false;
     StopAnimation();
-    StartCooldown();
+    if(!bIsCooldown)
+        StartCooldown();
     Super::Cancel();
 }
 

@@ -244,12 +244,28 @@ void ACharacterCreature::DoLevelUp(const FCharacterLevelInfo &levelInfo)
     // todo other stuff (combat, ability manager)
 }
 
+bool ACharacterCreature::PickupItem(AItemActor *ItemActor)
+{
+    if(!IsValid(ItemActor)) return false;
+    if(!IsValid(ItemActor->ItemBase)) return false;
+
+    auto result = InventoryComponent->AddToInventory(ItemActor->ItemBase,ItemActor->StackCount);
+
+    if(result)
+    {
+        ItemActor->Destroy();
+    }
+
+    return result;
+}
+
 float ACharacterCreature::CalculateKnockDownTime() const
 {
     int skillVal = USkillHelper::GetValue(AttributeComponent->Skills, ESkill::Tumble);
     float weightMod = EquipmentComponent->CurrentWeight / MaxWeight;
     return KnockDownBaseTime - KnockDownModBase * skillVal - KnockDownWeightModBase * weightMod;
 }
+
 
 void ACharacterCreature::PostInitializeComponents()
 {

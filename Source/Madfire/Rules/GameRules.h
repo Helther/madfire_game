@@ -208,6 +208,12 @@
 
         AmmoSlot            UMETA(DisplayName = "Ammo Slot"),    //Ammo
         
+        QuickItem1          UMETA(DisplayName = "QuickItem1"),
+        QuickItem2          UMETA(DisplayName = "QuickItem2"),
+        QuickItem3          UMETA(DisplayName = "QuickItem3"),
+        QuickItem4          UMETA(DisplayName = "QuickItem4"),
+        QuickItem5          UMETA(DisplayName = "QuickItem5"),
+
         Max					UMETA(Hidden)
     };
 
@@ -216,7 +222,6 @@
     enum class EItemFlags : uint8    //!< Флаги предметов.
     {
         NONE        = 0,
-        Usable      = 1 UMETA(DisplayName = "Usable"),
         Consumable  = 2 UMETA(DisplayName = "Consumable"),
         Magical     = 4 UMETA(DisplayName = "Magical"),
         Cursed      = 8 UMETA(DisplayName = "Cursed"),

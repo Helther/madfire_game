@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "../../Items/ItemWeapon.h"
+#include "../../Items/ItemEquipment.h"
 #include "../../CombatSystem/CombatStance.h"
 #include "../../AbilitySystem/AbstractAbility.h"
 #include "Components/ActorComponent.h"
@@ -68,7 +68,7 @@ private:
 class UEquipmentComponent;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class MADFIRE_API UCombatComponent : public UActorComponent
+class UCombatComponent : public UActorComponent
 {
     GENERATED_BODY()
 
@@ -156,26 +156,6 @@ public:
     UItemWeapon *CurrentWeaponMainH = nullptr;
     UItemWeapon *CurrentWeaponOffH = nullptr;
 
-    //================================= Ability System ================================//
-    UFUNCTION(BlueprintCallable, Category = "Ability System")
-    void SetCurrentAbility(UAbstractAbility *Ability);
-
-    UFUNCTION(BlueprintCallable, Category = "Ability System")
-    void ActivateAbility();
-
-    UFUNCTION(BlueprintCallable, Category = "Ability System")
-    void ReleaseAbility();
-
-    UFUNCTION(BlueprintCallable, Category = "Ability System")
-    void AddAbility(UAbstractAbility *Ability);
-
-    UFUNCTION(BlueprintCallable, Category = "Ability System")
-    void RemoveAbility(UAbstractAbility *Ability);
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability System")
-    UAbstractAbility *CurrentAbility;
-
-
     float CalculateWeaponDamage(const UItemWeapon* weapon, float attackInfoDamageMod, float strMod);
     // для расчета возможности применения блока или паррирования
     static float GetAngleBetweenAttackerAndDefender(const AActor *Attacker, const  AActor *Defender);
@@ -189,6 +169,20 @@ public:
         { return FMath::Max(skillVal + strMod + shieldWeight, 1.f); } // TODO улучшить при балансировке
 
     static FName GetSlotFromWeaponType(EWeaponType type, bool draw, bool mainHand);
+
+    //================================= Ability System ================================//
+    UFUNCTION(BlueprintCallable, Category = "Ability System")
+    void SetCurrentAbility(UAbstractAbility *Ability);
+    UFUNCTION(BlueprintCallable, Category = "Ability System")
+    void ActivateAbility();
+    UFUNCTION(BlueprintCallable, Category = "Ability System")
+    void ReleaseAbility();
+    UFUNCTION(BlueprintCallable, Category = "Ability System")
+    void AddAbility(UAbstractAbility *Ability);
+    UFUNCTION(BlueprintCallable, Category = "Ability System")
+    void RemoveAbility(UAbstractAbility *Ability);
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability System")
+    TSoftObjectPtr<UAbstractAbility> CurrentAbility;
 
 protected:
     enum class EChamberRes
@@ -216,7 +210,7 @@ protected:
     bool IsInActionState() const;
     bool IsChamberValid(const AActor* HitActor, const UItemWeapon* ActiveWeapon) const;
     EChamberRes ResolveChamber(AActor* HitActor, const UItemWeapon* OwnerActiveWeapon);
-    void EnterChamberState(ACharacterCreature* Character);
+    void EnterChamberState(ACharacterCreature* InCharacter);
 
     // character orientation to movement speed while weapon is drawn
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -247,6 +241,7 @@ protected:
     bool IsWeaponDrawn;
 
     //================================= Ability System ================================//
+    //TODO: Update Delegate For Ability panel
     void CalculateMaxCastingSpeed(float SpeedModifier);
     // значение относительно нормы
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability System")
@@ -257,7 +252,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability System")
     float GlobalCooldownTime = 1;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability System")
-    TSet<UAbstractAbility*> AbilityList;
+    TArray<UAbstractAbility*> AbilityList;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability System")
+    TArray<TSoftObjectPtr<UAbstractAbility>> AbilityPanel;
 
     bool AbilityPressed = false;
     FTimerHandle GlobalCooldownTimer;

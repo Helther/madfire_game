@@ -22,6 +22,8 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitili
     MaxFacingAngle = 45.f;
     // end temp
 
+    AbilityPanel.SetNum(10);
+
     InitCombatFSM();
 }
 
@@ -192,7 +194,7 @@ void UCombatComponent::InitCombatFSM()
     {
         bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;
         bool globalCool = GetWorld()->GetTimerManager().IsTimerActive(GlobalCooldownTimer);
-        return AbilityPressed && hasStamina && CurrentAbility != nullptr && !CurrentAbility->bIsCooldown && !globalCool;
+        return AbilityPressed && hasStamina && CurrentAbility.IsValid() && !CurrentAbility->bIsCooldown && !globalCool;
     });
     CombatFSM.addLink(ECombatState::Idle, ECombatState::Ability, req);
     req.Unbind();
@@ -582,12 +584,12 @@ UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(AActor* HitActor,
     return state;
 }
 
-void UCombatComponent::EnterChamberState(ACharacterCreature* Character)
+void UCombatComponent::EnterChamberState(ACharacterCreature* InCharacter)
 {
-    Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ResetAnimInfo();
-    Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::CheckedForChamber, true);
-    Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
-    Character->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::Chamber);
+    InCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ResetAnimInfo();
+    InCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::CheckedForChamber, true);
+    InCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+    InCharacter->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::Chamber);
 }
 
 void UCombatComponent::OnEquipmentUpdate(UEquipmentComponent* Component, EItemSlot Slot)

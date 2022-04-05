@@ -86,6 +86,13 @@ public:
 
     int32 RegenBlocker = 0;
 
+    UFUNCTION(BlueprintCallable, Category = "Attribute")
+    void Reset()
+    {
+        CurrentValue = BonusValue + BaseValue;
+    }
+
+    //TODO: Move all implementation to .cpp
     void ClearRegenTimer()
     {
         GetTimerManager().ClearTimer(RegenTimer);

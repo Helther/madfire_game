@@ -5,3 +5,4 @@ UInteractableInterface::UInteractableInterface(
   const class FObjectInitializer &ObjectInitializer)
   : Super(ObjectInitializer)
 {}
+

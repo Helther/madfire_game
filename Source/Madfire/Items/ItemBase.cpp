@@ -3,15 +3,13 @@
 #include "ItemBase.h"
 #include "Components/BoxComponent.h"
 #include "../TraceFunctional/TraceDefines.h"
+#include "Character/CharacterCreature.h"
 
 UItem::UItem(const class FObjectInitializer &ObjectInititalizer)
   : Super(ObjectInititalizer)
 {}
 
-void UItem::TakeDamage(float, const struct FDamageEvent &, class AActor *EventInstigator)
-{}
-
-bool UItem::OnInteract_Implementation(EInteractType EInteractType, ACharacter *controller)
+bool UItem::OnInteract_Implementation(EInteractType InteractType, ACharacter *controller)
 {
     return true;
 }
@@ -50,23 +48,40 @@ void AItemActor::OnConstruction(const FTransform &Transform)
     Super::OnConstruction(Transform);
 }
 
-bool AItemActor::OnInteract_Implementation(EInteractType EInteractType, ACharacter *controller)
+float AItemActor::TakeDamage(float DamageAmount, const FDamageEvent &DamageEvent, AController *EventInstigator, AActor *DamageCauser)
 {
-    return true;
+    check(ItemBase != nullptr && "AItemActor: Item Base is invalid");
+    ItemBase->TakeDamage(DamageAmount,DamageEvent,DamageCauser);
+    return 0.f;
+}
+
+bool AItemActor::OnInteract_Implementation(EInteractType InteractType, ACharacter *controller)
+{
+    if(int(InteractType & EInteractType::Pickup) != 0)
+    {
+        auto Character = Cast<ACharacterCreature>(controller);
+        if(Character)
+        {
+            Character->PickupItem(this);
+        }
+        return false;
+    }
+    else
+    {
+        return ItemBase->OnInteract(InteractType,controller);
+    }
 }
 
 uint8 AItemActor::GetInteractableFlags_Implementation() const
 {
-    if (IsValid(ItemBase))
-        return ItemBase->GetInteractableFlags_Implementation() | (uint8)EInteractType::Pickup;
-    return 0;
+    check(ItemBase != nullptr && "AItemActor: Item Base is invalid");
+    return ItemBase->GetInteractableFlags() | (uint8)EInteractType::Pickup;
 }
 
 FText AItemActor::GetInteractableName_Implementation() const
 {
-    if (IsValid(ItemBase))
-        return ItemBase->GetInteractableName_Implementation();
-    return FText();
+    check(ItemBase != nullptr && "AItemActor: Item Base is invalid");
+    return ItemBase->GetInteractableName();
 }
 
 bool AItemActor::OnBeginFocus_Implementation() { return true; }

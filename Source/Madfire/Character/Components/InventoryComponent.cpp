@@ -135,9 +135,9 @@ bool UInventoryComponent::GetStackByClass(UClass *ItemClass, FInventorySlot &out
     return false;
 }
 
-bool UInventoryComponent::GetEmptySlot(FInventorySlot &outSlot, int32 &foundIndex)
+bool UInventoryComponent::GetEmptySlot(FInventorySlot &outSlot, int32 &foundIndex) const
 {
-    for (auto Iterator(Inventory.CreateIterator()); Iterator; ++Iterator)
+    for (auto Iterator(Inventory.CreateConstIterator()); Iterator; ++Iterator)
     {
         if (Iterator->Item == nullptr)
         {
@@ -413,32 +413,36 @@ void UInventoryComponent::CalculateWeight()
         CurrentWeight += WeightOfSlot(slot);
 }
 
-bool UInventoryComponent::DropItem(int32 index, int32 amount)
+bool UInventoryComponent::DropItem(int32 index, int32 amount, FTransform transform)
 {
-    auto owner = GetOwner();
+    auto owner = Cast<ACharacterBase>(GetOwner());
     check(owner != nullptr && "UInventoryComponent: No owner");
 
     auto &slot = GetSlotByIndex(index);
 
-    if (!slot.Item)
+    if (!IsValid(slot.Item))
     {
         UE_LOG(LogTemp, Display, TEXT("No item to drop"));
         return false;
     }
+
     slot.Count -= amount;
     auto item = slot.Item;
+
     if (slot.Count <= 0)
     {
         slot.Count = 0;
         slot.Item = nullptr;
     }
 
-    AItemActor *actor = Cast<AItemActor>(GetWorld()->SpawnActor(item->ItemActor, &owner->GetTransform()));
-    actor->ItemMesh->SetSimulatePhysics(true);
-    actor->ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-    actor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-    actor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, ECollisionResponse::ECR_Block);
-    actor->ItemBase = item;
+    owner->DropItem(item,amount,transform);
 
     return true;
+}
+
+bool UInventoryComponent::IsFull() const
+{
+    FInventorySlot slot;
+    int id;
+    return !GetEmptySlot(slot,id);
 }
