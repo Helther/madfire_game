@@ -77,7 +77,7 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
     check(itemActor != nullptr && "ItemActor is invalid");
     itemActor->ItemBase = Item;
     Item->ItemActor = itemActor->GetClass();
-    UInventoryComponent::SetupItemActorCollision(itemActor, false);
+    ACharacterBase::SetupItemActorCollision(itemActor, false);
 
     auto tmp = Unequip(SlotName);
 
