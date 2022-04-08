@@ -399,6 +399,14 @@ bool UInventoryComponent::RemoveFromStack(int32 index, int32 amount,
     }
 }
 
+void UInventoryComponent::SetupItemActorCollision(AItemActor* InActor, bool Enable)
+{
+    InActor->ItemMesh->SetSimulatePhysics(Enable);
+    InActor->ItemMesh->SetCollisionEnabled(Enable ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::QueryOnly);
+    InActor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
+    InActor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
+}
+
 void UInventoryComponent::Update()
 {
     // todo finish
@@ -434,10 +442,7 @@ bool UInventoryComponent::DropItem(int32 index, int32 amount)
     }
 
     AItemActor *actor = Cast<AItemActor>(GetWorld()->SpawnActor(item->ItemActor, &owner->GetTransform()));
-    actor->ItemMesh->SetSimulatePhysics(true);
-    actor->ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-    actor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-    actor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, ECollisionResponse::ECR_Block);
+    SetupItemActorCollision(actor, true);
     actor->ItemBase = item;
 
     return true;

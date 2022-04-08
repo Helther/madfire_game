@@ -65,15 +65,14 @@ float UAttributeComponent::TakeDamage(float DamageAmount, UDamageType *DamageTyp
         auto Type = PhysD->Type;
         DamageAmount -= DamageAbsorb.DamageMap[(int32)Type];
         DamageAmount = DamageAmount * (100 - DamageResistance.DamageMap[(int32)Type]) / 100;
-        Health->Consume(DamageAmount);
     }
     else if(MagicD)
     {
         auto Type = MagicD->Type;
         DamageAmount -= DamageAbsorb.DamageMap[(int32)Type];
         DamageAmount = DamageAmount * (100 - DamageResistance.DamageMap[(int32)Type]) / 100;
-        Health->Consume(DamageAmount);
-    }
+    } // else generic damage
+    Health->Consume(DamageAmount);
     GetCharacterOwner()->Logger.Log(this,*FString::Printf(TEXT("take damage after attributes %f"), DamageAmount));
     return Health->CurrentValue;
 }

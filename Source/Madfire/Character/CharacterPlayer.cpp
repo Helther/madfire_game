@@ -234,7 +234,7 @@ bool ACharacterPlayer::IsActionKeyPressed(const FName& ActionKey)
 
 void ACharacterPlayer::MoveForward(float AxisValue)
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (FMath::Abs(AxisValue) >= MovementDeadZone && !CCStateManager.HasCC()
@@ -257,7 +257,7 @@ void ACharacterPlayer::MoveForward(float AxisValue)
             else if (GetMovementComponent()->MovementMode
                 == EMovementMode::MOVE_Custom)
             {
-                //todo for parkur
+                //TODO for parkur
                 switch (GetMovementComponent()->CustomMovementMode)
                 {
                 case ECustomMovementMode::ClimbingLedge:
@@ -305,7 +305,7 @@ void ACharacterPlayer::MoveForward(float AxisValue)
 
 void ACharacterPlayer::MoveRight(float AxisValue)
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (FMath::Abs(AxisValue) >= MovementDeadZone && !CCStateManager.HasCC()
@@ -320,7 +320,7 @@ void ACharacterPlayer::MoveRight(float AxisValue)
             if (GetMovementComponent()->MovementMode
                 == EMovementMode::MOVE_Custom)
             {
-                //todo for parkur
+                //TODO for parkur
                 switch (GetMovementComponent()->CustomMovementMode)
                 {
                 case ECustomMovementMode::ClimbingLedge:
@@ -375,7 +375,7 @@ void ACharacterPlayer::MoveRight(float AxisValue)
 
 void ACharacterPlayer::CameraPitch(float AxisValue)
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld):
     case (EGameplayReturnState::InMountMode): {
@@ -389,7 +389,7 @@ void ACharacterPlayer::CameraPitch(float AxisValue)
 
 void ACharacterPlayer::CameraYaw(float AxisValue)
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld):
     case (EGameplayReturnState::InMountMode): {
@@ -405,7 +405,7 @@ void ACharacterPlayer::RunAction()
 {
     switch (CurrentGameplayState)
     {
-    case (EGameplayReturnState::InWorld):    //todo учесть другие состояния
+    case (EGameplayReturnState::InWorld):    //TODO учесть другие состояния
     {
         if (GetMovementComponent()->bIsRunning)
             GetMovementComponent()->bIsRunning = false;
@@ -421,7 +421,7 @@ void ACharacterPlayer::SprintAction()    // TODO add equipment weight check
 {
     switch (CurrentGameplayState)
     {
-    case (EGameplayReturnState::InWorld):    //todo учесть другие состояния
+    case (EGameplayReturnState::InWorld):    //TODO учесть другие состояния
     {
         if (GetMovementComponent()->IsMovingOnGround()
             && !CCStateManager.HasCC())
@@ -442,7 +442,7 @@ void ACharacterPlayer::SprintAction()    // TODO add equipment weight check
 
 void ACharacterPlayer::UnSprintAction()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (GetMovementComponent()->bWantToSprint)
@@ -457,17 +457,14 @@ void ACharacterPlayer::UnSprintAction()
 
 void ACharacterPlayer::CrouchAction()
 {
-    GetMovementComponent()->SetMovementMode(
-        EMovementMode::MOVE_Walking);    // todo temp
     switch (CurrentGameplayState)
     {
-    case (EGameplayReturnState::InWorld):    //todo учесть другие состояния
+    case (EGameplayReturnState::InWorld):    //TODO учесть другие состояния
     {
         if (!CCStateManager.HasCC()
             && !GetMovementComponent()->IsRootOrTeleport())
         {
-            if (GetMovementComponent()->MovementMode
-                == EMovementMode::MOVE_Walking)
+            if (GetMovementComponent()->MovementMode == EMovementMode::MOVE_Walking)
             {
                 if (CombatComponent->IsBusy())
                     return;
@@ -476,10 +473,9 @@ void ACharacterPlayer::CrouchAction()
                 else
                     Crouch();
             }
-            else if (GetMovementComponent()->MovementMode
-                == EMovementMode::MOVE_Custom)
+            else if (GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
             {
-                //todo for parkur
+                //TODO for parkur
                 switch (GetMovementComponent()->CustomMovementMode)
                 {
                 case ECustomMovementMode::ClimbingWall: {
@@ -504,7 +500,7 @@ void ACharacterPlayer::CrouchAction()
 
 void ACharacterPlayer::JumpAction()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (!CCStateManager.HasCC()
@@ -533,7 +529,7 @@ void ACharacterPlayer::JumpAction()
             else if (GetMovementComponent()->MovementMode
                 == EMovementMode::MOVE_Custom)
             {
-                //todo for parkur
+                //TODO for parkur
                 switch (GetMovementComponent()->CustomMovementMode)
                 {
                 case ECustomMovementMode::ClimbingLedge:
@@ -587,7 +583,7 @@ void ACharacterPlayer::UnJumpAction() { StopJumping(); }
 
 void ACharacterPlayer::JumpRepAction()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (!CCStateManager.HasCC()
@@ -607,7 +603,7 @@ void ACharacterPlayer::JumpRepAction()
 
 void ACharacterPlayer::DodgeAction()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (!CCStateManager.HasCC()
@@ -623,19 +619,19 @@ void ACharacterPlayer::DodgeAction()
 
 void ACharacterPlayer::AttackOnAction()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (!CCStateManager.HasCC() ||
             (CCStateManager.IsInCCMode(ECCState::LossOfBalance) && CCStateManager.IsInCCSubMode(Chamber)))
-            CombatComponent->OnAttack(true); // TODO check if ability is busy
+            CombatComponent->OnAttack(true);
     }
     }
 }
 
 void ACharacterPlayer::AttackOffAction()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (!CCStateManager.HasCC() ||
@@ -647,7 +643,7 @@ void ACharacterPlayer::AttackOffAction()
 
 void ACharacterPlayer::BlockOnAction()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (!GetMovementComponent()->IsCrouching() &&
@@ -663,7 +659,7 @@ void ACharacterPlayer::BlockOnAction()
 
 void ACharacterPlayer::BlockOffAction()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (!GetMovementComponent()->IsCrouching())
@@ -678,7 +674,7 @@ void ACharacterPlayer::BlockOffAction()
 
 void ACharacterPlayer::WeaponAction()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (!CCStateManager.HasCC() && GetMovementComponent()->MovementMode != EMovementMode::MOVE_Custom)
@@ -689,7 +685,7 @@ void ACharacterPlayer::WeaponAction()
 
 void ACharacterPlayer::AbilityOn()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (!CCStateManager.HasCC())
@@ -700,7 +696,7 @@ void ACharacterPlayer::AbilityOn()
 
 void ACharacterPlayer::AilityOff()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         if (!CCStateManager.HasCC())
@@ -711,7 +707,7 @@ void ACharacterPlayer::AilityOff()
 
 void ACharacterPlayer::CameraDistanceIn()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         float Length = SpringArmComponent->TargetArmLength - CameraZoomStep;
@@ -722,7 +718,7 @@ void ACharacterPlayer::CameraDistanceIn()
 
 void ACharacterPlayer::CameraDistanceOut()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         float Length = SpringArmComponent->TargetArmLength + CameraZoomStep;
@@ -733,7 +729,7 @@ void ACharacterPlayer::CameraDistanceOut()
 
 void ACharacterPlayer::InteractAction()
 {
-    switch (CurrentGameplayState)    //todo учесть другие состояния
+    switch (CurrentGameplayState)    //TODO учесть другие состояния
     {
     case (EGameplayReturnState::InWorld): {
         //OnInteract(EGameplayReturnState::InWorld);

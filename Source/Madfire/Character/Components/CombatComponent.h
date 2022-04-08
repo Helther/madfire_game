@@ -111,18 +111,35 @@ public:
 
     // exclusively used to set new states(do not set directly from fsm!)
     bool UpdateCombatFSM();
-    void ResetCurrentCombo() { GetCurrentCombatStance()->CurrentCombo = 0; }
+    void ResetCurrentCombo() { CurrentCombo = 0; }
     // checks if can combo further and starts the animation
     void StartNextComboAttack(bool IsPauseAttack);
+    UFUNCTION(BlueprintCallable)
+    UItemWeapon* GetCurrentWeapon(bool MainHand) const { return MainHand ? CurrentWeaponMainH : CurrentWeaponOffH; }
 
-    // TODO add stance change logic
+//================================= Stance Logic ================================//
     void OnStanceChanged();
-    UCombatStance *GetCurrentCombatStance() const;
+    UCombatStance* GetCurrentCombatStance() const;
+protected:
+    void ResolveNewStance();
+    void UpdateStanceAnims(const UCombatStance* DefaultStance);
+    bool DoesStanceFit(const UCombatStance* Stance) const;
+
+    TArray<UCombatStance*> StanceStack;
+    // set it in order to have fallback stance during stance resolve
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
+    UCombatStance* BackupStance;
+
+
+public:
     FORCEINLINE bool IsBlockButtonPressed() const { return BlockPressed; }
     void ResetRotationRate();
 
     void UseAimComponent(class UAbilityAimComponent *);
-    
+
+    UFUNCTION()
+    void OnMovementModeChanged(int oldMode, int newMode);
+
     UFUNCTION()
     void OnEquipmentUpdate(UEquipmentComponent* Component, EItemSlot Slot);
 
@@ -208,15 +225,14 @@ protected:
     void CalculateMaxBlockingSpeed(float SpeedModifier);
     bool CanBeInterruptedWithBlock(int CurrentState) const;
     void WeaponSetup(UItemWeapon* weapon, AItemActor* actor, bool draw, bool mainHand);
-    bool HasAlreadyHitTarget(AActor *Target) const;
-    UFUNCTION()
-    void OnMovementModeChanged(int oldMode, int newMode);
+    bool HasAlreadyHitTarget(AActor *Target, UItemWeapon* Weapon) const;
     UFUNCTION()
     void OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
     bool IsInActionState() const;
     bool IsChamberValid(const AActor* HitActor, const UItemWeapon* ActiveWeapon) const;
     EChamberRes ResolveChamber(AActor* HitActor, const UItemWeapon* OwnerActiveWeapon);
-    void EnterChamberState(ACharacterCreature* Character);
+    void EnterChamberState(ACharacterCreature* ChamberedCharacter);
+    void SetupDefaultWeapon(bool IsMainHand, bool Equip);
 
     // character orientation to movement speed while weapon is drawn
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -240,7 +256,8 @@ protected:
     bool WeaponSwitchPressed = false;
     bool AttackPressed = false;
     bool BlockPressed = false;
-    TSet<AActor*> CharactersHit;
+    // set of characters hit and with what weapon
+    TSet<TPair<AActor*, UItemWeapon*>> CharactersHit;
     class ACharacterCreature *Character;
     AItemActor *CurrentMainWeaponActor;
     AItemActor *CurrentOffWeaponActor;
@@ -264,4 +281,7 @@ protected:
 
 private:
     bool IsDirty = false;
+    int CurrentCombo = 0;
+    // TODO use this to check if equipped melee weapon or not
+    TSet<EWeaponType> RangedWeaponTypes;
 };

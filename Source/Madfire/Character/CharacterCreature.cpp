@@ -14,6 +14,7 @@ ACharacterCreature::ACharacterCreature(const FObjectInitializer &ObjectInitializ
     CCInterruptDelegates.Emplace(ECCState::Stun, &ACharacterCreature::CCStunEnded);
     CCInterruptDelegates.Emplace(ECCState::KnockDown, &ACharacterCreature::CCKnockDownEnded);
     // TODO add other callbacks
+    GetMovementComponent()->OnMoveModeChanged.AddDynamic(CombatComponent, &UCombatComponent::OnMovementModeChanged);
     EquipmentComponent->EquipmentSlotUpdated.AddDynamic(CombatComponent, &UCombatComponent::OnEquipmentUpdate);
     EquipmentComponent->EquipmentSwaped.AddDynamic(CombatComponent, &UCombatComponent::OnEquipmentSwap);
     KnockDownBaseTime = 5.f;
@@ -38,9 +39,10 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
         return AttributeComponent->Health->CurrentValue;
 
     const auto DamageType = DamageEvent.DamageTypeClass.GetDefaultObject();
-    const auto Type = Cast<UDamageBase>(DamageType)->Type;
+    const auto DamageBase = Cast<UDamageBase>(DamageType);
     bool isAbsolute = Cast<UAbsoluteDamage>(DamageType) != nullptr;
-    float force = static_cast<const FForceDamageEvent*>(&DamageEvent)->Force;// "I sense a great disturbance in it"
+    auto forceType = static_cast<const FForceDamageEvent*>(&DamageEvent);// "I sense a great disturbance in it" TODO because there is a potential bug if it's not FForceDamageEvent
+    float force = forceType ? forceType->Force : 0.f;
     bool blocked = false;
     float balance;
     int32 strMod = UAttributeSetHelper::GetModifier(AttributeComponent->Attributes, EAttributes::Str);
@@ -51,9 +53,9 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
     UItemWeapon* shield = nullptr;
     if (CombatComponent->CurrentWeaponOffH != nullptr && CombatComponent->CurrentWeaponOffH->WeaponType == EWeaponType::Shield)
         shield = CombatComponent->CurrentWeaponOffH;
-    else if (CombatComponent->CurrentWeaponMainH != nullptr && CombatComponent->CurrentWeaponMainH->WeaponType != EWeaponType::Unarmed)
+    else if (CombatComponent->CurrentWeaponMainH != nullptr)
         shield = CombatComponent->CurrentWeaponMainH;
-    bool hasProperShield = (shield != nullptr) && (shield->WeaponType != EWeaponType::Unarmed);
+    bool hasProperShield = shield != nullptr;
     // check actors directions
     bool isFacingAttacker = UCombatComponent::GetAngleBetweenAttackerAndDefender(DamageCauser, this) < CombatComponent->MaxFacingAngle;
     // check parry
@@ -75,10 +77,10 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
             // check if block succeeded
             if (AttributeComponent->Stamina->Consume(CombatComponent->BlockStaminaCost) && (force <= balance))
             {
-                if (!isAbsolute)
+                if (DamageBase && !isAbsolute)
                 {
-                    DamageAmount -= shield->DamageLimit.DamageMap[(int32)Type];
-                    DamageAmount = DamageAmount * (100 - shield->DamageResistance.DamageMap[(int32)Type]) / 100;
+                    DamageAmount -= shield->DamageLimit.DamageMap[(int32)DamageBase->Type];
+                    DamageAmount = DamageAmount * (100 - shield->DamageResistance.DamageMap[(int32)DamageBase->Type]) / 100;
                 }
                 blocked = true;
                 // apply blocked action to the attacker
@@ -162,34 +164,26 @@ void ACharacterCreature::InterruptAnimation(ECCState Source, int SubMode)
         // character can interrupt blocks, spell casts, wall hanging, some attacks and not much else
         if (Source == ECCState::NoCC)
         {
-            auto animInstance = GetMesh()->GetAnimInstance();
             if (GetMovementComponent()->MovementMode == EMovementMode::MOVE_Custom)
             {
-                if (animInstance->Montage_IsActive(GetMovementComponent()->HangMontage))
-                    animInstance->StopSlotAnimation(0.f, FAnimSlotNames::FullBody);
+                if (AnimInstance->Montage_IsActive(GetMovementComponent()->HangMontage))
+                    AnimInstance->StopSlotAnimation(0.f, FAnimSlotNames::FullBody);
             }
-            else if (CombatComponent->CombatFSM.currentState()->Id
-                     == ECombatState::Attack)
+            else if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
             {
-                if (animInstance->Montage_IsActive(
-                      CombatComponent->CombatFSM.currentState()
-                        ->Info.AttackInfo->AttackMontage))
-                    animInstance->Montage_Stop(0.f,
-                                               CombatComponent->CombatFSM.currentState()
-                                                 ->Info.AttackInfo->AttackMontage);
+                if (AnimInstance->Montage_IsActive(CombatComponent->CombatFSM.currentState()->Info.AttackInfo->AttackMontage))
+                    AnimInstance->Montage_Stop(0.f, CombatComponent->CombatFSM.currentState()->Info.AttackInfo->AttackMontage);
             }
             else if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Parry)
             {
-                if (animInstance->Montage_IsActive(
-                      CombatComponent->GetCurrentCombatStance()->CurrentParryAnim))
-                    animInstance->Montage_Stop(
-                      0.f, CombatComponent->GetCurrentCombatStance()->CurrentParryAnim);
+                if (AnimInstance->Montage_IsActive(AnimInstance->CurrentParryAnim))
+                    AnimInstance->Montage_Stop(0.f, AnimInstance->CurrentParryAnim);
             }
             if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Ability)
             {
-                if (animInstance->Montage_IsActive(
+                if (AnimInstance->Montage_IsActive(
                       CombatComponent->CurrentAbility->CastAnimMontage))
-                    animInstance->Montage_Stop(
+                    AnimInstance->Montage_Stop(
                       0.f, CombatComponent->CurrentAbility->CastAnimMontage);
             }
             return;
@@ -201,15 +195,14 @@ void ACharacterCreature::InterruptAnimation(ECCState Source, int SubMode)
     }
     if (CCStateManager.IsInCCMode(Source))
     {// if already in this mode then remove end callback before restart
-        auto animInstance    = GetMesh()->GetAnimInstance();
         FAnimMontageInstance* montageInstance = nullptr;
         if (Source == ECCState::LossOfBalance && SubMode != ELossOfBalanceCCSubState::None)
         {
             if (CCStateManager.IsInCCSubMode(SubMode))
-                montageInstance = animInstance->GetActiveInstanceForMontage((CCLOBAnims[static_cast<ELossOfBalanceCCSubState>(SubMode)]));
+                montageInstance = AnimInstance->GetActiveInstanceForMontage((CCLOBAnims[static_cast<ELossOfBalanceCCSubState>(SubMode)]));
         }
         else
-            montageInstance = animInstance->GetActiveInstanceForMontage((CCAnims[Source]));
+            montageInstance = AnimInstance->GetActiveInstanceForMontage((CCAnims[Source]));
         if (montageInstance)
             montageInstance->OnMontageBlendingOutStarted.Unbind();
     }
@@ -251,20 +244,23 @@ float ACharacterCreature::CalculateKnockDownTime() const
     return KnockDownBaseTime - KnockDownModBase * skillVal - KnockDownWeightModBase * weightMod;
 }
 
+void ACharacterCreature::UpdateCCLOBAnims()
+{
+    CCLOBAnims.Emplace(ELossOfBalanceCCSubState::HitWall, AnimInstance->CurrentHitWallAnim);
+    CCLOBAnims.Emplace(ELossOfBalanceCCSubState::WasParried, AnimInstance->CurrentWasParriedAnim);
+    CCLOBAnims.Emplace(ELossOfBalanceCCSubState::BlockedAttack, AnimInstance->CurrentBlockedAttackAnim);
+    CCLOBAnims.Emplace(ELossOfBalanceCCSubState::Chamber, AnimInstance->CurrentChamberAnim);
+}
+
 void ACharacterCreature::PostInitializeComponents()
 {
     Super::PostInitializeComponents();
-    auto animInstance = Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
-    if (animInstance)
-    {
-        CCAnims.Emplace(ECCState::KnockDown, animInstance->KnockDownAnim);
-        CCAnims.Emplace(ECCState::LossOfBalance, animInstance->LossOfBalanceAnim);
-        CCAnims.Emplace(ECCState::Stun, animInstance->StunAnim);
-        CCLOBAnims.Emplace(ELossOfBalanceCCSubState::HitWall, animInstance->HitWallAnim);
-        CCLOBAnims.Emplace(ELossOfBalanceCCSubState::WasParried, animInstance->WasParriedAnim);
-        CCLOBAnims.Emplace(ELossOfBalanceCCSubState::BlockedAttack, animInstance->BlockedAttackAnim);
-        CCLOBAnims.Emplace(ELossOfBalanceCCSubState::Chamber, animInstance->ChamberAnim);
-    }
+    AnimInstance = Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
+    check(AnimInstance && "Invalid anim blueprint");
+    CCAnims.Emplace(ECCState::KnockDown, AnimInstance->KnockDownAnim);
+    CCAnims.Emplace(ECCState::LossOfBalance, AnimInstance->LossOfBalanceAnim);
+    CCAnims.Emplace(ECCState::Stun, AnimInstance->StunAnim);// TODO add sleep and stasis
+    UpdateCCLOBAnims();
 }
 
 void ACharacterCreature::BeginPlay()
@@ -297,7 +293,7 @@ void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted
         {
             FOnMontageBlendingOutStarted callBack;
             callBack.BindUObject(CombatComponent, &UCombatComponent::OnBlockEnded);
-            StartAnimation(CombatComponent->GetCurrentCombatStance()->CurrentBlockAnim, callBack, CombatComponent->AttackSpeed, FAnimSectionNames::Loop);
+            StartAnimation(AnimInstance->CurrentBlockAnim, callBack, CombatComponent->AttackSpeed, FAnimSectionNames::Loop);
         }
         else
         {
@@ -356,9 +352,8 @@ void FCCStateManager::SetCCMode(ECCState Mode, unsigned int SubMode, float *Time
         Character->Logger.Log(Character,*FString::Printf(TEXT("Setting CC with duration of %f"), duration));
         FTimerDelegate CCDelegate = FTimerDelegate::CreateLambda([this, Mode]() 
         {
-            auto animInstance = Character->GetMesh()->GetAnimInstance();
-            if (animInstance->Montage_IsActive(Character->CCAnims[Mode]))
-                animInstance->Montage_Stop(0.f, Character->CCAnims[Mode]);
+            if (Character->AnimInstance->Montage_IsActive(Character->CCAnims[Mode]))
+                Character->AnimInstance->Montage_Stop(0.f, Character->CCAnims[Mode]);
         });
         Character->GetWorld()->GetTimerManager().SetTimer(CCLocks[Mode].Key.CCTimer, CCDelegate, duration, false);
     }

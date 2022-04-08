@@ -85,6 +85,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
     bool RemoveFromStack(int32 index, int32 amount, bool removeWholeStack);
 
+    UFUNCTION(BlueprintCallable, Category = "Inventory Component")
+    static void SetupItemActorCollision(AItemActor* InActor, bool Enable);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory Component")
     float CurrentWeight;
 

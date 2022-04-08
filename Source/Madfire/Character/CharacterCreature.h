@@ -117,7 +117,8 @@ public:
     { return MaxWeightBase + MaxWeightModBase * UAttributeSetHelper::GetModifier(AttributeComponent->Attributes, EAttributes::Str); }
     // TODO уточнить при балансировке
     float CalculateKnockDownTime() const;
-
+    void UpdateCCLOBAnims();
+    
     // Deprecated
     //UPROPERTY(EditAnywhere, BlueprintReadWrite,
     //          meta = (Bitmask, BitmaskEnum = "ECCState", Category = "Character Stats"))
@@ -147,6 +148,8 @@ public:
     UEquipmentComponent *EquipmentComponent;
     UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
     UCombatComponent *CombatComponent;
+
+    UCharacterAnimInstance* AnimInstance;
 
 protected:
     void PostInitializeComponents() override;
