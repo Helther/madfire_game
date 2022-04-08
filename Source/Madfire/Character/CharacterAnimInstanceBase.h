@@ -40,8 +40,6 @@ class MADFIRE_API UCharacterAnimInstanceBase : public UAnimInstance
 	GENERATED_BODY()
 
 public:
-    UPROPERTY(BlueprintReadOnly, Category = "Character")
-    class ACharacterBase *Character;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
     UAnimMontage *SleepAnim;
@@ -53,7 +51,4 @@ public:
     UAnimMontage *KnockDownAnim;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
     UAnimMontage *StasisAnim;
-
-protected:
-    void NativeUpdateAnimation(float DeltaSeconds) override;
 };

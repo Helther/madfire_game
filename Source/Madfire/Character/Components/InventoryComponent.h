@@ -84,6 +84,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
     bool RemoveFromStack(int32 index, int32 amount, bool removeWholeStack);
 
+    UFUNCTION(BlueprintCallable, Category = "Inventory Component")
+    static void SetupItemActorCollision(AItemActor* InActor, bool Enable);
+
     UFUNCTION(BlueprintPure, Category = "Inventory Component")
     bool IsFull() const;
 

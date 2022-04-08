@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "Animation/BlendSpace.h"
+#include "../Rules/GameRules.h"
     
 #include "CombatStance.generated.h"
 
@@ -86,31 +87,44 @@ class MADFIRE_API UCombatStance : public UDataAsset
 public:
     FAttackInfo* GetAttackInfoForSpecial(ESpecialType type);
     
+    // Need weapon in each hand to use (exludes weapon+shield combination)
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    // TODO add custom aim offset blend space for ranged
-    bool IsMelee = true;
+    bool IsTwoWeapon = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool IsBlockAllowed = true;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool IsParryAllowed = true;
+    // a set of weapon types in which character equipped weapons should all be present
+    // in order to activate this stance
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSet<EWeaponType> AllowedWeaponTypes;
+
     ////////////////////////// combat mode speeds//////////////////////////
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Speeds")
-    float MaxCombatRunSpeed{};
+    float MaxCombatRunSpeed;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Speeds")
-    float MaxCombatCrouchedSpeed{};
+    float MaxCombatCrouchedSpeed;
 
     UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Combat Speeds")
-    float MaxCombatSprintSpeed{};
+    float MaxCombatSprintSpeed;
     // Max move speed during blocking
     UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Combat Speeds")
-    float MaxBlockSpeed{};
+    float MaxBlockSpeed;
+    ////////////////////////// END combat mode speeds//////////////////////////
 
     UPROPERTY(EditAnywhere)
     float ParryStaminaCost = 15;
+    // TODO do we need to set it?
     // used for req checks, set when gets stance resolved
     UPROPERTY(BlueprintReadOnly)
-    class ACharacterBase* Owner = nullptr;
+    class ACharacterCreature* Owner = nullptr;
 
     // Implement This, it's really important!
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
-    bool CheckRequirement(class ACharacterBase *character);
+    UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Stance Interface")
+    bool CheckRequirement(ACharacterCreature*character) const;
+
+    bool CheckRequirement_Implementation(ACharacterCreature* character) const { return true; }
     
     // use size as max combo count
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -119,24 +133,24 @@ public:
     TArray<FAttackInfo> SpecialAttacks;
     // custom equipment specific animations for unique stances
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UAnimMontage *CustomBlockAnim;// TODO modify anim speed according to shield weight after stance resolve
+    UAnimMontage *BlockAnim;// TODO modify anim speed according to shield weight after stance resolve
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UAnimMontage *CustomParryAnim;
+    UAnimMontage *ParryAnim;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UBlendSpace *CustomStandLocomotion;
+    UBlendSpace *StandLocomotion;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UBlendSpace *CustomCrouchLocomotion;
+    UBlendSpace *CrouchLocomotion;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UAnimMontage *CustomDrawAnim;
+    UAnimMontage *DrawAnim;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UAnimMontage *CustomSheathAnim;
+    UAnimMontage *SheathAnim;
 
-    UBlendSpace *CurrentCrouchLocomotion;
-    UBlendSpace *CurrentStandLocomotion;
-    UAnimMontage *CurrentBlockAnim;
-    UAnimMontage *CurrentParryAnim;
-    UAnimMontage *CurrentDrawAnim;
-    UAnimMontage *CurrentSheathAnim;
-    
-    int CurrentCombo = 0;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *HitWallAnim;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *WasParriedAnim;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *BlockedAttackAnim;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
+    UAnimMontage *ChamberAnim;
 };

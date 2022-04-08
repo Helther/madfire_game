@@ -11,7 +11,8 @@ const FName FEquipmentSlotNames::WeaponMain = "S_WeaponMain";
 const FName FEquipmentSlotNames::WeaponOff = "S_WeaponOff";
 const FName FEquipmentSlotNames::SheathMain = "S_WeaponSheathMain";
 const FName FEquipmentSlotNames::SheathOff = "S_WeaponSheathOff";
-const FName FEquipmentSlotNames::SheathBack = "S_WeaponSheathBack";
+const FName FEquipmentSlotNames::SheathWeaponBack = "S_WeaponSheathBack";
+const FName FEquipmentSlotNames::SheathShieldBack = "S_ShieldSheathBack";
 const FName FEquipmentSlotNames::Ammo = "S_Ammo";
 const FName FEquipmentSlotNames::Head = "S_EquipHead";
 const FName FEquipmentSlotNames::Chest = "S_EquipChest";
@@ -90,7 +91,7 @@ void UCharacterAnimInstance::OnCollisionActivation(bool mainHand, bool activate)
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CollisionOn, activate);
         if (activate)
             stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, false);
-        CharacterInstance->CombatComponent->SetCurrentWeaponCollision(mainHand, activate);// TODO separate norifies for main and off hand
+        CharacterInstance->CombatComponent->SetCurrentWeaponCollision(mainHand, activate);
     }
 }
 
