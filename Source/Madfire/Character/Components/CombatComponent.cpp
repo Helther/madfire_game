@@ -22,6 +22,10 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitili
     MaxFacingAngle = 45.f;
     // end temp
 
+    RangedWeaponTypes.Emplace(EWeaponType::Crossbow);
+    RangedWeaponTypes.Emplace(EWeaponType::Longbow);
+    RangedWeaponTypes.Emplace(EWeaponType::Shortbow);
+
     AbilityPanel.SetNum(10);
 
     RangedWeaponTypes.Emplace(EWeaponType::Crossbow);
@@ -604,7 +608,7 @@ void UCombatComponent::SetupDefaultWeapon(bool IsMainHand, bool Equip)
             IsMainHand ? CurrentWeaponMainH = defaultWeapon : CurrentWeaponOffH = defaultWeapon;
             auto actor = Cast<AItemActor>(GetWorld()->SpawnActor(defaultWeapon->ItemActor));
             IsMainHand ? CurrentMainWeaponActor = actor : CurrentOffWeaponActor = actor;
-            ACharacterBase::SetupItemActorCollision(actor, false);
+            UInventoryComponent::SetupItemActorCollision(actor, false);
             WeaponSetup(defaultWeapon, actor, IsWeaponDrawn, IsMainHand);
         }
         else

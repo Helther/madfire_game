@@ -3,7 +3,6 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PlayerInput.h"
-#include "AbilitySystem/AbilityComponents/AbilityAimComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
 struct FInputKeyNames

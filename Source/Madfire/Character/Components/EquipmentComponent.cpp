@@ -226,7 +226,7 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
     check(itemActor != nullptr && "ItemActor is invalid");
     itemActor->ItemBase = Item;
     Item->ItemActor = itemActor->GetClass();
-    ACharacterBase::SetupItemActorCollision(itemActor, false);
+    UInventoryComponent::SetupItemActorCollision(itemActor, false);
 
     auto tmp = Unequip(SlotName);
 
