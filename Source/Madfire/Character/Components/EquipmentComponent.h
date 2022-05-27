@@ -5,11 +5,85 @@
 #include "Attributes/Attributes.h"
 #include "Attributes/Skills.h"
 #include "Items/ItemEquipment.h"
-#include "AbilitySystem/EffectBase.h"
+#include "AbilitySystem/StatusEffect.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
-
 #include "EquipmentComponent.generated.h"
+
+
+
+USTRUCT(BlueprintType)
+struct FSkelMeshMergeSectionMapping_BP
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh Merge Params")
+    TArray<int32> SectionIDs;
+};
+
+USTRUCT(BlueprintType)
+struct FSkelMeshMergeUVTransform
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh Merge Params")
+    TArray<FTransform> UVTransform;
+};
+
+USTRUCT(BlueprintType)
+struct FSkelMeshMergeUVTransformMapping
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh Merge Params")
+    TArray<FSkelMeshMergeUVTransform> UVTransformPerMesh;
+};
+
+
+USTRUCT(BlueprintType)
+struct FSkeletalMeshMergeParams
+{
+    GENERATED_BODY()
+
+    FSkeletalMeshMergeParams() :
+        StripTopLODS(0),
+        bNeedsCpuAccess(0),
+        bSkeletonBefore(0),
+        Skeleton(nullptr)
+    {}
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<FSkelMeshMergeSectionMapping_BP> MeshSectionMappings;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<FSkelMeshMergeUVTransformMapping> UVTransformsPerMesh;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<USkeletalMesh*> MeshesToMerge;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 StripTopLODS;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    uint32 bNeedsCpuAccess:1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    uint32 bSkeletonBefore:1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    class USkeleton *Skeleton;
+};
+
+UCLASS()
+class UMeshMergeFunctionLibrary : public UBlueprintFunctionLibrary
+{
+    GENERATED_BODY()
+public:
+    UFUNCTION(BlueprintCallable, Category = "Mesh Merge", meta = (UnsafeDuringActorConstruction = "true"))
+    static class USkeletalMesh *MergeMeshes(const FSkeletalMeshMergeParams &Params);
+};
+
+
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEquipmentSlotEvent, class UEquipmentComponent*, Equipment, EItemSlot, Slot);

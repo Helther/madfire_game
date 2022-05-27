@@ -4,7 +4,6 @@
 #include "../Rules/GameRules.h"
 #include "Attributes/DamageMap.h"
 #include "Attributes/Damage.h"
-#include "AbilitySystem/EffectBase.h"
 #include "AbilitySystem/AbstractAbility.h"
 #include "ItemEquipment.generated.h"
 

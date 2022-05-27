@@ -1,13 +1,14 @@
 ﻿#pragma once
 
-#include "AbilitySystem/AbilityComponents/AbilityActorSelectionComponent.h"
-#include "AbilitySystem/AbilityComponents/Projectile.h"
+
+#include "AbilitySystem/Components/AbilityTargetSelectionComponent.h"
+#include "AbilitySystem/Components/AbilityProjectile.h"
 #include "AbilityComponentSamples.generated.h"
 
 
 
 UCLASS(EditInlineNew, Blueprintable)
-class UAbilitySelfSelection : public UAbilityActorSelection
+class UAbilitySelfSelection : public UAbilityTargetSelection
 {
     GENERATED_BODY()
 
@@ -16,7 +17,7 @@ protected:
 };
 
 UCLASS(EditInlineNew, Blueprintable)
-class UAbilityProjectileSpawn : public UAbilityActorSelection
+class UAbilityProjectileSpawn : public UAbilityTargetSelection
 {
     GENERATED_BODY()
 
@@ -32,4 +33,6 @@ public:
 
 protected:
     void ActivateComponent_Implementation() override;
+
+    void UpdateComponent_Implementation() override;
 };

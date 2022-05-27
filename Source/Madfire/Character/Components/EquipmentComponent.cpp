@@ -5,7 +5,148 @@
 #include "TraceFunctional/TraceDefines.h"
 #include "Character/CharacterCreature.h"
 #include "Character/CharacterAnimInstance.h"
+#include "Engine/SkeletalMeshSocket.h"
+#include "Engine/SkeletalMesh.h"
+#include "SkeletalMeshMerge.h"
+#include "Animation/Skeleton.h"
 #include "Kismet/GameplayStatics.h"
+
+static void ToMergeParams(const TArray<FSkelMeshMergeSectionMapping_BP> &InSectionMappings, TArray<FSkelMeshMergeSectionMapping> &OutSectionMappings)
+{
+    if(InSectionMappings.Num() > 0)
+    {
+        OutSectionMappings.AddUninitialized(InSectionMappings.Num());
+        for(int32 i=0; i<InSectionMappings.Num(); ++i)
+            OutSectionMappings[i].SectionIDs = InSectionMappings[i].SectionIDs;
+    }
+}
+
+static void ToMergeParams(const TArray<FSkelMeshMergeUVTransformMapping> &InUVTransformPerMesh, TArray<FSkelMeshMergeUVTransforms> &OutUVTransformsPerMesh)
+{
+    if(InUVTransformPerMesh.Num() > 0)
+    {
+        OutUVTransformsPerMesh.Empty();
+        OutUVTransformsPerMesh.AddUninitialized(InUVTransformPerMesh.Num());
+
+        for(int32 i=0; i < InUVTransformPerMesh.Num(); ++i)
+        {
+            TArray<TArray<FTransform>> &OutUVTransform = OutUVTransformsPerMesh[i].UVTransformsPerMesh;
+            const TArray<FSkelMeshMergeUVTransform> &InUVTransforms = InUVTransformPerMesh[i].UVTransformPerMesh;
+
+            if(InUVTransforms.Num() > 0)
+            {
+                OutUVTransform.Empty();
+                OutUVTransform.AddUninitialized(InUVTransforms.Num());
+                for(int32 j = 0; j < InUVTransforms.Num(); ++j)
+                {
+                    OutUVTransform[i] = InUVTransforms[i].UVTransform;
+                }
+            }
+        }
+    }
+}
+
+
+
+USkeletalMesh *UMeshMergeFunctionLibrary::MergeMeshes(const FSkeletalMeshMergeParams &Params)
+{
+    TArray<USkeletalMesh*> MeshesToMergeCopy = Params.MeshesToMerge;
+
+    MeshesToMergeCopy.RemoveAll([](USkeletalMesh *InMesh) {return InMesh == nullptr;});
+
+    if(MeshesToMergeCopy.Num() <= 1)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Must provide multiple valid Skeletal Meshes in order to perform a merge"));
+        return nullptr;
+    }
+
+    EMeshBufferAccess BufferAccess = Params.bNeedsCpuAccess ? EMeshBufferAccess::ForceCPUAndGPU : EMeshBufferAccess::Default;
+
+    TArray<FSkelMeshMergeSectionMapping> SectionMappings;
+    TArray<FSkelMeshMergeUVTransforms> UVTransforms;
+
+    ToMergeParams(Params.MeshSectionMappings, SectionMappings);
+    ToMergeParams(Params.UVTransformsPerMesh, UVTransforms);
+
+    bool bRunDuplicateCheck = false;
+
+    USkeletalMesh *BaseMesh = NewObject<USkeletalMesh>();
+
+    if(Params.Skeleton && Params.bSkeletonBefore)
+    {
+        BaseMesh->SetSkeleton(Params.Skeleton);
+        bRunDuplicateCheck = true;
+
+        for(USkeletalMeshSocket *Socket : BaseMesh->GetMeshOnlySocketList())
+        {
+            if(Socket)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("SkelMeshSocket: %s"), *(Socket->SocketName.ToString()));
+            }
+        }
+        for(USkeletalMeshSocket *Socket : BaseMesh->GetSkeleton()->Sockets)
+        {
+            if(Socket)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("SkelSocket: %s"), *(Socket->SocketName.ToString()));
+            }
+        }        
+    }
+
+    FSkeletalMeshMerge Merger(BaseMesh, MeshesToMergeCopy, SectionMappings, Params.StripTopLODS, BufferAccess, UVTransforms.GetData());
+
+    if(!Merger.DoMerge())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Merge failed!"));
+        return nullptr;
+    }
+
+    if(Params.Skeleton && !Params.bSkeletonBefore)
+    {
+        BaseMesh->SetSkeleton(Params.Skeleton);
+    }
+
+    if(bRunDuplicateCheck)
+    {
+        TArray<FName> SkelMeshSockets;
+        TArray<FName> SkelSockets;
+
+        for(USkeletalMeshSocket *Socket : BaseMesh->GetMeshOnlySocketList())
+        {
+            if(Socket)
+            {
+                SkelMeshSockets.Add(Socket->GetFName());
+                UE_LOG(LogTemp, Warning, TEXT("SkelMeshSocket: %s"), *(Socket->SocketName.ToString()));
+            }
+        }
+
+        for(USkeletalMeshSocket *Socket : BaseMesh->GetSkeleton()->Sockets)
+        {
+            if(Socket)
+            {
+                SkelSockets.Add(Socket->GetFName());
+                UE_LOG(LogTemp, Warning, TEXT("SkelSocket: %s"), *(Socket->SocketName.ToString()));
+            }
+        }
+
+        TSet<FName> UniqueSkelMeshSockets;
+        TSet<FName> UniqueSkelSockets;
+
+        UniqueSkelMeshSockets.Append(SkelMeshSockets);
+        UniqueSkelSockets.Append(SkelSockets);
+
+        int32 Total = SkelSockets.Num() + SkelMeshSockets.Num();
+        int32 UniqueTotal = UniqueSkelMeshSockets.Num() + UniqueSkelSockets.Num();
+
+        UE_LOG(LogTemp, Warning, TEXT("SkelMeshSocketCount: %d | SkelSocketCount: %d | Combined: %d"), SkelMeshSockets.Num(), SkelSockets.Num(), Total);
+        UE_LOG(LogTemp, Warning, TEXT("SkelMeshSocketCount: %d | SkelSocketCount: %d | Combined: %d"), UniqueSkelMeshSockets.Num(), UniqueSkelSockets.Num(), UniqueTotal);
+        UE_LOG(LogTemp, Warning, TEXT("Found Duplicates: %s"), *((Total != UniqueTotal) ? FString("True") : FString("False")));
+    }
+
+    return BaseMesh;
+}
+
+
 
 
 // Sets default values for this component's properties
@@ -66,6 +207,14 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
         return tmp;
     }
 
+    auto EquipItem = Cast<UItemEquipable>(Item);
+
+    if(!EquipItem)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Equipment: No class"));
+        return Item;
+    }
+
     if(!Item->IsA(slot.ItemClass))
     {
         UE_LOG(LogTemp, Warning, TEXT("Equipment: No class"));
@@ -83,11 +232,11 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
 
     Slot[(int32)SlotName].Item = itemActor;
     EquipAttach(SlotName);
+    EquipItem->OnEquip(this);
     EquipmentSlotUpdated.Broadcast(this, SlotName);
 
+
     //TODO: Check One Weapon MainHand only
-
-
 
     return tmp;
 }
@@ -110,6 +259,13 @@ UItem *UEquipmentComponent::Unequip(EItemSlot SlotName)
     if(!test)
     {
         UE_LOG(LogTemp, Warning, TEXT("Equipment: Item is Indestructible"));
+    }
+
+    auto EquipItem = Cast<UItemEquipable>(slot.Item);
+
+    if(EquipItem)
+    {
+        EquipItem->OnUnequip(this);
     }
 
     return tmp;
@@ -175,3 +331,4 @@ void UEquipmentComponent::EquipAttach(EItemSlot SlotName)
     if(slot.Item)
         slot.Item->AttachToComponent(ownerMesh,FAttachmentTransformRules::SnapToTargetNotIncludingScale,slot.SocketName);
 }
+

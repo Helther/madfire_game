@@ -9,15 +9,15 @@
 UENUM(BlueprintType, meta = (Bitflags))
 enum class EInteractType : uint8
 {
-    NONE       = 0,  //00
-    Use        = 1,  //01
-    Pickup     = 2,  //02
-    Talk       = 4,  //04
-    Inspect    = 8,  //08
-    Steal      = 16, //10
-    Move       = 32, //20
-    Open       = 64, //40
-    MAX        = 128,//80
+    NONE       = 0,
+    Use        = 1, //1
+    Pickup     = 2, //2
+    Talk       = 3, //4
+    Inspect    = 4, //8
+    Steal      = 5, //32
+    Move       = 6, //64
+    Open       = 7, //128
+    MAX           ,
     /// Some other actions
 };
 ENUM_CLASS_FLAGS(EInteractType)
@@ -38,7 +38,7 @@ public:
     bool OnInteract(EInteractType InteractType, ACharacter *controller);
 
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Interactable")
-    uint8 GetInteractFlags() const;
+    UPARAM(meta=(Bitmask, BitmaskEnum = EInteractType)) int32 GetInteractFlags() const;
 
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Interactable")
     FText GetInteractableName() const;

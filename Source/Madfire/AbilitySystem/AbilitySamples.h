@@ -3,11 +3,9 @@
 #include "AbilitySystem/CastedAbility.h"
 #include "AbilitySystem/ChannelAbility.h"
 #include "AbilitySystem/InstantAbility.h"
-#include "AbilitySystem/AbilityComponents/AbilityAimComponent.h"
-#include "AbilitySystem/AbilityComponents/AbilityTargetSelectionComponent.h"
-#include "AbilitySystem/AbilityComponents/AbilityActorSelectionComponent.h"
-#include "AbilitySystem/AbilityComponents/AbilityLocationSelectionComponent.h"
-#include "AbilitySystem/AbilityComponents/AbilitySoundComponent.h"
+#include "AbilitySystem/Components/AbilityAimComponent.h"
+#include "AbilitySystem/Components/AbilityTargetSelectionComponent.h"
+#include "AbilitySystem/Components/AbilitySoundComponent.h"
 
 
 #include "AbilitySamples.generated.h"
@@ -28,7 +26,7 @@ public:
     UAbilitySoundComponent *SoundComponent;
 
     UPROPERTY(Instanced, EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
-    UAbilityActorSelection *TargetComponent;
+    UAbilityTargetSelection *TargetComponent;
 
 protected:
     void CastNotify() override;
@@ -44,7 +42,7 @@ public:
     void AbilityInit() override;
 
     UPROPERTY(Instanced, EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
-    UAbilityActorSelection *TargetComponent;
+    UAbilityTargetSelection *TargetComponent;
 
     UPROPERTY(Instanced, EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
     UAbilityAimComponent *AimingComponent;
@@ -66,13 +64,15 @@ public:
     void AbilityInit() override;
 
     UPROPERTY(Instanced, EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
-    UAbilityActorSelection *TargetComponent;
+    UAbilityTargetSelection *TargetComponent;
 
     void ChannelUpdate();
 
 protected:
     void Release() override;
     void CastNotify() override;
+    void Interrupt() override;
+    void Cancel() override;
 };
 
 

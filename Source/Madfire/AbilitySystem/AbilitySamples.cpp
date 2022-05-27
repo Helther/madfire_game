@@ -1,20 +1,20 @@
 ﻿#include "AbilitySamples.h"
 #include "Character/Components/CombatComponent.h"
-#include "AbilitySystem/AbilityFunctional.h"
+#include "AbilitySystem/Components/AbilitySoundComponent.h"
 #include "Character/CharacterBase.h"
 
 
 void UInstantAbility_Sample::AbilityInit()
 {
     Super::AbilityInit();
-    SoundComponent = Cast<UAbilitySoundComponent>(UAbilityFunctional::CreateComponent(this,UAbilitySoundComponent::StaticClass()));
+    SoundComponent = Cast<UAbilitySoundComponent>(UAbstractAbility::CreateComponent(this,UAbilitySoundComponent::StaticClass()));
 
     check(SoundComponent != nullptr)
     AddComponent(SoundComponent);
 
     if(TargetComponent)
     {
-        TargetComponent->OnTargetChoosed.AddDynamic(this, &UAbstractAbility::OnTargetExecute);
+        TargetComponent->OnExecuteEvent.BindUObject(this, &UAbstractAbility::OnExecute);
         AddComponent(TargetComponent);
     }
     else
@@ -45,7 +45,7 @@ void UCastedAbility_Sample::AbilityInit()
     if(TargetComponent)
     {
         AddComponent(TargetComponent);
-        TargetComponent->OnTargetChoosed.AddDynamic(this, &UAbstractAbility::OnTargetExecute);
+        TargetComponent->OnExecuteEvent.BindUObject(this, &UAbstractAbility::OnExecute);
     }
     else
     {
@@ -103,7 +103,7 @@ void UChannelAbility_Sample::AbilityInit()
     if(TargetComponent)
     {
         AddComponent(TargetComponent);
-        TargetComponent->OnTargetChoosed.AddDynamic(this, &UAbstractAbility::OnTargetExecute);
+        TargetComponent->OnExecuteEvent.BindUObject(this, &UAbstractAbility::OnExecute);
     }
     else
     {
@@ -144,4 +144,27 @@ void UChannelAbility_Sample::Release()
     }
     Super::Release();
 }
+
+void UChannelAbility_Sample::Interrupt()
+{
+    if(TargetComponent)
+        TargetComponent->DeactivateComponent();
+    else
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("UChannelAbility_Sample: No Target Component"));
+    }
+    Super::Interrupt();
+}
+
+void UChannelAbility_Sample::Cancel()
+{
+    if(TargetComponent)
+        TargetComponent->DeactivateComponent();
+    else
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("UChannelAbility_Sample: No Target Component"));
+    }
+    Super::Cancel();
+}
+
 

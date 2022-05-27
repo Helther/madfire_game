@@ -4,7 +4,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Components/AttributesComponent.h"
-#include "Components/EffectComponent.h"
+#include "Components/StatusEffectComponent.h"
 #include "Items/ItemBase.h"
 #include "Utils/ObjectLogger.h"
 
@@ -39,7 +39,7 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
     UAttributeComponent *AttributeComponent;
     UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
-    UEffectComponent *EffectComponent;
+    UStatusEffectQueueComponent *StatusEffectComponent;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
 	UPawnNoiseEmitterComponent* NoiseEmitterComponent;
     UFUNCTION(BlueprintCallable, Category = "Character Function")

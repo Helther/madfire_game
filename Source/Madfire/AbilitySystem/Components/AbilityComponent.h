@@ -9,6 +9,7 @@
 class UCombatComponent;
 class UAbstractAbility;
 
+
 /*
 * Тут тоже немного изменилось. Компонент теперь хранит кастера как чарактера,
 * а не Актора. В Скиле он тоже теперь чарактер. (Думаю понятно почему)
@@ -44,6 +45,8 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AbilitySystem")
     UCombatComponent *CombatComponent; //Set through ComponentSetup    
+
+
 };
 
 /*

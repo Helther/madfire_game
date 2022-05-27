@@ -22,7 +22,7 @@ public:
     void OnComponentCreated() override;
 
     UFUNCTION(BlueprintPure, Category = "Interact Helpers")
-    static TArray<EInteractType> InteractList(uint8 interactFlags);
+    static TArray<EInteractType> InteractList(UPARAM(meta=(Bitmask, BitmaskEnum = EInteractType)) int32 interactFlags);
 
 
 protected:

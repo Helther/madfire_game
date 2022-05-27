@@ -20,8 +20,8 @@ public:
     bool OnInteract_Implementation(EInteractType InteractType, ACharacter *controller);
 
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interactable Interface")
-    uint8 GetInteractableFlags() const;
-    uint8 GetInteractableFlags_Implementation() const;
+    UPARAM(meta=(Bitmask, BitmaskEnum = EInteractType)) int32 GetInteractFlags() const;
+    UPARAM(meta=(Bitmask, BitmaskEnum = EInteractType)) int32 GetInteractFlags_Implementation() const;
 
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interactable Interface")
     FText GetInteractableName() const;
@@ -37,7 +37,7 @@ public:
 
     //Item Interaction
     UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "EInteractType"), Category = "Interactable Interface")
-    uint8 InteractFlags;
+    int32 ItemInteractFlags;
 
 
 public:
@@ -87,8 +87,8 @@ public:
     bool OnInteract_Implementation(EInteractType InteractType, ACharacter *controller);
 
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interactable Interface")
-    uint8 GetInteractableFlags() const;
-    uint8 GetInteractableFlags_Implementation() const;
+    UPARAM(meta=(Bitmask, BitmaskEnum = EInteractType)) int32 GetInteractFlags() const;
+    UPARAM(meta=(Bitmask, BitmaskEnum = EInteractType)) int32 GetInteractFlags_Implementation() const;
 
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Interactable Interface")
     FText GetInteractableName() const;

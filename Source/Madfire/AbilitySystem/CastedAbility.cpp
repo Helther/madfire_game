@@ -1,7 +1,6 @@
 ﻿#include "CastedAbility.h"
 #include "Character/CharacterBase.h"
-#include "AbilitySystem/AbilityComponents/AbilityAimComponent.h"
-#include "AbilitySystemLog.h"
+#include "AbilitySystem/Components/AbilityAimComponent.h"
 
 
 

@@ -1,6 +1,5 @@
 ﻿#include "AbilityComponent.h"
 
-#include "AbilitySystem/AbilitySystemLog.h"
 #include "AbilitySystem/AbstractAbility.h"
 #include "Classes/Engine/World.h"
 
@@ -108,3 +107,4 @@ bool UAbilityComponent::ComponentSetup(UCombatComponent *Component)
     OnComponentSetup();
     return true;
 }
+

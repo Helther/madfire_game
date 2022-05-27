@@ -14,7 +14,7 @@ bool UItem::OnInteract_Implementation(EInteractType InteractType, ACharacter *co
     return true;
 }
 
-uint8 UItem::GetInteractableFlags_Implementation() const { return InteractFlags; }
+int32 UItem::GetInteractFlags_Implementation() const { return ItemInteractFlags; }
 FText UItem::GetInteractableName_Implementation() const { return ItemName; }
 
 bool UItem::OnBeginFocus_Implementation() { return true; }
@@ -72,10 +72,10 @@ bool AItemActor::OnInteract_Implementation(EInteractType InteractType, ACharacte
     }
 }
 
-uint8 AItemActor::GetInteractableFlags_Implementation() const
+int32 AItemActor::GetInteractFlags_Implementation() const
 {
     check(ItemBase != nullptr && "AItemActor: Item Base is invalid");
-    return ItemBase->GetInteractableFlags() | (uint8)EInteractType::Pickup;
+    return 1<<(int32)EInteractType::Pickup;
 }
 
 FText AItemActor::GetInteractableName_Implementation() const

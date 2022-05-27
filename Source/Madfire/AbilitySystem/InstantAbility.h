@@ -2,7 +2,7 @@
 
 
 #include "AbilitySystem/AbstractAbility.h"
-#include "AbilitySystem/AbilityComponents/AbilityTargetSelectionComponent.h"
+#include "AbilitySystem/Components/AbilityTargetSelectionComponent.h"
 #include "InstantAbility.generated.h"
 
 

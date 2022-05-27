@@ -2,7 +2,7 @@
 
 
 #include "Engine/Classes/Components/AudioComponent.h"
-#include "AbilitySystem/AbilityComponents/AbilityComponent.h"
+#include "AbilitySystem/Components/AbilityComponent.h"
 #include "Sound/SoundCue.h"
 #include "AbilitySoundComponent.generated.h"
 

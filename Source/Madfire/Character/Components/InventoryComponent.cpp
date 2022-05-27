@@ -6,6 +6,7 @@
 #include "Character/CharacterBase.h"
 #include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Character/Components/EquipmentComponent.h"
 
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent() {}
@@ -53,6 +54,14 @@ bool UInventoryComponent::MergeSlots(UPARAM(ref) FInventorySlot &SlotA,
 
         return true;
     }
+}
+
+bool UInventoryComponent::SwapSlots(UPARAM(ref) FInventorySlot &SlotA, UPARAM(ref) FInventorySlot &SlotB)
+{
+    FInventorySlot tempSlot = SlotA;
+    SlotA               = SlotB;
+    SlotB               = tempSlot;
+    return true;
 }
 
 float UInventoryComponent::WeightOfSlot(FInventorySlot &Slot)
@@ -431,13 +440,14 @@ bool UInventoryComponent::DropItem(int32 index, int32 amount, FTransform transfo
     slot.Count -= amount;
     auto item = slot.Item;
 
+    owner->DropItem(item,amount,transform);
+
     if (slot.Count <= 0)
     {
         slot.Count = 0;
+        slot.Item->ConditionalBeginDestroy();
         slot.Item = nullptr;
     }
-
-    owner->DropItem(item,amount,transform);
 
     return true;
 }
@@ -447,4 +457,118 @@ bool UInventoryComponent::IsFull() const
     FInventorySlot slot;
     int id;
     return !GetEmptySlot(slot,id);
+}
+
+bool UInventoryComponent::MoveSlot(UInventoryComponent *FromInventory, UInventoryComponent *ToInventory, int32 FromIndex, int32 ToIndex)
+{
+    check(FromInventory != nullptr);
+    check(ToInventory != nullptr);
+
+    auto &FromSlot = FromInventory->GetSlotByIndex(FromIndex);
+    auto &ToSlot = ToInventory->GetSlotByIndex(ToIndex);
+
+    if(FromSlot.Item == ToSlot.Item)
+    {
+        UE_LOG(AbilitySystemLog, Warning, TEXT("Inventory: Same Object"));
+        return false;
+    }
+
+    if(FromSlot.Item != nullptr && ToSlot.Item != nullptr)
+    {
+        if(FromSlot.Item->GetClass() == ToSlot.Item->GetClass())
+        {
+            const auto imc = FromSlot.Item->MaxCount;
+
+            ToSlot.Count += FromSlot.Count;
+
+            if(ToSlot.Count > imc)
+            {
+                auto reminder = ToSlot.Count - imc;
+                ToSlot.Count = imc;
+
+                if(ToInventory->AddToInventory(FromSlot.Item,FromSlot.Count))
+                {
+                    FromSlot.Item = nullptr;
+                    FromSlot.Count = 0;
+                    return true;
+                }
+
+                FromSlot.Count = reminder;
+            }
+            else
+            {
+                FromSlot.Item->ConditionalBeginDestroy();
+                FromSlot.Item = nullptr;
+                FromSlot.Count = 0;
+            }
+
+            return true;
+        }
+    }
+    return SwapSlots(ToSlot,FromSlot);
+}
+
+
+
+bool UInventoryComponent::InventoryEquip(UInventoryComponent *Inventory, int32 ItemIndex, class UEquipmentComponent *EquipComp, EItemSlot SlotName)
+{
+    check(Inventory != nullptr);
+    check(EquipComp != nullptr);
+    auto &Slot = Inventory->GetSlotByIndex(ItemIndex);
+
+    auto Item = Slot.Item;
+    auto EquipItem = EquipComp->EquipToSlot(Item,SlotName);
+
+    if(Item == EquipItem)
+        return false;
+
+    if(Item != nullptr)
+        Slot.Count--;
+
+    if(EquipItem != nullptr)
+    {
+        if(Slot.Count <= 0)
+        {
+            Slot.Count = 1;
+            Slot.Item = EquipItem;
+        }
+        else
+        {
+            Inventory->AddToInventory(EquipItem,1);
+        }
+    }
+    else
+    {
+        Slot.Item = nullptr;
+        Slot.Count = 0;
+    }
+
+    return true;
+}
+
+
+bool UInventoryComponent::UseItem(int32 ItemIndex, EInteractType interractType)
+{
+    auto owner = Cast<ACharacterBase>(GetOwner());
+    check(owner != nullptr && "UInventoryComponent: No owner");
+    auto &slot = GetSlotByIndex(ItemIndex);
+
+    if(slot.Count == 0 || slot.Item == nullptr)
+    {
+        return false;
+    }
+
+    auto Item = slot.Item;
+    auto result = Item->OnInteract(interractType,owner);
+
+    if((Item->ItemFlags & (1 << int32(EItemFlags::Consumable))) && result && interractType == EInteractType::Use)
+    {
+        slot.Count--;
+        if(slot.Count <=0)
+        {
+            slot.Count = 0;
+            slot.Item = nullptr;
+        }
+    }
+    return result;
 }

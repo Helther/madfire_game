@@ -1,6 +1,6 @@
 ﻿#include "ChannelAbility.h"
 #include "Character/CharacterBase.h"
-#include "AbilitySystemLog.h"
+//#include "AbilitySystemLog.h"
 
 
 UChannelAbility::UChannelAbility(const FObjectInitializer &f) :
