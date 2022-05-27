@@ -5,7 +5,6 @@
 #include "../../Items/ItemBase.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
-
 #include "InventoryComponent.generated.h"
 
 
@@ -30,16 +29,17 @@ public:
     UInventoryComponent();
     void OnComponentCreated() override;
 
-
-	UFUNCTION(BlueprintPure, Category = "Inventory Slot")
+    UFUNCTION(BlueprintCallable, Category = "Inventory Slot")
     static bool SlotIsEmpty(UPARAM(ref) FInventorySlot &slot) { return slot.Item == nullptr; }
 
-	UFUNCTION(BlueprintPure, Category = "Inventory Slot")
+    UFUNCTION(BlueprintCallable, Category = "Inventory Slot")
     static bool RemoveFromSlot(UPARAM(ref) FInventorySlot &slot, int32 amount, bool removeWholeStack);
 
-	UFUNCTION(BlueprintPure, Category = "Inventory Slot")
+    UFUNCTION(BlueprintCallable, Category = "Inventory Slot")
     static bool MergeSlots(UPARAM(ref) FInventorySlot &SlotA, UPARAM(ref) FInventorySlot &SlotB);
 
+    UFUNCTION(BlueprintCallable, Category = "Inventory Component")
+    static bool SwapSlots(UPARAM(ref) FInventorySlot &SlotA, UPARAM(ref) FInventorySlot &SlotB);
 
 	//New Inventory Interface
 	UFUNCTION(BlueprintPure, Category = "Inventory Component")
@@ -83,6 +83,15 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
     bool RemoveFromStack(int32 index, int32 amount, bool removeWholeStack);
+
+    UFUNCTION(BlueprintCallable, Category = "Inventory Component")
+    static bool InventoryEquip(UInventoryComponent *Inventory, int32 ItemIndex, class UEquipmentComponent *EquipComp, EItemSlot SlotName);
+
+    UFUNCTION(BlueprintCallable, Category = "Inventory Component")
+    static bool MoveSlot(UInventoryComponent *FromInventory, UInventoryComponent *ToInventory, int32 FromIndex, int32 ToIndex);
+
+    UFUNCTION(BlueprintCallable, Category = "Inventory Component")
+    bool UseItem(int32 ItemIndex, EInteractType interractType);
 
     UFUNCTION(BlueprintPure, Category = "Inventory Component")
     bool IsFull() const;

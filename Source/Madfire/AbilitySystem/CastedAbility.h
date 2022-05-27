@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "AbilitySystem/AbilityComponents/AbilityTargetSelectionComponent.h"
-#include "AbilitySystem/AbilityComponents/AbilityAimComponent.h"
+#include "AbilitySystem/Components/AbilityTargetSelectionComponent.h"
+#include "AbilitySystem/Components/AbilityAimComponent.h"
 #include "AbilitySystem/AbstractAbility.h"
 #include "CastedAbility.generated.h"
 

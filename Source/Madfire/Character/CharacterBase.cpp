@@ -8,13 +8,13 @@ ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) :
 {
     PrimaryActorTick.bCanEverTick = true;
     AttributeComponent = CreateDefaultSubobject<UAttributeComponent>("AttributeComponent");
-    EffectComponent = CreateDefaultSubobject<UEffectComponent>("EffectComponent");
+    StatusEffectComponent = CreateDefaultSubobject<UStatusEffectQueueComponent>("StatusEffectComponent");
     NoiseEmitterComponent = CreateDefaultSubobject<UPawnNoiseEmitterComponent>("NoiseEmitterComponent");
     Cheats.Invulnerable = false;
     Cheats.InvulnerableToHit = false;
 
     Logger.RegisterSubLogger(AttributeComponent, true);
-    Logger.RegisterSubLogger(EffectComponent, true);
+    Logger.RegisterSubLogger(StatusEffectComponent, true);
 }
 
 float ACharacterBase::TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent,
@@ -28,7 +28,7 @@ float ACharacterBase::TakeDamage(float DamageAmount, const struct FDamageEvent &
         //TODO: Set Dead State
         //TODO: Or Dead Event;
     }
-    
+
     return RemainingHealth;
 }
 
@@ -56,6 +56,6 @@ void ACharacterBase::DropItem(UItem *item, int32 amount, FTransform transform)
     actor->ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     actor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
     actor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, ECollisionResponse::ECR_Block);
-    actor->ItemBase = item;
+    actor->ItemBase = DuplicateObject(item,actor->GetOuter());
     actor->StackCount = amount;
 }

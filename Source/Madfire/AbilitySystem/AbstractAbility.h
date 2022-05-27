@@ -1,7 +1,6 @@
 #pragma once
 
-#include "AbilityComponents/AbilityComponent.h"
-#include "AbilitySystemLog.h"
+#include "Components/AbilityComponent.h"
 #include "Character/AbstractRequirement.h"
 #include "Character/Components/MovementComponentBase.h"
 #include "CoreMinimal.h"
@@ -11,7 +10,29 @@
 
 class UCombatComponent;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAbilityEvent, UAbstractAbility*, Ability);
+DECLARE_LOG_CATEGORY_EXTERN(AbilitySystemLog, Log, All);
+
+USTRUCT(BlueprintType)
+struct FAbilityActorSpawnParameters
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    FVector Location;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    FRotator Rotation;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    FVector Scale;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    class APawn *Instigator = nullptr; //
+};
+
+UENUM(BlueprintType)
+enum class EAbilityCameraMode : uint8
+{
+    CameraMode1,
+    CameraMode2,
+};
 
 /*
 * Тут я удалил всякие ненужные функции
@@ -90,6 +111,9 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
     UCombatComponent *CombatComponent;
 
+    UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    EAbilityCameraMode AbilityCameraMode;
+
     //Interface
     virtual void AbilityInit();
 
@@ -124,11 +148,20 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
     void OnAbilityCancel();
 
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "AbilitySystem")
-    void OnTargetExecute(AActor *target);
+    UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
+    void OnExecute(const TArray<AActor*> &Target, FVector InstigatorLocation, FRotator InstigatorRotation);
 
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "AbilitySystem")
-    void OnLocationExecute(FVector Location);
+
+
+    //Functional
+    UFUNCTION(BlueprintCallable, Meta=(DefaultToSelf="Parent", DeterminesOutputType="AbilityClass"), Category = "AbilitySystem")
+    static UAbstractAbility *SpawnAbility(UObject *Parent, TSubclassOf<UAbstractAbility> AbilityClass, FName Name = NAME_None);
+
+    UFUNCTION(BlueprintCallable, Meta=(DefaultToSelf="Parent", DeterminesOutputType= "TargetSelectionClass"), Category = "AbilitySystem")
+    static UAbilityComponent *CreateComponent(UAbstractAbility *Parent, TSubclassOf<UAbilityComponent> ComponentClass, FName Name = NAME_None);
+
+    UFUNCTION(BlueprintCallable, meta = (DeterminesOutputType = "ActorClass"), Category = "AbilitySystem")
+    static AActor *SpawnAbilityActor(AActor *Owner, TSubclassOf<AActor> ActorClass, FAbilityActorSpawnParameters param, FName Name = NAME_None);
 
 protected:
     FTimerHandle CastTimer;
@@ -168,36 +201,6 @@ protected:
     bool StopAnimation();
 
     bool bUserAnimInterrupt = false;
-
-    /*
-    inline bool isValid(void)
-    {
-        check(Caster != nullptr && "Skill: caster not found");
-        check(GlobalCoolDownTime > 0.0f && "Skill: cooldown time is not valid");
-        check(CastTime > 0 && "Skill: charge cooldown time is not valid");
-        check(MaxCharges > 0 && "Skill: max charge count is not valid");
-
-
-        if (isCasting)
-        {
-            UE_LOG(AbilitySystemLog, Warning, TEXT("Skill: is casting now"));
-            return false;
-        }
-
-        if (onCooldown)
-        {
-            UE_LOG(AbilitySystemLog, Warning, TEXT("Skill: is on cooldown now"));
-            return false;
-        }
-
-        if (SkillComponents.Num() == 0)
-        {
-            UE_LOG(AbilitySystemLog, Error, TEXT("Skill: component list is empty"));
-            return false;
-        }
-
-        return true;
-    }*/
 };
 
 

@@ -3,7 +3,7 @@
 #include "PlayerCharController.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "AbilitySystem/AbilityComponents/AbilityAimComponent.h"
+#include "AbilitySystem/Components/AbilityAimComponent.h"
 
 ACharacterPlayer::ACharacterPlayer(const FObjectInitializer &ObjectInitializer)
   : Super(ObjectInitializer)

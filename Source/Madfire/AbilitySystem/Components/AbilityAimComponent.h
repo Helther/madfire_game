@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "AbilitySystem/AbilityComponents/AbilityComponent.h"
+#include "AbilitySystem/Components/AbilityComponent.h"
 #include "AbilityAimComponent.generated.h"
 
 

@@ -201,7 +201,7 @@ void UCombatComponent::InitCombatFSM()
 
     //================================ WEAPON SWITCH ==============================//
     CombatFSM.state(ECombatState::WeaponSwitch)->Info.OnEnter.BindLambda([&]()
-    {// TODO check stance resolve and set current anims
+    {
         Character->Logger.Log(this, *FString::Printf(TEXT("weapon switch enter")));
         FOnMontageBlendingOutStarted callBack;
         callBack.BindUObject(this, &UCombatComponent::OnWeaponSwitchEnded);

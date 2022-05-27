@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "AbilitySystem/AbilityComponents/AbilityTargetSelectionComponent.h"
+#include "AbilitySystem/Components/AbilityTargetSelectionComponent.h"
 #include "AbstractAbility.h"
 #include "CoreMinimal.h"
 

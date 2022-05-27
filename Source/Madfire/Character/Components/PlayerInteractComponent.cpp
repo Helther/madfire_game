@@ -100,8 +100,8 @@ TScriptInterface<IInteractableInterface> UPlayerInteractComponent::GetInteractab
 
 void UPlayerInteractComponent::CheckForInteractable()
 {
-    check(Owner != nullptr);
-    check(Owner->Controller != nullptr);
+    check(Owner != nullptr && "Player Interact component: Owner is Invalid");
+    check(Owner->Controller != nullptr && "Player Interact component: Controller is Invalid");
 
     auto interactable = GetInteractableInView();
 
@@ -124,16 +124,15 @@ void UPlayerInteractComponent::CheckForInteractable()
     }
 }
 
-TArray<EInteractType> UPlayerInteractComponent::InteractList(uint8 interactFlags)
+TArray<EInteractType> UPlayerInteractComponent::InteractList(int32 interactFlags)
 {
     TArray<EInteractType> result;
-    int counter = 0;
     //TODO: It
-    for(uint8 flag = 1; flag < static_cast<uint8>(EInteractType::MAX); flag <<= 1)
+    for(int32 flag = 1; flag < static_cast<uint8>(EInteractType::MAX); flag++)
     {
-        if((interactFlags & flag) != 0)
+        int32 mask = 1 << flag;
+        if((interactFlags & mask) != 0)
             result.Add(static_cast<EInteractType>(flag));
-        if(counter++ > 7) break;
     }
     return result;
 }
