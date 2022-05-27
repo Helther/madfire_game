@@ -45,6 +45,8 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character Function")
     void DropItem(UItem *item, int32 amount, FTransform transform);
 
+    UFUNCTION(BlueprintCallable, Category = "Character Function")
+    static void SetupItemActorCollision(AItemActor* InActor, bool Enable);
 
     virtual void UseAimComponent(class UAbilityAimComponent *) {}
 

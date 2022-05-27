@@ -408,6 +408,8 @@ bool UInventoryComponent::RemoveFromStack(int32 index, int32 amount,
     }
 }
 
+
+
 void UInventoryComponent::Update()
 {
     // todo finish

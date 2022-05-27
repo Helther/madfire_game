@@ -226,11 +226,7 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
     check(itemActor != nullptr && "ItemActor is invalid");
     itemActor->ItemBase = Item;
     Item->ItemActor = itemActor->GetClass();
-
-    itemActor->ItemMesh->SetSimulatePhysics(false);
-    itemActor->ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    itemActor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
-    itemActor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, ECollisionResponse::ECR_Ignore);
+    ACharacterBase::SetupItemActorCollision(itemActor, false);
 
     auto tmp = Unequip(SlotName);
 

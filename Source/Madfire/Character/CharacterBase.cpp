@@ -52,10 +52,15 @@ void ACharacterBase::BeginPlay()
 void ACharacterBase::DropItem(UItem *item, int32 amount, FTransform transform)
 {
     AItemActor *actor = Cast<AItemActor>(GetWorld()->SpawnActor(item->ItemActor, &transform));
-    actor->ItemMesh->SetSimulatePhysics(true);
-    actor->ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-    actor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-    actor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, ECollisionResponse::ECR_Block);
-    actor->ItemBase = DuplicateObject(item,actor->GetOuter());
+    SetupItemActorCollision(actor, true);
+    actor->ItemBase = item;
     actor->StackCount = amount;
+}
+
+void ACharacterBase::SetupItemActorCollision(AItemActor* InActor, bool Enable)
+{
+    InActor->ItemMesh->SetSimulatePhysics(Enable);
+    InActor->ItemMesh->SetCollisionEnabled(Enable ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::QueryOnly);
+    InActor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
+    InActor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
 }

@@ -137,7 +137,6 @@
         Quaterstaff UMETA(DisplayName = "Quaterstaff"),
         Spear		UMETA(DisplayName = "Spear"),
         Crossbow	UMETA(DisplayName = "Crossbow"),
-        Dart		UMETA(DisplayName = "Dart"),
         Battleaxe	UMETA(DisplayName = "Battleaxe"),
         Longsword	UMETA(DisplayName = "Longsword"),
         Scimitar	UMETA(DisplayName = "Scimitar"),
@@ -148,20 +147,9 @@
         Halberd		UMETA(DisplayName = "Halberd"),
         Longbow		UMETA(DisplayName = "Longbow"),
         Shortbow	UMETA(DisplayName = "Shortbow"),
-        Warglave	UMETA(DisplayName = "Warglave"),
         Shortsword	UMETA(DisplayName = "Shortsword"),
         Shield		UMETA(DisplayName = "Shield"),
         Unarmed     UMETA(DisplayName = "Unarmed")
-    };
-
-
-    UENUM(BlueprintType)
-    enum class EShieldType : uint8
-    {
-        TowerShield UMETA(DisplayName = "TowerShield"),
-        SmallShield UMETA(DisplayName = "SmallShield"),
-        HeavyShield UMETA(DisplayName = "HeavyShield"),
-        Buckler		UMETA(DisplayName = "Buckler"),
     };
 
     UENUM(BlueprintType)

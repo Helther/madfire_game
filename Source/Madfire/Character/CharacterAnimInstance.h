@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CharacterAnimInstanceBase.h"
+#include "../CombatSystem/CombatStance.h"
 #include "CoreMinimal.h"
 
 #include "CharacterAnimInstance.generated.h"
@@ -21,7 +22,8 @@ struct FEquipmentSlotNames
     static const FName WeaponOff;
     static const FName SheathMain;
     static const FName SheathOff;
-    static const FName SheathBack;
+    static const FName SheathWeaponBack;
+    static const FName SheathShieldBack;
     static const FName Ammo;
     static const FName Head;
     static const FName Chest;
@@ -75,17 +77,30 @@ public:
     UFUNCTION(BlueprintCallable)
     bool IsMovementAllowed() const;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
-    UAnimMontage *HitWallAnim;
+    UPROPERTY(BlueprintReadOnly, Category = "CC Anims")
+        UAnimMontage* CurrentHitWallAnim;
+    UPROPERTY(BlueprintReadOnly, Category = "CC Anims")
+        UAnimMontage* CurrentWasParriedAnim;
+    UPROPERTY(BlueprintReadOnly, Category = "CC Anims")
+        UAnimMontage* CurrentBlockedAttackAnim;
+    UPROPERTY(BlueprintReadOnly, Category = "CC Anims")
+        UAnimMontage* CurrentChamberAnim;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
-    UAnimMontage *WasParriedAnim;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
-    UAnimMontage *BlockedAttackAnim;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
-    UAnimMontage *ChamberAnim;
+    UPROPERTY(BlueprintReadOnly, Category = "Animations")
+        UBlendSpace* CurrentCrouchLocomotion;
+    UPROPERTY(BlueprintReadOnly, Category = "Animations")
+        UBlendSpace* CurrentStandLocomotion;
+    UPROPERTY(BlueprintReadOnly, Category = "Animations")
+        UAnimMontage* CurrentBlockAnim;
+    UPROPERTY(BlueprintReadOnly, Category = "Animations")
+        UAnimMontage* CurrentParryAnim;
+    UPROPERTY(BlueprintReadOnly, Category = "Animations")
+        UAnimMontage* CurrentDrawAnim;
+    UPROPERTY(BlueprintReadOnly, Category = "Animations")
+        UAnimMontage* CurrentSheathAnim;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
+        TArray<UCombatStance*> DefaultStances;
 
 private:
     void NativeUpdateAnimation(float DeltaSeconds) override;
