@@ -168,14 +168,15 @@ void UEquipmentComponent::Update()
 }
 
 UEquipmentComponent::UEquipmentComponent(const FObjectInitializer &ObjectInitializer)
+    : Super(ObjectInitializer)
 {
-    Slot[(int32)EItemSlot::MainWeaponSlot].ItemClass = TSubclassOf<UItemWeapon>();
+    Slot[(int32)EItemSlot::MainWeaponSlot].ItemClass = TSubclassOf<UItemArms>();
     Slot[(int32)EItemSlot::MainWeaponSlot].SocketName = FEquipmentSlotNames::WeaponMain;
-    Slot[(int32)EItemSlot::OffMeaponSlot].ItemClass = TSubclassOf<UItemWeapon>();
+    Slot[(int32)EItemSlot::OffMeaponSlot].ItemClass = TSubclassOf<UItemArms>();
     Slot[(int32)EItemSlot::OffMeaponSlot].SocketName = FEquipmentSlotNames::WeaponOff;
-    Slot[(int32)EItemSlot::MainWeaponSlotSet2].ItemClass = TSubclassOf<UItemWeapon>();
+    Slot[(int32)EItemSlot::MainWeaponSlotSet2].ItemClass = TSubclassOf<UItemArms>();
     Slot[(int32)EItemSlot::MainWeaponSlotSet2].SocketName = FEquipmentSlotNames::WeaponMain;
-    Slot[(int32)EItemSlot::OffWeaponSlotSet2].ItemClass = TSubclassOf<UItemWeapon>();
+    Slot[(int32)EItemSlot::OffWeaponSlotSet2].ItemClass = TSubclassOf<UItemArms>();
     Slot[(int32)EItemSlot::OffWeaponSlotSet2].SocketName = FEquipmentSlotNames::WeaponOff;
     Slot[(int32)EItemSlot::AmmoSlot].SocketName = FEquipmentSlotNames::Ammo;
 
@@ -197,6 +198,10 @@ UItem *UEquipmentComponent::Equip(UItem *Item)
 
 UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
 {
+    // check in widgets EquipFromInventory if combat is busy before calling that
+    auto owner = Cast<ACharacterCreature>(GetOwner());
+    if (owner && owner->CombatComponent->IsBusy())
+        return Item;
     auto &slot = Slot[(int32)SlotName];
 
     if(!Item)
@@ -217,16 +222,24 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
 
     if(!Item->IsA(slot.ItemClass))
     {
-        UE_LOG(LogTemp, Warning, TEXT("Equipment: No class"));
-        return Item;
+        auto weapon = Cast<UItemWeapon>(Item);
+        auto shield = Cast<UItemShield>(Item);
+        if (!weapon)
+        {
+            if (!shield)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("EquipToSlot: No class"));
+                return Item;
+            }
+            else if ((SlotName != EItemSlot::OffMeaponSlot) && (SlotName != EItemSlot::OffWeaponSlotSet2))
+            {
+                UE_LOG(LogTemp, Warning, TEXT("EquipToSlot: invalid slot for shield"));
+                return Item;
+            }
+        }
     }
 
-    AItemActor *itemActor = GetWorld()->SpawnActor<AItemActor>(Item->ItemActor);
-    itemActor->SetOwner(GetOwner());
-    check(itemActor != nullptr && "ItemActor is invalid");
-    itemActor->ItemBase = Item;
-    Item->ItemActor = itemActor->GetClass();
-    ACharacterBase::SetupItemActorCollision(itemActor, false);
+    AItemActor *itemActor = SpawnItemActor(Item, false);
 
     auto tmp = Unequip(SlotName);
 
@@ -234,7 +247,6 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
     EquipAttach(SlotName);
     EquipItem->OnEquip(this);
     EquipmentSlotUpdated.Broadcast(this, SlotName);
-
 
     //TODO: Check One Weapon MainHand only
 
@@ -274,7 +286,7 @@ UItem *UEquipmentComponent::Unequip(EItemSlot SlotName)
 bool UEquipmentComponent::DropItem(EItemSlot SlotName, FTransform transform)
 {
     auto owner = Cast<ACharacterBase>(GetOwner());
-    check(owner != nullptr && "UInventoryComponent: No owner");
+    check(owner != nullptr && "Equipment: No owner");
 
     auto item = Unequip(SlotName);
 
@@ -295,9 +307,12 @@ FEquipmentSlot &UEquipmentComponent::GetEquipmentFromSlot(EItemSlot SlotName)
 
 bool UEquipmentComponent::SwapItems(EItemSlot lhs, EItemSlot rhs)
 {
-    if(Slot[(int32)lhs].ItemClass == Slot[(int32)rhs].ItemClass)
-    {        
-        auto ownerMesh = Cast<ACharacterCreature>(GetOwner())->GetMesh();
+    auto owner = Cast<ACharacterCreature>(GetOwner());
+    check(owner != nullptr && "Equipment: No owner");
+    if(Slot[(int32)lhs].ItemClass == Slot[(int32)rhs].ItemClass &&
+        owner->CombatComponent->IsWeaponSwapAllowed(lhs, rhs))
+    {
+        auto ownerMesh = owner->GetMesh();
 
         auto tmp = Slot[(int32)lhs].Item;
         Slot[(int32)lhs].Item = Slot[(int32)rhs].Item;
@@ -312,6 +327,17 @@ bool UEquipmentComponent::SwapItems(EItemSlot lhs, EItemSlot rhs)
     return false;
 }
 
+AItemActor* UEquipmentComponent::SpawnItemActor(UItem* Item, bool EnableCollision)
+{
+    AItemActor *itemActor = GetWorld()->SpawnActor<AItemActor>(Item->ItemActor);
+    check(itemActor != nullptr && "ItemActor is invalid");
+    itemActor->SetOwner(GetOwner());
+    itemActor->ItemBase = Item;
+    Item->ItemActor = itemActor->GetClass();
+    ACharacterBase::SetupItemActorCollision(itemActor, EnableCollision);
+    return itemActor;
+}
+
 void UEquipmentComponent::CalculateWeight()
 {
     CurrentWeight = 0;
@@ -324,11 +350,21 @@ void UEquipmentComponent::CalculateWeight()
 
 void UEquipmentComponent::EquipAttach(EItemSlot SlotName)
 {
-    auto ownerMesh = Cast<ACharacterCreature>(GetOwner())->GetMesh();
-    check(ownerMesh != nullptr && "OwnerMesh is invalid");
+    auto owner = Cast<ACharacterCreature>(GetOwner());
+    check(owner && "Owner is invalid");
     auto &slot = Slot[(int32)SlotName];
 
-    if(slot.Item)
-        slot.Item->AttachToComponent(ownerMesh,FAttachmentTransformRules::SnapToTargetNotIncludingScale,slot.SocketName);
+    if (slot.Item)
+    {
+        FName socketName = slot.SocketName;
+        if (SlotName == EItemSlot::MainWeaponSlot || SlotName == EItemSlot::OffMeaponSlot)
+        {// attach weapon to the actor as fallback before updating stance, and then stance might reattach it elsewhere
+            auto arms = Cast<UItemArms>(slot.Item->ItemBase);
+            check(arms && "invalid weapon item");
+            socketName = UCombatComponent::GetSlotFromWeaponType(arms->WeaponType, false, SlotName == EItemSlot::MainWeaponSlot);
+        }
+
+        slot.Item->AttachToComponent(owner->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, socketName);
+    }
 }
 

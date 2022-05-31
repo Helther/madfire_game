@@ -14,12 +14,12 @@ struct StateInfoBase
 };
 
 template<typename StateInfo>
-class ComboFSM
+class FSM
 {
 public:
     struct State
     {
-        friend class ComboFSM;
+        friend class FSM;
 
         State(int inputId) {Id = inputId;}
         int Id;
@@ -31,9 +31,6 @@ public:
         TArray<Link> Links;
     };
 
-    ComboFSM() {}
-    ~ComboFSM() {}
-
     bool contains(int Id) const
     {
         if (_States.FindByKey(Id))
@@ -41,14 +38,20 @@ public:
         return false;
     }
 
+    bool isInState(int Id) const
+    {
+        check(_CurrentState && "no state");
+        return _CurrentState->Id == Id;
+    }
+
     State *state(int StateId) 
     {
-       check(contains(StateId) && "invalid state id");
+        check(contains(StateId) && "invalid state id");
         return &_States[StateId];
     }
     const State *state(int StateId) const
     {
-       check(contains(StateId) && "invalid state id");
+        check(contains(StateId) && "invalid state id");
         return &_States[StateId];
     }
 
@@ -67,13 +70,14 @@ public:
 
     const State *const currentState() const { return _CurrentState; }
 
-    ComboFSM &addState(int StateId)
+    FSM &addState(int StateId)
     {
         if (!contains(StateId))
             _States.Emplace(State(StateId));
         return *this;
     }
-    ComboFSM &addLink(int FromState, int ToState, const FLinkReq& Req)
+
+    FSM &addLink(int FromState, int ToState, const FLinkReq& Req)
     {
         check(contains(FromState) && "invalid state id");
         auto from = state(FromState);

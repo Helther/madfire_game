@@ -12,34 +12,6 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCombatStateChanged, int, OldState, int, NewState);
 
 
-enum ECombatState
-{
-    Idle = 0,
-    WeaponSwitch,
-    Attack,
-    Block,
-    Parry,
-    Ability
-};
-
-enum ECombatStateAnimInfo
-{// Set in anim callBacks (for the most part)
-    CollisionOn        = 0x0001, // currentWeapon collision
-    ComboSaved         = 0x0002,
-    PauseComboSaved    = 0x0004, // is set when saving combo after ComboCanContinue is set and ComboSaved not
-    MovementBlocked    = 0x0008, // is set at the start of action and reset close to finish
-    CanBeParried       = 0x0010,
-    ComboCanContinue   = 0x0020, // is set when saved previously combo should play out
-    BlockOrParryActive = 0x0040,
-    WeaponGrabbed      = 0x0080, // is set at the moment of weapon switch when character reaches his weapon
-    AnimEnded          = 0x0100,
-    UserInterrupt      = 0x0200, // is set before restarting current montage at different section, to not trigger normal interrupt
-    RotationBlocked    = 0x0400, // is set in sync with MovementBlocked, but for combo anims, resets just before ComboCanContinue is set, to allow character to realign with camera
-    ChargeAllowed      = 0x0800, // is set when starting combo attack and has chargable atacks, unset when released attack
-    CanCounterChamber  = 0x1000, // is set during chamber to indicate that character can attack again, unset after exit chamber mode
-    CheckedForChamber  = 0x2000  // is set during chamber to indicate that there is no need to check again with same character
-};
-
 // directions of special attack moves
 enum ESpecialDirection
 {
@@ -49,31 +21,30 @@ enum ESpecialDirection
     SRIGHT = 8
 };
 
-
-struct CombatStateInfo : public StateInfoBase
+USTRUCT(BlueprintType)
+struct FStanceResolveResult
 {
-    float ChargeTime = 0.f;
-    int ChargeStage = -1;
-    // pointer to relevant attack info from current stance
-    FAttackInfo *AttackInfo = nullptr;
+    GENERATED_BODY()
 
-    void ChangeAnimInfo(uint16 mask, bool set) { set ? (AnimInfo |= mask) : (AnimInfo &= ~mask); }
-    bool CheckAnimInfo(uint16 mask) const { return (AnimInfo & mask) == mask; }
-    void ResetAnimInfo() { AnimInfo = 0u; }
-    
-private:
-    uint16 AnimInfo = 0u;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool NoValidStanceFound = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool NewStanceWasSet = false;
 };
 
+
 class UEquipmentComponent;
+class ACharacterCreature;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class UCombatComponent : public UActorComponent
 {
     GENERATED_BODY()
 
+    friend class UMeleeCombatStance;
+
 public:
-    UCombatComponent(const class FObjectInitializer &ObjectInitilizer);
+    UCombatComponent(const class FObjectInitializer &ObjectInitializer);
 
     UFUNCTION(BlueprintCallable, Category = "Component Update")
     void Update();
@@ -102,37 +73,65 @@ public:
     void OnBlock(bool Started);
     void OnDrawWeapon();
     void OnUseAbility(bool Started);
-
-    // for checking if allowed to do other combat related actions
-    bool IsBusy() const { return CombatFSM.currentState()->Id != ECombatState::Idle; }
-    void WeaponsSetup(bool draw);
+    // setups collision and attaches weapon to owner if has not been attached already by equipment
+    UFUNCTION(BlueprintCallable)
+    void WeaponSetup(UItemArms* Weapon, AItemActor* Actor, bool Draw, FName Slot, bool MainHand);
     // called in attack collision anim notify
-    void SetCurrentWeaponCollision(bool main, bool enable);
-
+    UFUNCTION(BlueprintCallable)
+    static void SetWeaponCollision(AItemActor* WeaponActor, bool Enable);
+    UFUNCTION(BlueprintCallable)
+    static FName GetSlotFromWeaponType(EWeaponType type, bool draw, bool mainHand);
+    FORCEINLINE auto& GetCombatFSM() const { return CurrentCombatStance->CombatFSM; }
+    // for checking if allowed to do other combat related actions
+    UFUNCTION(BlueprintCallable)
+    FORCEINLINE bool IsBusy() const { return HasCombatStance() && !GetCombatFSM().isInState(ECombatState::Idle); }
     // exclusively used to set new states(do not set directly from fsm!)
     bool UpdateCombatFSM();
-    void ResetCurrentCombo() { CurrentCombo = 0; }
     // checks if can combo further and starts the animation
     void StartNextComboAttack(bool IsPauseAttack);
-    UFUNCTION(BlueprintCallable)
-    UItemWeapon* GetCurrentWeapon(bool MainHand) const { return MainHand ? CurrentWeaponMainH : CurrentWeaponOffH; }
 
 //================================= Stance Logic ================================//
-    void OnStanceChanged();
-    UCombatStance* GetCurrentCombatStance() const;
+    // Infers what stance should be from current equipment (if stance is specified in the argument, then then check it before/instead looking in StanceStack)
+    // WeaponChanged is true then equipment was updated
+    UFUNCTION(BlueprintCallable)
+    FStanceResolveResult ResolveNewStance(UCombatStance* NewStance = nullptr, bool WeaponChanged = false);
+    FORCEINLINE bool HasCombatStance() const { return CurrentCombatStance != nullptr; }
+    FORCEINLINE UCombatStance *GetCurrentCombatStance() const { return CurrentCombatStance; }
+    UFUNCTION(BlueprintCallable)
+    void ToggleHandMode();
 protected:
-    void ResolveNewStance();
-    void UpdateStanceAnims(const UCombatStance* DefaultStance);
-    bool DoesStanceFit(const UCombatStance* Stance) const;
+    struct PendingStanceInfo
+    {
+        // Use it to swap stances with weapons drawn
 
+        // check if state is valid and return true if new stance is pending switch
+        FORCEINLINE bool IsSet() const { check(!((NewStance != nullptr) ^ (DefaultStance != nullptr))); return NewStance && DefaultStance; }
+        FORCEINLINE void Reset() { NewStance = nullptr; DefaultStance = nullptr; }
+
+        UCombatStance *NewStance = nullptr;
+        const UCombatStance *DefaultStance = nullptr;
+    };
+
+    void SetNewStance(UCombatStance* OldStance, UCombatStance* NewStance, const UCombatStance* DefaultStance);
+    void StanceChanged(UCombatStance* OldStance, UCombatStance* NewStance, const UCombatStance* DefaultStance, bool WeaponChanged);
+    bool DoesStanceFit(UCombatStance* Stance, bool CheckHandMode = false) const;
+    UCombatStance* CheckStances(const TArray<UCombatStance*>& Stances, bool CheckHandMode = false);
+    // looks in current stance for a weapon that has the given collision
+    UItemWeapon* FindHitMeleeWeapon(const UPrimitiveComponent* HitComp) const;
+    // checks if given collision hit this characters weapon
+    bool HitOwnMeleeWeapons(const UPrimitiveComponent* HitComp, const AActor* HitActor) const;
+    // looks for the first weapon (starting with main-hand) that has active collision
+    UItemWeapon* FindCharacterActiveWeapon(const ACharacterCreature* SomeCharacter) const;
+    // looks in current stance for weapons have enabled collision
+    TArray<AItemActor*> FindActiveMeleeWeapons() const;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    UCombatStance *CurrentCombatStance;
+    PendingStanceInfo PendingStance;
     TArray<UCombatStance*> StanceStack;
-    // set it in order to have fallback stance during stance resolve
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-    UCombatStance* BackupStance;
-
+//============================================================================
 
 public:
-    FORCEINLINE bool IsBlockButtonPressed() const { return BlockPressed; }
     void ResetRotationRate();
 
     void UseAimComponent(class UAbilityAimComponent *);
@@ -145,9 +144,15 @@ public:
 
     UFUNCTION()
     void OnEquipmentSwap(UEquipmentComponent* Component, EItemSlot SlotL, EItemSlot SlotR);
+    bool IsWeaponSwapAllowed(EItemSlot lhs, EItemSlot rhs) const;
+
+    FORCEINLINE bool IsBlockButtonPressed() const { return BlockPressed; }
+    FORCEINLINE bool IsWeaponSwitchPressed() const { return WeaponSwitchPressed; }
+    FORCEINLINE bool IsAttackPressed() const { return AttackPressed; }
+    FORCEINLINE bool IsBlockPressed() const { return BlockPressed; }
 
     // current active directions for special moves
-    UPROPERTY(BlueprintReadOnly)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     uint8 SpecialDirections = 0u;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float BlockStaminaCost;
@@ -161,21 +166,21 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float ChamberThreshhold;
     // значение относительно нормы (коэффициент)
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     float AttackSpeed;
+    // TODO add check when switching, that current stance is unarmed or ranged->noop
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool TwoHandMode = false;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float UnarmedBaseDamage;
     // максимальный угол между направлениями бойцов
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float MaxFacingAngle;
-    ComboFSM<CombatStateInfo> CombatFSM;
     FCombatStateChanged OnCombatStateChanged;
-    UItemWeapon *CurrentWeaponMainH = nullptr;
-    UItemWeapon *CurrentWeaponOffH = nullptr;
 
     float CalculateWeaponDamage(const UItemWeapon* weapon, float attackInfoDamageMod, float strMod);
     // для расчета возможности применения блока или паррирования
-    static float GetAngleBetweenAttackerAndDefender(const AActor *Attacker, const  AActor *Defender);
+    static float GetAngleBetweenAttackerAndDefender(const AActor *Attacker, const AActor *Defender);
     // для расчета разницы направлений
     static float GetAngleBetweenActors(const AActor *First, const AActor *Second);
 
@@ -184,8 +189,6 @@ public:
 
     FORCEINLINE static float CalculateBalance(int32 skillVal, int32 strMod, float shieldWeight) 
         { return FMath::Max(skillVal + strMod + shieldWeight, 1.f); } // TODO улучшить при балансировке
-
-    static FName GetSlotFromWeaponType(EWeaponType type, bool draw, bool mainHand);
 
     //================================= Ability System ================================//
     UFUNCTION(BlueprintCallable, Category = "Ability System")
@@ -198,8 +201,14 @@ public:
     void AddAbility(UAbstractAbility *Ability);
     UFUNCTION(BlueprintCallable, Category = "Ability System")
     void RemoveAbility(UAbstractAbility *Ability);
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability System")
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability System")
     TSoftObjectPtr<UAbstractAbility> CurrentAbility;
+    FORCEINLINE bool IsAbilityPressed() const { return AbilityPressed; }
+    FORCEINLINE bool IsOnGlobalCooldown() const { return GetWorld()->GetTimerManager().IsTimerActive(GlobalCooldownTimer); }
+    FORCEINLINE void SetGlobalCooldown() { GetWorld()->GetTimerManager().SetTimer(GlobalCooldownTimer, GlobalCooldownTime, false); }
+    UFUNCTION(BlueprintCallable, Category = "Ability System")
+    bool IsUsingAbility() const;
+
 
 protected:
     enum class EChamberRes
@@ -212,21 +221,18 @@ protected:
     void TickComponent(float DeltaTime, ELevelTick TickType,
                                FActorComponentTickFunction *ThisTickFunction) override;
 
-    void InitCombatFSM();
     // action states are attack and parry, so far
     void ResetActionState(int StateId);
     void CalculateMaxCombatSpeeds();
     void CalculateMaxBlockingSpeed(float SpeedModifier);
     bool CanBeInterruptedWithBlock(int CurrentState) const;
-    void WeaponSetup(UItemWeapon* weapon, AItemActor* actor, bool draw, bool mainHand);
     bool HasAlreadyHitTarget(AActor *Target, UItemWeapon* Weapon) const;
     UFUNCTION()
     void OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
     bool IsInActionState() const;
-    bool IsChamberValid(const AActor* HitActor, const UItemWeapon* ActiveWeapon) const;
-    EChamberRes ResolveChamber(AActor* HitActor, const UItemWeapon* OwnerActiveWeapon);
+    bool IsChamberValid(const ACharacterCreature* HitCharacter, const UItemWeapon* HitActorActiveWeapon, const UItemWeapon* OwnerActiveWeapon) const;
+    EChamberRes ResolveChamber(ACharacterCreature* HitCharacter, const UItemWeapon* HitActorActiveWeapon, const UItemWeapon* OwnerActiveWeapon);
     void EnterChamberState(ACharacterCreature* ChamberedCharacter);
-    void SetupDefaultWeapon(bool IsMainHand, bool Equip);
 
     // character orientation to movement speed while weapon is drawn
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -238,23 +244,14 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float ChargeStartTime;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float BlockStaminaRegenRateMod;    
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-    UItemWeapon *DefaultWeaponMainH = nullptr;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-    UItemWeapon *DefaultWeaponOffH = nullptr;
-    // TODO temp, set before drawing weapon with user selected ability in mind via resolver
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-    UCombatStance *CurrentCombatStance = nullptr;
+    float BlockStaminaRegenRateMod;
+    // set of characters hit and with what weapon
+    TSet<TPair<AActor*, UItemWeapon*>> CharactersHit;
     // works the same for ai controller, but without actually pressing buttons
     bool WeaponSwitchPressed = false;
     bool AttackPressed = false;
     bool BlockPressed = false;
-    // set of characters hit and with what weapon
-    TSet<TPair<AActor*, UItemWeapon*>> CharactersHit;
-    class ACharacterCreature *Character;
-    AItemActor *CurrentMainWeaponActor;
-    AItemActor *CurrentOffWeaponActor;
+    ACharacterCreature *Owner = nullptr;
     bool IsWeaponDrawn;
 
     //================================= Ability System ================================//
@@ -265,7 +262,7 @@ protected:
     float CastSpeed;
     //Max move speed during ability cast
     UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Ability System")
-    float MaxSpeedWhileCasting;    
+    float MaxSpeedWhileCasting;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability System")
     float GlobalCooldownTime = 1;
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability System")
@@ -278,7 +275,4 @@ protected:
 
 private:
     bool IsDirty = false;
-    int CurrentCombo = 0;
-    // TODO use this to check if equipped melee weapon or not
-    TSet<EWeaponType> RangedWeaponTypes;
 };

@@ -47,30 +47,28 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
     float balance;
     int32 strMod = UAttributeSetHelper::GetModifier(AttributeComponent->Attributes, EAttributes::Str);
     int32 balanceSkill = USkillHelper::GetValue(AttributeComponent->Skills, ESkill::Balance);
-    Logger.Log(this,*FString::Printf(TEXT("take damage before block %f"), DamageAmount));
+    Logger.Log(this, *FString::Printf(TEXT("take damage before block %f"), DamageAmount));
     auto attackerChar = Cast<ACharacterCreature>(DamageCauser);
     // check if had shield and what kind
-    UItemWeapon* shield = nullptr;
-    if (CombatComponent->CurrentWeaponOffH != nullptr && CombatComponent->CurrentWeaponOffH->WeaponType == EWeaponType::Shield)
-        shield = CombatComponent->CurrentWeaponOffH;
-    else if (CombatComponent->CurrentWeaponMainH != nullptr)
-        shield = CombatComponent->CurrentWeaponMainH;
+    auto shield = Cast<UItemWeapon>(CombatComponent->GetCurrentCombatStance()->GetArmsFromSlot(EArmsSlot::Shield));
     bool hasProperShield = shield != nullptr;
     // check actors directions
     bool isFacingAttacker = UCombatComponent::GetAngleBetweenAttackerAndDefender(DamageCauser, this) < CombatComponent->MaxFacingAngle;
     // check parry
-    if (hasProperShield && isFacingAttacker && attackerChar && (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Parry) &&
-        CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::BlockOrParryActive) &&
-        attackerChar->CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::CanBeParried) &&
-        !attackerChar->CombatComponent->CombatFSM.currentState()->Info.AttackInfo->IsNotParriable)
+    auto attackerCombatStateInfo = attackerChar->CombatComponent->GetCombatFSM().currentState()->Info;
+    auto characterCombatStateInfo = CombatComponent->GetCombatFSM().currentState()->Info;
+    if (hasProperShield && isFacingAttacker && attackerChar && (CombatComponent->GetCombatFSM().isInState(ECombatState::Parry)) &&
+        characterCombatStateInfo.CheckAnimInfo(ECombatStateAnimInfo::BlockOrParryActive) &&
+        attackerCombatStateInfo.CheckAnimInfo(ECombatStateAnimInfo::CanBeParried) &&
+        !attackerCombatStateInfo.AttackInfo->IsNotParriable)
     {
         attackerChar->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::WasParried);
         return AttributeComponent->Health->CurrentValue; 
     }
-    if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Block)
+    if (CombatComponent->GetCombatFSM().isInState(ECombatState::Block))
     {
-        bool attackisInterruptable = attackerChar && !attackerChar->CombatComponent->CombatFSM.currentState()->Info.AttackInfo->IsNotInterruptable;
-        bool attackisBlockable = attackerChar && !attackerChar->CombatComponent->CombatFSM.currentState()->Info.AttackInfo->IsNotBlockable;
+        bool attackisInterruptable = attackerChar && !attackerCombatStateInfo.AttackInfo->IsNotInterruptable;
+        bool attackisBlockable = attackerChar && !attackerCombatStateInfo.AttackInfo->IsNotBlockable;
         if (hasProperShield && isFacingAttacker && attackisBlockable)
         {
             balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, shield->Weight);
@@ -87,7 +85,7 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
                 if (attackisInterruptable)
                     attackerChar->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::HitWall);
                 // apply blocked action to the defender
-                CombatComponent->CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+                characterCombatStateInfo.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
                 InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::BlockedAttack);
             }
         }
@@ -98,8 +96,8 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEve
         balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, 0);
     Logger.Log(this,*FString::Printf(TEXT("force %f"), force));
     Logger.Log(this,*FString::Printf(TEXT("balance %f"), balance));
-    bool isNotInterruptable = CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack &&
-        CombatComponent->CombatFSM.currentState()->Info.AttackInfo->IsNotInterruptable;
+    bool isNotInterruptable = CombatComponent->GetCombatFSM().isInState(ECombatState::Attack) &&
+        CombatComponent->GetCombatFSM().currentState()->Info.AttackInfo->IsNotInterruptable;
     if (!blocked && (force > balance) && !isNotInterruptable) // check if block failed and can be interrupted
     {
         if (CombatComponent->KnockdownThreshhold < force / balance) // the consequences
@@ -169,17 +167,17 @@ void ACharacterCreature::InterruptAnimation(ECCState Source, int SubMode)
                 if (AnimInstance->Montage_IsActive(GetMovementComponent()->HangMontage))
                     AnimInstance->StopSlotAnimation(0.f, FAnimSlotNames::FullBody);
             }
-            else if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
+            else if (CombatComponent->GetCombatFSM().isInState(ECombatState::Attack))
             {
-                if (AnimInstance->Montage_IsActive(CombatComponent->CombatFSM.currentState()->Info.AttackInfo->AttackMontage))
-                    AnimInstance->Montage_Stop(0.f, CombatComponent->CombatFSM.currentState()->Info.AttackInfo->AttackMontage);
+                if (AnimInstance->Montage_IsActive(CombatComponent->GetCombatFSM().currentState()->Info.AttackInfo->AttackMontage))
+                    AnimInstance->Montage_Stop(0.f, CombatComponent->GetCombatFSM().currentState()->Info.AttackInfo->AttackMontage);
             }
-            else if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Parry)
+            else if (CombatComponent->GetCombatFSM().isInState(ECombatState::Parry))
             {
                 if (AnimInstance->Montage_IsActive(AnimInstance->CurrentParryAnim))
                     AnimInstance->Montage_Stop(0.f, AnimInstance->CurrentParryAnim);
             }
-            if (CombatComponent->CombatFSM.currentState()->Id == ECombatState::Ability)
+            if (CombatComponent->GetCombatFSM().isInState(ECombatState::Ability))
             {
                 if (AnimInstance->Montage_IsActive(
                       CombatComponent->CurrentAbility->CastAnimMontage))
@@ -300,7 +298,6 @@ void ACharacterCreature::CCStunEnded(UAnimMontage *animMontage, bool bInterrupte
 
 void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
-    // todo 
     Logger.Log(this,*FString::Printf(TEXT("CCEnd: Loss of balance")));
     if (CCStateManager.IsInCCSubMode(BlockedAttack))
     {
@@ -312,13 +309,13 @@ void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted
         }
         else
         {
-            CombatComponent->CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::AnimEnded, true);
+            CombatComponent->GetCombatFSM().currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::AnimEnded, true);
             CombatComponent->UpdateCombatFSM();
         }
     }
     else if (CCStateManager.IsInCCSubMode(Chamber))
     {
-        auto& stateInfo = CombatComponent->CombatFSM.currentState()->Info;
+        auto& stateInfo = CombatComponent->GetCombatFSM().currentState()->Info;
         bool startedAttack = !stateInfo.CheckAnimInfo(ECombatStateAnimInfo::CheckedForChamber) && stateInfo.CheckAnimInfo(ECombatStateAnimInfo::CanCounterChamber);
         if (!startedAttack)
         { // check if starting new attack from chamber then don't interrupt
