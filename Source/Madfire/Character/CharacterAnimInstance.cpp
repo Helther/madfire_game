@@ -9,6 +9,7 @@ const FName FAnimSectionNames::Cancel = "Cancel";
 
 const FName FEquipmentSlotNames::WeaponMain = "S_WeaponMain";
 const FName FEquipmentSlotNames::WeaponOff = "S_WeaponOff";
+const FName FEquipmentSlotNames::Shield = "S_Shield";
 const FName FEquipmentSlotNames::SheathMain = "S_WeaponSheathMain";
 const FName FEquipmentSlotNames::SheathOff = "S_WeaponSheathOff";
 const FName FEquipmentSlotNames::SheathWeaponBack = "S_WeaponSheathBack";
@@ -30,39 +31,39 @@ void UCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 void UCharacterAnimInstance::OnWeaponSwitch()
 {    
-    auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::WeaponSwitch)->Info;
+    auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().state(ECombatState::WeaponSwitch)->Info;
     stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::WeaponGrabbed, true);
-    CharacterInstance->CombatComponent->WeaponsSetup(!CharacterInstance->CombatComponent->WeaponDrawn());
+    CharacterInstance->CombatComponent->GetCurrentCombatStance()->ArmsSetup(!CharacterInstance->CombatComponent->WeaponDrawn());
 }
 
 void UCharacterAnimInstance::OnBlockActivation(bool activate)
 {
-    if (CharacterInstance->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Block)
+    if (CharacterInstance->CombatComponent->GetCombatFSM().isInState(ECombatState::Block))
     {
-        auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::Block)->Info;
+        auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().state(ECombatState::Block)->Info;
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::BlockOrParryActive, activate);
     }
 }
 
 void UCharacterAnimInstance::OnParryActivation(bool activate)
 {
-    if (CharacterInstance->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Parry)
+    if (CharacterInstance->CombatComponent->GetCombatFSM().isInState(ECombatState::Parry))
     {
-        auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::Parry)->Info;
+        auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().state(ECombatState::Parry)->Info;
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::BlockOrParryActive, activate);
     }
 }
 
 void UCharacterAnimInstance::OnMovementAllowed(bool activate)
 {
-    auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.currentState()->Info;
+    auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().currentState()->Info;
     stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::MovementBlocked, !activate);
     CharacterInstance->GetMovementComponent()->MovementLock = !activate;
 }
 
 void UCharacterAnimInstance::OnRotationAllowed(bool activate)
 {
-    auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.currentState()->Info;
+    auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().currentState()->Info;
     stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::RotationBlocked, !activate);
     RootMotionMode = activate ? ERootMotionMode::IgnoreRootMotion : ERootMotionMode::RootMotionFromMontagesOnly;
     if (activate)
@@ -73,8 +74,8 @@ void UCharacterAnimInstance::OnRotationAllowed(bool activate)
 
 void UCharacterAnimInstance::OnComboCanContinue()
 {
-    auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
-    if (CharacterInstance->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
+    auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().state(ECombatState::Attack)->Info;
+    if (CharacterInstance->CombatComponent->GetCombatFSM().isInState(ECombatState::Attack))
     {
         if (!stateInfo.CheckAnimInfo(ECombatStateAnimInfo::ComboSaved))
             stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::ComboCanContinue, true);
@@ -83,32 +84,35 @@ void UCharacterAnimInstance::OnComboCanContinue()
     }
 }
 
-void UCharacterAnimInstance::OnCollisionActivation(bool mainHand, bool activate)
+void UCharacterAnimInstance::OnCollisionActivation(EArmsSlot WeaponSlot, bool activate)
 {
-    if (CharacterInstance->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
+    if (CharacterInstance->CombatComponent->GetCombatFSM().isInState(ECombatState::Attack))
     {
-        auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
+        auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().state(ECombatState::Attack)->Info;
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CollisionOn, activate);
         if (activate)
             stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, false);
-        CharacterInstance->CombatComponent->SetCurrentWeaponCollision(mainHand, activate);
+        AItemActor* weaponActor = CharacterInstance->CombatComponent->GetCurrentCombatStance()->GetArmsActorFromSlot(WeaponSlot);
+        check(weaponActor && "invalid weapon collision anim event");
+        UCombatComponent::SetWeaponCollision(weaponActor, activate);
     }
 }
 
 void UCharacterAnimInstance::OnParriableActivation(bool activate)
 {
-    if (CharacterInstance->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
+    if (CharacterInstance->CombatComponent->GetCombatFSM().isInState(ECombatState::Attack))
     {
-        auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
+        auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().state(ECombatState::Attack)->Info;
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanBeParried, activate);
     }
 }
 
 bool UCharacterAnimInstance::IsMovementAllowed() const
 {
-    if (CharacterInstance != nullptr && CharacterInstance->CombatComponent != nullptr && CharacterInstance->CombatComponent->CombatFSM.currentState())
+    if (CharacterInstance != nullptr && CharacterInstance->CombatComponent != nullptr &&
+        CharacterInstance->CombatComponent->HasCombatStance() && CharacterInstance->CombatComponent->GetCombatFSM().currentState())
     {
-        const auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.currentState()->Info;
+        const auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().currentState()->Info;
         return !stateInfo.CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked);
     }
     return false;
@@ -126,6 +130,6 @@ void UCharacterAnimInstance::OnDodgeInvulnerable(bool activate)
 
 void UCharacterAnimInstance::OnCounterChamber(bool activate)
 {
-    auto& stateInfo = CharacterInstance->CombatComponent->CombatFSM.currentState()->Info;
+    auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().currentState()->Info;
     stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanCounterChamber, activate);
 }

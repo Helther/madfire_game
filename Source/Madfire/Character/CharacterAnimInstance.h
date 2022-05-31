@@ -20,6 +20,7 @@ struct FEquipmentSlotNames
 {
     static const FName WeaponMain;
     static const FName WeaponOff;
+    static const FName Shield;
     static const FName SheathMain;
     static const FName SheathOff;
     static const FName SheathWeaponBack;
@@ -63,7 +64,7 @@ public:
     void OnComboCanContinue();
 
     UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
-    void OnCollisionActivation(bool mainHand, bool activate);
+    void OnCollisionActivation(EArmsSlot WeaponSlot, bool activate);
 
     UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
     void OnParriableActivation(bool activate);
@@ -90,6 +91,8 @@ public:
         UBlendSpace* CurrentCrouchLocomotion;
     UPROPERTY(BlueprintReadOnly, Category = "Animations")
         UBlendSpace* CurrentStandLocomotion;
+    UPROPERTY(BlueprintReadOnly, Category = "Animations")
+        UAimOffsetBlendSpace* CurrentAimOffset;
     UPROPERTY(BlueprintReadOnly, Category = "Animations")
         UAnimMontage* CurrentBlockAnim;
     UPROPERTY(BlueprintReadOnly, Category = "Animations")

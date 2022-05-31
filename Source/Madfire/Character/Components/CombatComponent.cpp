@@ -4,8 +4,8 @@
 #include "Kismet/KismetMathLibrary.h"
 
 
-UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitilizer)
-  : Super(ObjectInitilizer)
+UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitializer)
+  : Super(ObjectInitializer)
 {
     PrimaryComponentTick.bCanEverTick = true;
     // TODO temp test
@@ -23,24 +23,14 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitili
     // end temp
 
     AbilityPanel.SetNum(10);
-
-    RangedWeaponTypes.Emplace(EWeaponType::Crossbow);
-    RangedWeaponTypes.Emplace(EWeaponType::Longbow);
-    RangedWeaponTypes.Emplace(EWeaponType::Shortbow);
-
-    AbilityPanel.SetNum(10);
-
-    RangedWeaponTypes.Emplace(EWeaponType::Crossbow);
-    RangedWeaponTypes.Emplace(EWeaponType::Longbow);
-    RangedWeaponTypes.Emplace(EWeaponType::Shortbow);
-
-    InitCombatFSM();
 }
 
 FName UCombatComponent::GetSlotFromWeaponType(EWeaponType type, bool draw, bool mainHand)
 {
     if (draw)
     {
+        if (type == EWeaponType::Shield)
+            return FEquipmentSlotNames::Shield;
         return mainHand ? FEquipmentSlotNames::WeaponMain : FEquipmentSlotNames::WeaponOff;
     }
     else
@@ -60,6 +50,8 @@ FName UCombatComponent::GetSlotFromWeaponType(EWeaponType type, bool draw, bool 
             return FEquipmentSlotNames::SheathWeaponBack;
         case EWeaponType::Shield:
             return FEquipmentSlotNames::SheathShieldBack;
+        case EWeaponType::Unarmed:
+            return mainHand ? FEquipmentSlotNames::WeaponMain : FEquipmentSlotNames::WeaponOff;
         default:
             return mainHand ? FEquipmentSlotNames::SheathMain : FEquipmentSlotNames::SheathOff;
         }
@@ -70,7 +62,7 @@ float UCombatComponent::CalculateWeaponDamage(const UItemWeapon* weapon, float a
 {
     if (weapon->WeaponType == EWeaponType::Unarmed)
     {
-        auto gloves = Character->EquipmentComponent->GetEquipmentFromSlot(EItemSlot::HandsSlot).Item;
+        auto gloves = Owner->EquipmentComponent->GetEquipmentFromSlot(EItemSlot::HandsSlot).Item;
         if (gloves)
             return FMath::Max((UnarmedBaseDamage + gloves->ItemBase->Weight) + strMod, UnarmedBaseDamage);
         else
@@ -86,12 +78,10 @@ float UCombatComponent::CalculateWeaponDamage(const UItemWeapon* weapon, float a
 void UCombatComponent::BeginPlay()
 {
     Super::BeginPlay();
-    Character = Cast<ACharacterCreature>(GetOwner());
-    check(Character != nullptr && "UCombatComponent: No pawn");
-    CombatFSM.setCurrentState(ECombatState::Idle);
-    // TODO temp set init weapon to default while no equipemnt initialization is present yet
-    SetupDefaultWeapon(true, true);
-    SetupDefaultWeapon(false, true);
+    Owner = Cast<ACharacterCreature>(GetOwner());
+    check(Owner != nullptr && "UCombatComponent: No pawn");
+    // set default stance as current and setup weapon actors
+    ResolveNewStance();
 }
 
 // Called every frame
@@ -99,13 +89,13 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                                      FActorComponentTickFunction *ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-    auto currentState = CombatFSM.currentState();
+    auto currentState = CurrentCombatStance ? GetCombatFSM().currentState() : nullptr;
     if (currentState && CurrentCombatStance && currentState->Id == ECombatState::Attack && AttackPressed)// check if charging
     {
         if (currentState->Info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed))
         {
             currentState->Info.ChargeTime += DeltaTime;
-            auto &currentCombo = CurrentCombatStance->ComboAttacks[CurrentCombo];
+            auto &currentCombo = CurrentCombatStance->ComboAttacks[CurrentCombatStance->GetComboCount()];
             // check if held attack for at least some time to start charging and has charge stage
             if ((currentState->Info.ChargeStage == -1 && currentState->Info.ChargeTime < ChargeStartTime) ||
                 currentCombo.ChargeAttackStages.Num() == 0 )
@@ -123,289 +113,20 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                     currentState->Info.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, true);
                     FOnMontageBlendingOutStarted callBack;
                     callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
-                    Character->StartAnimation(currentState->Info.AttackInfo->AttackMontage, callBack, AttackSpeed, currentState->Info.AttackInfo->AnimSectionName);
+                    Owner->StartAnimation(currentState->Info.AttackInfo->AttackMontage, callBack, AttackSpeed, currentState->Info.AttackInfo->AnimSectionName);
                 }
             }
         }
     }
 }
 
-void UCombatComponent::InitCombatFSM()
-{
-    CombatFSM.addState(ECombatState::Idle).addState(ECombatState::WeaponSwitch).addState(ECombatState::Attack).addState(ECombatState::Block).addState(ECombatState::Parry).addState(ECombatState::Ability);
-    //=================================== IDLE =====================================//
-    CombatFSM.state(ECombatState::Idle)->Info.OnEnter.BindLambda([&]()
-    {
-        Character->Logger.Log(this, *FString::Printf(TEXT("idle enter: %s"),
-                IsWeaponDrawn ? TEXT("weapon on") : TEXT("weapon off")));
-        ResetRotationRate();
-    });
-    CombatFSM.state(ECombatState::Idle)->Info.OnLeave.BindLambda([&]()
-    {
-        CombatFSM.state(ECombatState::Idle)->Info.ResetAnimInfo();
-        Character->Logger.Log(this, *FString::Printf(TEXT("idle leave")));
-        ResetRotationRate();
-    });
-    FLinkReq req;
-    req.BindLambda([&]()
-    {
-        return CurrentWeaponMainH && CombatFSM.currentState()->Id == ECombatState::Idle && WeaponSwitchPressed;
-    });
-    CombatFSM.addLink(ECombatState::Idle, ECombatState::WeaponSwitch, req);
-    req.Unbind();
-    req.BindLambda([&]() 
-    {
-        bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;
-        bool hasAnim = Character->AnimInstance->CurrentBlockAnim != nullptr;
-        return hasAnim && CurrentCombatStance && CurrentCombatStance->IsBlockAllowed && IsWeaponDrawn && IsWeaponDrawn && CombatFSM.currentState()->Id == ECombatState::Idle && BlockPressed && hasStamina;
-    });
-    CombatFSM.addLink(ECombatState::Idle, ECombatState::Block, req);
-    req.Unbind();
-    req.BindLambda([&]() // set relevant attack info into current state, check special, if not start combo
-    {
-        bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;
-        if (!IsWeaponDrawn || !AttackPressed || !hasStamina || Character->GetMovementComponent()->IsTransitionInProgress())
-            return false;
-        ESpecialType special = ESpecialType::None;
-        if (Character->GetMovementComponent()->bIsSprinting)
-            special = ESpecialType::Sprint;
-        else if (Character->GetMovementComponent()->IsCrouching())
-            special = ESpecialType::Crouch;
-        else if (Character->GetMovementComponent()->IsFalling())
-            special = ESpecialType::Air;
-        else
-        {
-            if (SpecialDirections & ESpecialDirection::SFORWARD)
-                special = ESpecialType::Forward;
-            else if (SpecialDirections & ESpecialDirection::SBACK)
-                special = ESpecialType::Back;
-            else if (SpecialDirections & ESpecialDirection::SLEFT)
-                special = ESpecialType::Left;
-            else if (SpecialDirections & ESpecialDirection::SRIGHT)
-                special = ESpecialType::Right;
-        }
-        if (special != ESpecialType::None)
-            CombatFSM.state(ECombatState::Attack)->Info.AttackInfo = CurrentCombatStance->GetAttackInfoForSpecial(special);
-        else
-        { // may not be any combos
-            auto newAttackInfo = CurrentCombatStance->ComboAttacks.Num() != 0 ? &CurrentCombatStance->ComboAttacks[0].NormalAttack : nullptr;
-            CombatFSM.state(ECombatState::Attack)->Info.AttackInfo = newAttackInfo;
-        }
-        return CombatFSM.state(ECombatState::Attack)->Info.AttackInfo != nullptr && CombatFSM.state(ECombatState::Attack)->Info.AttackInfo->AttackMontage != nullptr;
-    });
-    CombatFSM.addLink(ECombatState::Idle, ECombatState::Attack, req);
-    req.Unbind();
-    req.BindLambda([&]() // check if not active and not in cooldown and more
-    {
-        bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;
-        bool globalCool = GetWorld()->GetTimerManager().IsTimerActive(GlobalCooldownTimer);
-        return AbilityPressed && hasStamina && CurrentAbility.IsValid() && !CurrentAbility->bIsCooldown && !globalCool;
-    });
-    CombatFSM.addLink(ECombatState::Idle, ECombatState::Ability, req);
-    req.Unbind();
-
-    //================================ WEAPON SWITCH ==============================//
-    CombatFSM.state(ECombatState::WeaponSwitch)->Info.OnEnter.BindLambda([&]()
-    {
-        Character->Logger.Log(this, *FString::Printf(TEXT("weapon switch enter")));
-        FOnMontageBlendingOutStarted callBack;
-        callBack.BindUObject(this, &UCombatComponent::OnWeaponSwitchEnded);
-        if (!IsWeaponDrawn)
-            ResolveNewStance();
-        Character->StartAnimation(IsWeaponDrawn ? 
-            Character->AnimInstance->CurrentSheathAnim : Character->AnimInstance->CurrentDrawAnim, callBack, AttackSpeed);
-    });
-    CombatFSM.state(ECombatState::WeaponSwitch)->Info.OnLeave.BindLambda([&]()
-    {
-        Character->Logger.Log(this, *FString::Printf(TEXT("weapon switch leave")));
-        if (IsWeaponDrawn)// in combat mode
-        {
-            Character->GetMovementComponent()->maxSpeedBlock = true;
-            CalculateMaxCombatSpeeds();
-            Character->GetMovementComponent()->bUseControllerDesiredRotation = true;
-            Character->GetMovementComponent()->bOrientRotationToMovement = false;
-            Character->GetMovementComponent()->RotationRate.Yaw = CombatModeRotationRate;
-        }
-        else// exit combat mode
-        {// reset max speeds
-            Character->GetMovementComponent()->maxSpeedBlock = false;
-            Character->GetMovementComponent()->CalculateMaxSpeeds(Character->GetMovementComponent()->GetSpeedModifier());
-            Character->GetMovementComponent()->bUseControllerDesiredRotation = false;
-            Character->GetMovementComponent()->bOrientRotationToMovement = true;
-        }
-        CombatFSM.state(ECombatState::WeaponSwitch)->Info.ResetAnimInfo();
-    });
-    req.BindLambda([&]()  // to idle after animation complete
-    {
-        return CombatFSM.state(ECombatState::WeaponSwitch)->Info.CheckAnimInfo(ECombatStateAnimInfo::AnimEnded); 
-    });
-    CombatFSM.addLink(ECombatState::WeaponSwitch, ECombatState::Idle, req);
-    req.Unbind();
-
-    //=================================== Block =====================================//
-    CombatFSM.state(ECombatState::Block)->Info.OnEnter.BindLambda([&]()
-    {
-        Character->Logger.Log(this, *FString::Printf(TEXT("block enter")));
-        CalculateMaxBlockingSpeed(Character->GetMovementComponent()->GetSpeedModifier());
-        Character->AttributeComponent->Stamina->RegenCoef += BlockStaminaRegenRateMod; // slowing down stamina regen rate
-        FOnMontageBlendingOutStarted callBack;
-        callBack.BindUObject(this, &UCombatComponent::OnBlockEnded);
-        Character->StartAnimation(Character->AnimInstance->CurrentBlockAnim, callBack, AttackSpeed, FAnimSectionNames::Start);
-    });
-    CombatFSM.state(ECombatState::Block)->Info.OnLeave.BindLambda([&]()
-    {
-        Character->Logger.Log(this, *FString::Printf(TEXT("block leave")));
-        CalculateMaxCombatSpeeds();
-        Character->AttributeComponent->Stamina->RegenCoef -= BlockStaminaRegenRateMod; // reseting stamina regen rate
-        CombatFSM.state(ECombatState::Block)->Info.ResetAnimInfo();
-    });
-    req.BindLambda([&]() // to idle after animation complete
-    {
-        const auto state = CombatFSM.state(ECombatState::Block);
-        return state->Info.CheckAnimInfo(ECombatStateAnimInfo::AnimEnded) && 
-            !state->Info.CheckAnimInfo(ECombatStateAnimInfo::UserInterrupt); 
-    });
-    CombatFSM.addLink(ECombatState::Block, ECombatState::Idle, req);
-    req.Unbind();
-    req.BindLambda([&]() // check if stance has parry
-    {
-        bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;
-        const auto state = CombatFSM.state(ECombatState::Block);
-        return CurrentCombatStance->IsParryAllowed && state->Info.CheckAnimInfo(ECombatStateAnimInfo::BlockOrParryActive) && AttackPressed && hasStamina;
-    });
-    CombatFSM.addLink(ECombatState::Block, ECombatState::Parry, req);
-    req.Unbind();
-    
-    //=================================== Parry =====================================//
-    CombatFSM.state(ECombatState::Parry)->Info.OnEnter.BindLambda([&]()
-    {
-        Character->Logger.Log(this, *FString::Printf(TEXT("parry enter")));
-        FOnMontageBlendingOutStarted callBack;
-        callBack.BindUObject(this, &UCombatComponent::OnParryEnded);
-        Character->StartAnimation(Character->AnimInstance->CurrentParryAnim, callBack, AttackSpeed);
-        Character->AttributeComponent->Stamina->Consume(CurrentCombatStance->ParryStaminaCost);
-        Character->AttributeComponent->Stamina->BlockRegen();
-        Character->GetMovementComponent()->RotationRate.Yaw = ActionRotationRate;
-    });
-    CombatFSM.state(ECombatState::Parry)->Info.OnLeave.BindLambda([&]()
-    {
-        Character->Logger.Log(this, *FString::Printf(TEXT("parry leave")));
-        ResetActionState(ECombatState::Parry);
-    });
-    req.BindLambda([&]()  // to idle after animation complete
-    {
-        const auto state = CombatFSM.state(ECombatState::Parry);
-        return state->Info.CheckAnimInfo(ECombatStateAnimInfo::AnimEnded) && !BlockPressed;
-    });
-    CombatFSM.addLink(ECombatState::Parry, ECombatState::Idle, req);
-    req.Unbind();
-    req.BindLambda([&]()  // to block after animation complete and blocked or manual interrupt
-    {
-        bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0; // can't start block without stamina
-        const auto state = CombatFSM.state(ECombatState::Parry);
-        bool checkEnd = state->Info.CheckAnimInfo(ECombatStateAnimInfo::AnimEnded) && BlockPressed;
-        return CurrentCombatStance->IsBlockAllowed && hasStamina && (checkEnd || CanBeInterruptedWithBlock(ECombatState::Parry)) && !Character->GetMovementComponent()->IsRootOrTeleport();
-    });
-    CombatFSM.addLink(ECombatState::Parry, ECombatState::Block, req);
-    req.Unbind();
-    
-    //=================================== Attack ====================================//
-    CombatFSM.state(ECombatState::Attack)->Info.OnEnter.BindLambda([&]()
-    {
-        Character->Logger.Log(this, *FString::Printf(TEXT("attack enter")));
-        const FAttackInfo* currentAttack = CombatFSM.state(ECombatState::Attack)->Info.AttackInfo;
-        FOnMontageBlendingOutStarted callBack;
-        callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
-        Character->StartAnimation(currentAttack->AttackMontage, callBack, AttackSpeed, currentAttack->AnimSectionName);
-        bool isComboAttack = CombatFSM.state(ECombatState::Attack)->Info.AttackInfo->Special == ESpecialType::None;
-        bool hasChargeAttack = CurrentCombatStance->ComboAttacks[0].ChargeAttackStages.Num() > 0;
-        if (isComboAttack && hasChargeAttack)
-            CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, true);
-        Character->AttributeComponent->Stamina->Consume(currentAttack->StaminaCost);
-        Character->AttributeComponent->Stamina->BlockRegen();
-        Character->GetMovementComponent()->RotationRate.Yaw = ActionRotationRate;
-        CalculateMaxBlockingSpeed(Character->GetMovementComponent()->GetSpeedModifier());
-    });
-    CombatFSM.state(ECombatState::Attack)->Info.OnLeave.BindLambda([&]()
-    {
-        Character->Logger.Log(this, *FString::Printf(TEXT("attack leave")));
-        ResetActionState(ECombatState::Attack);
-        CombatFSM.state(ECombatState::Attack)->Info.ChargeTime = 0.f;
-        CombatFSM.state(ECombatState::Attack)->Info.AttackInfo = nullptr;
-        CombatFSM.state(ECombatState::Attack)->Info.ChargeStage = -1;
-        ResetCurrentCombo();
-        CharactersHit.Reset();
-        SetCurrentWeaponCollision(true, false);
-        SetCurrentWeaponCollision(false, false);
-        CalculateMaxCombatSpeeds();
-    });
-    req.BindLambda([&]()
-    {
-        const auto state = CombatFSM.state(ECombatState::Attack);
-        return state->Info.CheckAnimInfo(ECombatStateAnimInfo::AnimEnded) && !BlockPressed &&
-            !state->Info.CheckAnimInfo(ECombatStateAnimInfo::UserInterrupt);
-    });
-    CombatFSM.addLink(ECombatState::Attack, ECombatState::Idle, req);
-    req.Unbind();
-    req.BindLambda([&]() // manual interrupt
-    {
-        bool hasStanceAnims = Character->AnimInstance->CurrentBlockAnim != nullptr;
-        bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;        
-        const auto state = CombatFSM.state(ECombatState::Attack);
-        bool checkEnd = state->Info.CheckAnimInfo(ECombatStateAnimInfo::AnimEnded) && BlockPressed &&
-            !state->Info.CheckAnimInfo(ECombatStateAnimInfo::UserInterrupt);
-        return hasStamina && hasStanceAnims && (checkEnd || CanBeInterruptedWithBlock(ECombatState::Attack));
-    });
-    CombatFSM.addLink(ECombatState::Attack, ECombatState::Block, req);
-    req.Unbind();
-
-    //=================================== Ability ====================================//
-    CombatFSM.state(ECombatState::Ability)->Info.OnEnter.BindLambda([&]()
-    {
-        Character->Logger.Log(this, *FString::Printf(TEXT("Ability enter")));
-        if (!IsWeaponDrawn)// not in combat mode
-        {
-            Character->GetMovementComponent()->maxSpeedBlock = true;
-            Character->GetMovementComponent()->bUseControllerDesiredRotation = true;
-            Character->GetMovementComponent()->bOrientRotationToMovement = false;
-        }
-        CalculateMaxCastingSpeed(Character->GetMovementComponent()->GetSpeedModifier());
-        Character->AttributeComponent->Stamina->Consume(CurrentAbility->StaminaCost);
-        Character->AttributeComponent->Stamina->BlockRegen();
-        Character->GetMovementComponent()->MoveAbilitiesCurrent = CurrentAbility->MoveAbilities;
-        CurrentAbility->ActivateAbility();
-    });
-    CombatFSM.state(ECombatState::Ability)->Info.OnLeave.BindLambda([&]()
-    {
-        Character->Logger.Log(this, *FString::Printf(TEXT("Ability leave")));
-        if (IsWeaponDrawn)// in combat mode
-            CalculateMaxCombatSpeeds();
-        else
-        {
-            Character->GetMovementComponent()->maxSpeedBlock = false;
-            Character->GetMovementComponent()->CalculateMaxSpeeds(Character->GetMovementComponent()->GetSpeedModifier());
-            Character->GetMovementComponent()->bUseControllerDesiredRotation = false;
-            Character->GetMovementComponent()->bOrientRotationToMovement = true;
-        }
-        Character->AttributeComponent->Stamina->UnblockRegen();
-        Character->GetMovementComponent()->MoveAbilitiesCurrent = Character->GetMovementComponent()->MoveAbilitiesDefault;// TODO think how to restore it to last state
-        GetWorld()->GetTimerManager().SetTimer(GlobalCooldownTimer, GlobalCooldownTime, false);
-    });
-    req.BindLambda([&]()
-    {
-        return CurrentAbility != nullptr && !CurrentAbility->bIsActive;
-    });
-    CombatFSM.addLink(ECombatState::Ability, ECombatState::Idle, req);
-    req.Unbind();
-}
-
 bool UCombatComponent::UpdateCombatFSM()
 {
-    int oldState = CombatFSM.currentState()->Id;
-    auto newState = CombatFSM.proccessNextState();
+    int oldState = GetCombatFSM().currentState()->Id;
+    auto newState = GetCombatFSM().proccessNextState();
     if (newState != nullptr)
     {
-        CombatFSM.setCurrentState(newState->Id);
+        GetCombatFSM().setCurrentState(newState->Id);
         OnCombatStateChanged.Broadcast(oldState,newState->Id);
     }
     return newState != nullptr;
@@ -414,27 +135,27 @@ bool UCombatComponent::UpdateCombatFSM()
 void UCombatComponent::ResetActionState(int StateId)
 {
     // reset root motion ignore
-    Character->AnimInstance->OnMovementAllowed(true);
-    Character->AnimInstance->OnRotationAllowed(false);
-    Character->AttributeComponent->Stamina->UnblockRegen();
-    CombatFSM.state(StateId)->Info.ResetAnimInfo();
-    Character->GetMovementComponent()->RotationRate.Yaw = CombatModeRotationRate;
+    Owner->AnimInstance->OnMovementAllowed(true);
+    Owner->AnimInstance->OnRotationAllowed(false);
+    Owner->AttributeComponent->Stamina->UnblockRegen();
+    GetCombatFSM().state(StateId)->Info.ResetAnimInfo();
+    Owner->GetMovementComponent()->RotationRate.Yaw = CombatModeRotationRate;
 }
 
 void UCombatComponent::OnMovementModeChanged(int oldMode, int newMode)
 { 
-    if (CombatFSM.currentState() && CombatFSM.currentState()->Id == ECombatState::Attack)
+    if (CurrentCombatStance && GetCombatFSM().currentState() && GetCombatFSM().isInState(ECombatState::Attack))
     {
         // check if started falling during regular attack
-        if (newMode == EMovementMode::MOVE_Falling && !CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed))
-            Character->InterruptAnimation(ECCState::NoCC);
+        if (newMode == EMovementMode::MOVE_Falling && !GetCombatFSM().currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed))
+            Owner->InterruptAnimation(ECCState::NoCC);
         // check if landed during air attack to finish anim
-        if (newMode == EMovementMode::MOVE_Walking && CombatFSM.currentState()->Info.AttackInfo->Special == ESpecialType::Air)
+        if (newMode == EMovementMode::MOVE_Walking && GetCombatFSM().currentState()->Info.AttackInfo->Special == ESpecialType::Air)
         {
-            CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+            GetCombatFSM().currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
             FOnMontageBlendingOutStarted callBack;
             callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
-            Character->StartAnimation(CombatFSM.currentState()->Info.AttackInfo->AttackMontage, callBack, AttackSpeed, FAnimSectionNames::End);	
+            Owner->StartAnimation(GetCombatFSM().currentState()->Info.AttackInfo->AttackMontage, callBack, AttackSpeed, FAnimSectionNames::End);	
         }
     }
 }
@@ -442,54 +163,51 @@ void UCombatComponent::OnMovementModeChanged(int oldMode, int newMode)
 void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
     auto hitActor = SweepResult.GetActor();
-    if (hitActor == nullptr || hitActor == Character || hitActor == CurrentMainWeaponActor || hitActor == CurrentOffWeaponActor)// Check self and weapon
+    if (hitActor == nullptr || hitActor == Owner || HitOwnMeleeWeapons(comp, OtherActor))// Check self and weapon
         return;
-    if (CombatFSM.currentState()->Id == ECombatState::Attack)
+    if (GetCombatFSM().isInState(ECombatState::Attack))
     {
-        const auto &info = CombatFSM.state(ECombatState::Attack)->Info;
-        UItemWeapon* activeWeapon = nullptr;
-        if (CurrentMainWeaponActor->ItemCollision == comp)
-            activeWeapon = CurrentWeaponMainH;
-        else if (CurrentOffWeaponActor->ItemCollision == comp)
-            activeWeapon = CurrentWeaponOffH;
-        check(activeWeapon && "Should have default weapon");
+        const auto &info = GetCombatFSM().state(ECombatState::Attack)->Info;
+        UItemWeapon* activeWeapon = FindHitMeleeWeapon(comp);
+        check(activeWeapon && "Should have a weapon");
         if (info.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && !HasAlreadyHitTarget(hitActor, activeWeapon))
         {
             CharactersHit.Emplace(TPair<AActor*, UItemWeapon*>(hitActor, activeWeapon));
-            // check which hand has active collision
             auto hitCharacter = Cast<ACharacterBase>(hitActor);
             if (hitCharacter)
             {
                 if (hitCharacter->Cheats.InvulnerableToHit)
                 {
-                    Character->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap: invul character!")));
+                    Owner->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap: invul character!")));
                     return;
                 }
                 // check for chamber scenario
-                if (IsChamberValid(hitActor, activeWeapon))
+                auto hitCombatCharacter = Cast<ACharacterCreature>(hitActor);
+                UItemWeapon* enemyActiveWeapon = FindCharacterActiveWeapon(hitCombatCharacter);
+                if (hitCombatCharacter && IsChamberValid(hitCombatCharacter, enemyActiveWeapon, activeWeapon))
                 {
-                    EChamberRes res = ResolveChamber(hitActor, activeWeapon);
+                    EChamberRes res = ResolveChamber(hitCombatCharacter,enemyActiveWeapon, activeWeapon);
                     if (res == EChamberRes::ChamberState)
                         return;
                 }
-                Character->Logger.Log(this, "OnBeginOverlap: Hit character!");
+                Owner->Logger.Log(this, "OnBeginOverlap: Hit character!");
                 int32 strMod = UAttributeSetHelper::GetModifier(hitCharacter->AttributeComponent->Attributes, EAttributes::Str);
-                const float damage = CalculateWeaponDamage(activeWeapon, CombatFSM.state(ECombatState::Attack)->Info.AttackInfo->DamageMod, strMod);
+                const float damage = CalculateWeaponDamage(activeWeapon, GetCombatFSM().state(ECombatState::Attack)->Info.AttackInfo->DamageMod, strMod);
                 float force = CalculateHitForce(activeWeapon->Weight, strMod, info.AttackInfo->PowerMod); // Use Force, Luke
-                hitCharacter->TakeDamage(damage, FForceDamageEvent(activeWeapon->DamageType, force), Character->GetController(), Character);
+                hitCharacter->TakeDamage(damage, FForceDamageEvent(activeWeapon->DamageType, force), Owner->GetController(), Owner);
             }
             else // hit an obsticle
             {
                 if (SweepResult.GetComponent()->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic) // check if hit a wall and interrupt with loss of balance
                 {
-                    Character->Logger.Log(this, "OnBeginOverlap Hit wall!");
-                    Character->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::HitWall);
+                    Owner->Logger.Log(this, "OnBeginOverlap Hit wall!");
+                    Owner->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::HitWall);
                 }
                 else // try to damage the actor
                 {
-                    Character->Logger.Log(this, "OnBeginOverlap Hit actor!");
-                    const float damage = CalculateWeaponDamage(activeWeapon, CombatFSM.state(ECombatState::Attack)->Info.AttackInfo->DamageMod, 0);
-                    hitActor->TakeDamage(damage, FDamageEvent(activeWeapon->DamageType), Character->GetController(), Character);
+                    Owner->Logger.Log(this, "OnBeginOverlap Hit actor!");
+                    const float damage = CalculateWeaponDamage(activeWeapon, GetCombatFSM().state(ECombatState::Attack)->Info.AttackInfo->DamageMod, 0);
+                    hitActor->TakeDamage(damage, FDamageEvent(activeWeapon->DamageType), Owner->GetController(), Owner);
                 }
             }
         }
@@ -498,48 +216,39 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
 
 bool UCombatComponent::IsInActionState() const
 {
-    return CombatFSM.currentState()->Id == ECombatState::Attack || CombatFSM.currentState()->Id == ECombatState::Parry;
+    return GetCombatFSM().isInState(ECombatState::Attack) || GetCombatFSM().currentState()->Id == ECombatState::Parry;
 }
 
-bool UCombatComponent::IsChamberValid(const AActor* HitActor, const UItemWeapon* ActiveWeapon) const
+bool UCombatComponent::IsChamberValid(const ACharacterCreature* HitCharacter, const UItemWeapon* HitActorActiveWeapon, const UItemWeapon* OwnerActiveWeapon) const
 {
-    auto hitCharacter = Cast<ACharacterCreature>(HitActor);
-    if (hitCharacter)
+    if (HitCharacter->CombatComponent->GetCombatFSM().isInState(ECombatState::Attack))
     {
-        if (hitCharacter->CombatComponent->CombatFSM.currentState()->Id == ECombatState::Attack)
+        auto& enemyAttackInfo = HitCharacter->CombatComponent->GetCombatFSM().state(ECombatState::Attack)->Info;
+        auto& attackInfo = Owner->CombatComponent->GetCombatFSM().state(ECombatState::Attack)->Info;
+        bool shouldResolveChamber = !enemyAttackInfo.CheckAnimInfo(ECombatStateAnimInfo::CheckedForChamber) ||
+            !attackInfo.CheckAnimInfo(ECombatStateAnimInfo::CheckedForChamber);
+        if (shouldResolveChamber && enemyAttackInfo.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && GetAngleBetweenActors(Owner, HitCharacter) <= MaxFacingAngle)
         {
-            auto& enemyAttackInfo = hitCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
-            auto& attackInfo = Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
-            bool shouldResolveChamber = !enemyAttackInfo.CheckAnimInfo(ECombatStateAnimInfo::CheckedForChamber) ||
-                !attackInfo.CheckAnimInfo(ECombatStateAnimInfo::CheckedForChamber);
-            if (shouldResolveChamber && enemyAttackInfo.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && GetAngleBetweenActors(Character, HitActor) <= MaxFacingAngle)
-            {
-                auto enemyActiveWeapon = hitCharacter->CombatComponent->CurrentMainWeaponActor->ItemCollision->GetGenerateOverlapEvents() ? hitCharacter->CombatComponent->CurrentWeaponMainH :
-                    hitCharacter->CombatComponent->CurrentWeaponOffH;
-                check(ActiveWeapon && enemyActiveWeapon && "Characters should have default weapons set");
-                // check if both characters have simililar weapon types
-                return (enemyActiveWeapon->WeaponType != EWeaponType::Unarmed) ? ActiveWeapon->WeaponType != EWeaponType::Unarmed :
-                    ActiveWeapon->WeaponType == EWeaponType::Unarmed;
-            }
+            check(OwnerActiveWeapon && HitActorActiveWeapon && "Characters should have weapons set");
+            // check if both characters have simililar weapon types
+            return (HitActorActiveWeapon->WeaponType != EWeaponType::Unarmed) ? OwnerActiveWeapon->WeaponType != EWeaponType::Unarmed :
+                OwnerActiveWeapon->WeaponType == EWeaponType::Unarmed;
         }
     }
 
     return false;
 }
 
-UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(AActor* HitActor, const UItemWeapon* OwnerActiveWeapon)
+UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(ACharacterCreature* HitCharacter, const UItemWeapon* HitActorActiveWeapon, const UItemWeapon* OwnerActiveWeapon)
 {
-    Character->Logger.Log(this, "Chamber: enter!");
-    auto hitCharacter = Cast<ACharacterCreature>(HitActor);
-    auto enemyActiveWeapon = hitCharacter->CombatComponent->CurrentMainWeaponActor->ItemCollision->GetGenerateOverlapEvents() ? hitCharacter->CombatComponent->CurrentWeaponMainH : 
-        hitCharacter->CombatComponent->CurrentWeaponOffH;
+    Owner->Logger.Log(this, "Chamber: enter!");
     // calculate characters attack powers
-    int32 strMod = UAttributeSetHelper::GetModifier(Character->AttributeComponent->Attributes, EAttributes::Str);
-    auto& characterAttackInfo = Character->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
+    int32 strMod = UAttributeSetHelper::GetModifier(Owner->AttributeComponent->Attributes, EAttributes::Str);
+    auto& characterAttackInfo = Owner->CombatComponent->GetCombatFSM().state(ECombatState::Attack)->Info;
     float force = CalculateHitForce(OwnerActiveWeapon->Weight, strMod, characterAttackInfo.AttackInfo->PowerMod);
-    int32 enemyStrMod = UAttributeSetHelper::GetModifier(hitCharacter->AttributeComponent->Attributes, EAttributes::Str);
-    auto& enemyAttackInfo = hitCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info;
-    float enemyForce = CalculateHitForce(enemyActiveWeapon->Weight, enemyStrMod, enemyAttackInfo.AttackInfo->PowerMod);
+    int32 enemyStrMod = UAttributeSetHelper::GetModifier(HitCharacter->AttributeComponent->Attributes, EAttributes::Str);
+    auto& enemyAttackInfo = HitCharacter->CombatComponent->GetCombatFSM().state(ECombatState::Attack)->Info;
+    float enemyForce = CalculateHitForce(HitActorActiveWeapon->Weight, enemyStrMod, enemyAttackInfo.AttackInfo->PowerMod);
     bool enemyStronger = enemyForce > force;
     float forceRatio = enemyStronger ? enemyForce/force : force/enemyForce;
 
@@ -552,14 +261,14 @@ UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(AActor* HitActor,
     if (forceRatio > ChamberThreshhold)
     { // one is stronger than other
         // apply reaction to weaker one
-        auto staggeredCharacter = enemyStronger ? (characterIsInterruptable ? Character : nullptr) : (enemyIsInterruptable ? hitCharacter : nullptr);
+        auto staggeredCharacter = enemyStronger ? (characterIsInterruptable ? Owner : nullptr) : (enemyIsInterruptable ? HitCharacter : nullptr);
         if (staggeredCharacter)
         {
             staggeredCharacter->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::None);
             staggeredCharacter->Logger.Log(this, "Chamber: got staggered!");
         }
         // apply reaction to stronger one
-        auto strongerCharacter = enemyStronger ? (enemyIsInterruptable ? hitCharacter : nullptr) : (characterIsInterruptable ? Character : nullptr);
+        auto strongerCharacter = enemyStronger ? (enemyIsInterruptable ? HitCharacter : nullptr) : (characterIsInterruptable ? Owner : nullptr);
         if (forceRatio <= KnockdownThreshhold)
         { // but not much stronger...
             if (strongerCharacter)
@@ -569,9 +278,9 @@ UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(AActor* HitActor,
             }
         } // else continue with attack
         else
-            enemyStronger ? hitCharacter->Logger.Log(hitCharacter->CombatComponent, "Chamber: continue with attack!") : Character->Logger.Log(this, "Chamber: continue with attack!");
+            enemyStronger ? HitCharacter->Logger.Log(HitCharacter->CombatComponent, "Chamber: continue with attack!") : Owner->Logger.Log(this, "Chamber: continue with attack!");
         // define chamber state for this character
-        if (strongerCharacter == Character || staggeredCharacter == Character)
+        if (strongerCharacter == Owner || staggeredCharacter == Owner)
             state = EChamberRes::ChamberState;
         else
             state = EChamberRes::ContinueAttack;
@@ -580,96 +289,48 @@ UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(AActor* HitActor,
     { // both in chamber
         if (characterIsInterruptable)
         {
-            EnterChamberState(Character);
+            EnterChamberState(Owner);
             state = EChamberRes::ChamberState;
         }
         else
             state = EChamberRes::ContinueAttack;
         if (enemyIsInterruptable)
-            EnterChamberState(hitCharacter);
-        Character->Logger.Log(this, "Chamber: should be chamber for both!");
+            EnterChamberState(HitCharacter);
+        Owner->Logger.Log(this, "Chamber: should be chamber for both!");
     }
     return state;
 }
 
 void UCombatComponent::EnterChamberState(ACharacterCreature* ChamberedCharacter)
 {
-    ChamberedCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ResetAnimInfo();
-    ChamberedCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::CheckedForChamber, true);
-    ChamberedCharacter->CombatComponent->CombatFSM.state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+    ChamberedCharacter->CombatComponent->GetCombatFSM().state(ECombatState::Attack)->Info.ResetAnimInfo();
+    ChamberedCharacter->CombatComponent->GetCombatFSM().state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::CheckedForChamber, true);
+    ChamberedCharacter->CombatComponent->GetCombatFSM().state(ECombatState::Attack)->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
     ChamberedCharacter->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::Chamber);
 }
 
-void UCombatComponent::SetupDefaultWeapon(bool IsMainHand, bool Equip)
-{
-    auto defaultWeapon = IsMainHand ? DefaultWeaponMainH : DefaultWeaponOffH;
-    if (defaultWeapon)
-    {
-        if (Equip)
-        {
-            IsMainHand ? CurrentWeaponMainH = defaultWeapon : CurrentWeaponOffH = defaultWeapon;
-            auto actor = Cast<AItemActor>(GetWorld()->SpawnActor(defaultWeapon->ItemActor));
-            IsMainHand ? CurrentMainWeaponActor = actor : CurrentOffWeaponActor = actor;
-            ACharacterBase::SetupItemActorCollision(actor, false);
-            WeaponSetup(defaultWeapon, actor, IsWeaponDrawn, IsMainHand);
-        }
-        else
-        {
-            IsMainHand ? CurrentWeaponMainH = nullptr : CurrentWeaponOffH = nullptr;
-            if (IsMainHand)
-            {
-                CurrentMainWeaponActor->Destroy();
-                CurrentMainWeaponActor = nullptr;
-            }
-            else
-            {
-                CurrentOffWeaponActor->Destroy();
-                CurrentOffWeaponActor = nullptr;
-            }
-        }
-    }
-}
-
 void UCombatComponent::OnEquipmentUpdate(UEquipmentComponent* Component, EItemSlot Slot)
-{
+{ // TODO fix crash when unequipping main hand while has offhand
     auto item = Component->GetEquipmentFromSlot(Slot);
-    bool isMainHand = Slot == EItemSlot::MainWeaponSlot;
-    if (!isMainHand && Slot != EItemSlot::OffMeaponSlot)
-        return; // not a weapon
-
-    if (item.Item)
-    { // equipped
-        auto weapon = Cast<UItemWeapon>(item.Item->ItemBase);
-        if (weapon)
+    if ((Slot == EItemSlot::MainWeaponSlot) || (Slot == EItemSlot::OffMeaponSlot))
+    {
+        auto result = ResolveNewStance(nullptr, true);
+        if (result.NoValidStanceFound)
         {
-            if (CurrentWeaponMainH == DefaultWeaponMainH)
-                SetupDefaultWeapon(true, false);
-            if (CurrentWeaponOffH == DefaultWeaponOffH)
-                SetupDefaultWeapon(false, false);
-            if (isMainHand)
+            // check if has valid combat stance for equipped weapon, if not cancel
+            if (item.Item)
             {
-                CurrentWeaponMainH = weapon;
-                CurrentMainWeaponActor = item.Item;
+                auto unfitItem = Owner->EquipmentComponent->Unequip(Slot);
+                Owner->InventoryComponent->AddToInventory(unfitItem, 1, true); // TODO until we think of something better
             }
-            else
-            {
-                CurrentWeaponOffH = weapon;
-                CurrentOffWeaponActor = item.Item;
-            }
-            WeaponSetup(weapon, item.Item, IsWeaponDrawn, isMainHand);
+        }
+        else if (!result.NewStanceWasSet)
+        { // if stance has not changed but weapon did -> setup new weapon
+            CurrentCombatStance->SetWeaponVars(Owner);
+            CurrentCombatStance->OnStanceActivated();
+            CurrentCombatStance->ArmsSetup(IsWeaponDrawn);
         }
     }
-    else
-    { // unequipped
-        auto anotherWeapon = Component->GetEquipmentFromSlot(isMainHand ? EItemSlot::OffMeaponSlot : EItemSlot::MainWeaponSlot);
-        if (!anotherWeapon.Item)
-        { // if empty-handed equip default weapons
-            SetupDefaultWeapon(true, true);
-            SetupDefaultWeapon(false, true);
-        }
-        // TODO else reset unequipped weapon and check is main hand and fix swap
-    }
-    ResolveNewStance();
 }
 
 void UCombatComponent::OnEquipmentSwap(UEquipmentComponent* Component, EItemSlot SlotL, EItemSlot SlotR)
@@ -678,38 +339,31 @@ void UCombatComponent::OnEquipmentSwap(UEquipmentComponent* Component, EItemSlot
     auto itemR = Component->GetEquipmentFromSlot(SlotR);
     if (!itemL.Item || !itemR.Item)
         return;
-    auto weaponL = Cast<UItemWeapon>(itemL.Item->ItemBase);
-    auto weaponR = Cast<UItemWeapon>(itemR.Item->ItemBase);
-    if (weaponL && weaponR)
-    {
-        bool isMainHandL = SlotL == EItemSlot::MainWeaponSlot;
-        CurrentWeaponMainH = isMainHandL ? weaponL : weaponR;
-        CurrentMainWeaponActor = isMainHandL ? itemL.Item : itemR.Item;
-        CurrentWeaponOffH = isMainHandL ? weaponR : weaponL;
-        CurrentOffWeaponActor = isMainHandL ? itemR.Item : itemL.Item;
-        const FName socketL = UCombatComponent::GetSlotFromWeaponType(weaponL->WeaponType, IsWeaponDrawn, isMainHandL);
-        itemL.Item->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, socketL);
-        const FName socketR = UCombatComponent::GetSlotFromWeaponType(weaponR->WeaponType, IsWeaponDrawn, !isMainHandL);
-        itemR.Item->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, socketR);
-    }
+    // TODO check if weapon slots and reinitialize current stance to swap weapons or resolve new stance
+    // call CurrentCombatStance->ArmsSetup(IsWeaponDrawn)
+}
+
+bool UCombatComponent::IsWeaponSwapAllowed(EItemSlot lhs, EItemSlot rhs) const
+{ // TODO
+    return (lhs != EItemSlot::MainWeaponSlot) && (rhs != EItemSlot::OffMeaponSlot);
 }
 
 void UCombatComponent::Update()
 {
-    ResolveNewStance();
+    // TODO what?
     UnSetUpdate();
 }
 
 void UCombatComponent::OnAttack(bool Started)
 {
-    Character->Logger.Log(this, *FString::Printf(TEXT("OnAttack %s"),
+    Owner->Logger.Log(this, *FString::Printf(TEXT("OnAttack %s"),
             Started ? TEXT("pressed") : TEXT("released")));
     AttackPressed = Started;
-    if (CombatFSM.currentState()->Id == ECombatState::Attack)
+    if (GetCombatFSM().isInState(ECombatState::Attack))
     {
-        auto &info = CombatFSM.state(ECombatState::Attack)->Info;
+        auto &info = GetCombatFSM().state(ECombatState::Attack)->Info;
         const FAttackInfo* currentAttack = info.AttackInfo;
-        if (Character->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && Character->CCStateManager.IsInCCSubMode(Chamber))
+        if (Owner->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && Owner->CCStateManager.IsInCCSubMode(Chamber))
         {
             if (!info.CheckAnimInfo(CanCounterChamber)) // check if not ready to strike while in chamber
                 return;
@@ -733,28 +387,28 @@ void UCombatComponent::OnAttack(bool Started)
             {
                 if (info.ChargeStage != -1 && info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed))
                 {
-                    bool hasStamina = Character->AttributeComponent->Stamina->CurrentValue > 0;
+                    bool hasStamina = Owner->AttributeComponent->Stamina->CurrentValue > 0;
                     auto airAttack = CurrentCombatStance->GetAttackInfoForSpecial(ESpecialType::Air);
-                    if (Character->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling && hasStamina && airAttack != nullptr)
+                    if (Owner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling && hasStamina && airAttack != nullptr)
                     { // uncharging in air
                         info.AttackInfo = CurrentCombatStance->GetAttackInfoForSpecial(ESpecialType::Air);
                         info.ResetAnimInfo();
                         info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
-                        Character->AttributeComponent->Stamina->Consume(info.AttackInfo->StaminaCost);
+                        Owner->AttributeComponent->Stamina->Consume(info.AttackInfo->StaminaCost);
                         FOnMontageBlendingOutStarted callBack;
                         callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
-                        Character->StartAnimation(info.AttackInfo->AttackMontage, callBack, AttackSpeed);
+                        Owner->StartAnimation(info.AttackInfo->AttackMontage, callBack, AttackSpeed);
                         return;
                     }
                     else if (hasStamina && currentAttack->AttackMontage && info.ChargeTime >=
-                        CurrentCombatStance->ComboAttacks[CurrentCombo].ChargeAttackStages[CombatFSM.currentState()->Info.ChargeStage].ChargeTimeNeeded)
+                        CurrentCombatStance->ComboAttacks[CurrentCombatStance->GetComboCount()].ChargeAttackStages[GetCombatFSM().currentState()->Info.ChargeStage].ChargeTimeNeeded)
                     { // uncharging on ground
-                        Character->AttributeComponent->Stamina->Consume(currentAttack->StaminaCost);
+                        Owner->AttributeComponent->Stamina->Consume(currentAttack->StaminaCost);
                         info.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, false);
                         info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
                         FOnMontageBlendingOutStarted callBack;
                         callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
-                        Character->StartAnimation(currentAttack->AttackMontage, callBack, AttackSpeed, FAnimSectionNames::End);
+                        Owner->StartAnimation(currentAttack->AttackMontage, callBack, AttackSpeed, FAnimSectionNames::End);
                         return;
                     }
                     // charging cancelled
@@ -762,7 +416,7 @@ void UCombatComponent::OnAttack(bool Started)
                     info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
                     FOnMontageBlendingOutStarted callBack;
                     callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
-                    Character->StartAnimation(currentAttack->AttackMontage, callBack, AttackSpeed, FAnimSectionNames::Cancel);
+                    Owner->StartAnimation(currentAttack->AttackMontage, callBack, AttackSpeed, FAnimSectionNames::Cancel);
                 }
             }
         }
@@ -773,18 +427,18 @@ void UCombatComponent::OnAttack(bool Started)
 
 void UCombatComponent::OnBlock(bool Started) 
 {
-    Character->Logger.Log(this, *FString::Printf(TEXT("OnBlock %s"),
+    Owner->Logger.Log(this, *FString::Printf(TEXT("OnBlock %s"),
             Started ? TEXT("pressed") : TEXT("released")));
     BlockPressed = Started;
-    if (Character->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && 
-        Character->CCStateManager.IsInCCSubMode(BlockedAttack))
+    if (Owner->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && 
+        Owner->CCStateManager.IsInCCSubMode(BlockedAttack))
         return;
-    if (!BlockPressed && CombatFSM.currentState()->Id == ECombatState::Block) // end block
+    if (!BlockPressed && GetCombatFSM().isInState(ECombatState::Block)) // end block
     {
-        CombatFSM.currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+        GetCombatFSM().currentState()->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
         FOnMontageBlendingOutStarted callBack;
         callBack.BindUObject(this, &UCombatComponent::OnBlockEnded);
-        Character->StartAnimation(Character->AnimInstance->CurrentBlockAnim, callBack, AttackSpeed, FAnimSectionNames::End);
+        Owner->StartAnimation(Owner->AnimInstance->CurrentBlockAnim, callBack, AttackSpeed, FAnimSectionNames::End);
     }
     else
         UpdateCombatFSM();
@@ -792,9 +446,14 @@ void UCombatComponent::OnBlock(bool Started)
 
 void UCombatComponent::OnDrawWeapon()
 {
-    WeaponSwitchPressed = true;
-    UpdateCombatFSM();
-    WeaponSwitchPressed = false;
+    if (CurrentCombatStance)
+    {
+        WeaponSwitchPressed = true;
+        UpdateCombatFSM();
+        WeaponSwitchPressed = false;
+    }
+    else
+        Owner->Logger.Log(this, "Can't draw weapon: Invalid combat stance");
 }
 
 void UCombatComponent::OnUseAbility(bool Started)
@@ -821,14 +480,15 @@ void UCombatComponent::OnUseAbility(bool Started)
 
 void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
 {
-    check(CombatFSM.currentState()->Id == ECombatState::Attack && "StartNextComboAttack: not in attack state");
+    check(GetCombatFSM().isInState(ECombatState::Attack) && "StartNextComboAttack: not in attack state");
     check(CurrentCombatStance && "StartNextComboAttack: doesn't have stance");
+    int CurrentCombo = CurrentCombatStance->GetComboCount();
     if (CurrentCombo >= CurrentCombatStance->ComboAttacks.Num() - 1)
         return;
-    if (Character->AttributeComponent->Stamina->CurrentValue <= 0)
+    if (Owner->AttributeComponent->Stamina->CurrentValue <= 0)
         return;
 
-    auto& stateInfo = CombatFSM.currentState()->Info;
+    auto& stateInfo = GetCombatFSM().currentState()->Info;
     FAttackInfo* nextAttackInfo = nullptr;
     if (IsPauseAttack)
     {
@@ -853,13 +513,14 @@ void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
     if (nextAttackInfo != nullptr)
     {
         bool isAttackFromChamber = stateInfo.CheckAnimInfo(ECombatStateAnimInfo::CanCounterChamber);
-        ++CurrentCombo;
-        Character->AttributeComponent->Stamina->Consume(nextAttackInfo->StaminaCost);
+        CurrentCombatStance->IncreaseComboCount();
+        Owner->AttributeComponent->Stamina->Consume(nextAttackInfo->StaminaCost);
         stateInfo.ResetAnimInfo();
         CharactersHit.Reset();
-        SetCurrentWeaponCollision(true, false);
-        SetCurrentWeaponCollision(false, false);
-        Character->AnimInstance->OnMovementAllowed(false);
+        auto activeWeapons = FindActiveMeleeWeapons();
+        for (auto& weaponActor : activeWeapons)
+            SetWeaponCollision(weaponActor, false);
+        Owner->AnimInstance->OnMovementAllowed(false);
         stateInfo.AttackInfo = nextAttackInfo;
         if (isAttackFromChamber)
             stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanCounterChamber, true);
@@ -868,8 +529,30 @@ void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, true);
         FOnMontageBlendingOutStarted callBack;
         callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
-        Character->StartAnimation(stateInfo.AttackInfo->AttackMontage, callBack, AttackSpeed, stateInfo.AttackInfo->AnimSectionName);
+        Owner->StartAnimation(stateInfo.AttackInfo->AttackMontage, callBack, AttackSpeed, stateInfo.AttackInfo->AnimSectionName);
     }
+}
+
+void UCombatComponent::ToggleHandMode()
+{
+    if (IsBusy())
+        return;
+
+    TwoHandMode = !TwoHandMode;
+    UCombatStance* newStance = CheckStances(StanceStack, true);
+    UCombatStance* defaultStance = CheckStances(Owner->AnimInstance->DefaultStances, true);
+    if (newStance == nullptr)
+    {
+        if (defaultStance == nullptr)
+            Owner->Logger.Log(this, "ToggleHandMode: no valid stance to switch to, retaining the current one");
+        else
+            newStance = defaultStance; // apply default stance
+    }
+    else
+        StanceStack.Insert(newStance, 0);
+    if ((newStance != nullptr) && (newStance != CurrentCombatStance))
+        StanceChanged(CurrentCombatStance, newStance, defaultStance, false);
+    // TODO finish stack logic
 }
 
 bool UCombatComponent::HasAlreadyHitTarget(AActor *Target, UItemWeapon* Weapon) const
@@ -899,18 +582,19 @@ float UCombatComponent::GetAngleBetweenActors(const AActor *First, const AActor 
 
 void UCombatComponent::OnWeaponSwitchEnded(UAnimMontage* animMontage, bool bInterrupted)
 {
-    auto& stateInfo = CombatFSM.state(ECombatState::WeaponSwitch)->Info;
-    if (!bInterrupted || stateInfo.CheckAnimInfo(ECombatStateAnimInfo::WeaponGrabbed))
-        IsWeaponDrawn = !IsWeaponDrawn;
+    auto& stateInfo = GetCombatFSM().state(ECombatState::WeaponSwitch)->Info;
+    IsWeaponDrawn = !IsWeaponDrawn;
+    if (!stateInfo.CheckAnimInfo(ECombatStateAnimInfo::WeaponGrabbed))
+        CurrentCombatStance->ArmsSetup(IsWeaponDrawn);
     stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::AnimEnded, true);
     UpdateCombatFSM();
 }
 
 void UCombatComponent::OnBlockEnded(UAnimMontage* animMontage, bool bInterrupted)
 {
-    if (bInterrupted && CombatFSM.currentState()->Id == ECombatState::Parry)// interrupted by Parry
+    if (bInterrupted && GetCombatFSM().isInState(ECombatState::Parry))// interrupted by Parry
         return;
-    auto& stateInfo = CombatFSM.state(ECombatState::Block)->Info;
+    auto& stateInfo = GetCombatFSM().state(ECombatState::Block)->Info;
     if (stateInfo.CheckAnimInfo(ECombatStateAnimInfo::UserInterrupt))// to exit loop section
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, false);
     else
@@ -922,8 +606,8 @@ void UCombatComponent::OnBlockEnded(UAnimMontage* animMontage, bool bInterrupted
 
 void UCombatComponent::OnParryEnded(UAnimMontage* animMontage, bool bInterrupted)
 {
-    auto& stateInfo = CombatFSM.state(ECombatState::Parry)->Info;
-    if (CombatFSM.currentState()->Id == ECombatState::Parry)
+    auto& stateInfo = GetCombatFSM().state(ECombatState::Parry)->Info;
+    if (GetCombatFSM().isInState(ECombatState::Parry))
     {
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::AnimEnded, true);
         UpdateCombatFSM();
@@ -932,9 +616,9 @@ void UCombatComponent::OnParryEnded(UAnimMontage* animMontage, bool bInterrupted
 
 void UCombatComponent::OnAttackEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
-    if (CombatFSM.currentState()->Id != ECombatState::Attack)// interrupted
+    if (GetCombatFSM().currentState()->Id != ECombatState::Attack)// interrupted
         return;
-    auto& stateInfo = CombatFSM.state(ECombatState::Attack)->Info;
+    auto& stateInfo = GetCombatFSM().state(ECombatState::Attack)->Info;
     if (stateInfo.CheckAnimInfo(ECombatStateAnimInfo::UserInterrupt))
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, false);// continued combo
     else
@@ -944,89 +628,152 @@ void UCombatComponent::OnAttackEnded(UAnimMontage *animMontage, bool bInterrupte
     }
 }
 
-UCombatStance *UCombatComponent::GetCurrentCombatStance() const
+UCombatStance* UCombatComponent::CheckStances(const TArray<UCombatStance*>& Stances, bool CheckHandMode)
 {
-    check(CurrentCombatStance != nullptr && "Combat component: no combat stance");
-    return CurrentCombatStance;
+    for (auto stance : Stances)
+    {
+        if (DoesStanceFit(stance, CheckHandMode))
+            return stance;
+    }
+    return nullptr;
 }
 
-void UCombatComponent::ResolveNewStance()
+bool CheckHitActorCollision(const AItemActor* WeaponActor, const UPrimitiveComponent* HitComp)
 {
-    UCombatStance* newStance = BackupStance, *defaultStance = BackupStance;
-    for (auto stance : StanceStack)
+    return (WeaponActor != nullptr) && (WeaponActor->ItemCollision == HitComp);
+}
+
+UItemWeapon* UCombatComponent::FindHitMeleeWeapon(const UPrimitiveComponent* HitComp) const
+{
+    AItemActor* weaponActor = CurrentCombatStance->GetArmsActorFromSlot(EArmsSlot::MainHand);
+    if (CheckHitActorCollision(weaponActor, HitComp))
+        return Cast<UItemWeapon>(weaponActor->ItemBase);
+    weaponActor = CurrentCombatStance->GetArmsActorFromSlot(EArmsSlot::OffHand);
+    if (CheckHitActorCollision(weaponActor, HitComp))
+        return Cast<UItemWeapon>(weaponActor->ItemBase);
+    weaponActor = CurrentCombatStance->GetArmsActorFromSlot(EArmsSlot::RightFoot);
+    if (CheckHitActorCollision(weaponActor, HitComp))
+        return Cast<UItemWeapon>(weaponActor->ItemBase);
+    weaponActor = CurrentCombatStance->GetArmsActorFromSlot(EArmsSlot::LeftFoot);
+    if (CheckHitActorCollision(weaponActor, HitComp))
+        return Cast<UItemWeapon>(weaponActor->ItemBase);
+
+    return nullptr;
+}
+
+bool UCombatComponent::HitOwnMeleeWeapons(const UPrimitiveComponent* HitComp, const AActor* HitActor) const
+{
+    auto weaponActor = Cast<AItemActor>(HitActor);
+    if (weaponActor)
+        return weaponActor->ItemCollision == HitComp;
+
+    return false;
+}
+
+bool CheckActorCollisionActive(const AItemActor* WeaponActor)
+{
+    return (WeaponActor != nullptr) && (WeaponActor->ItemCollision->GetGenerateOverlapEvents());
+}
+
+UItemWeapon* UCombatComponent::FindCharacterActiveWeapon(const ACharacterCreature* SomeCharacter) const
+{
+    auto stance = SomeCharacter->CombatComponent->CurrentCombatStance;
+    if (stance)
     {
-        if (DoesStanceFit(stance))
-        {
-            newStance = stance;
-            break;
-        }
+        AItemActor* weaponActor = stance->GetArmsActorFromSlot(EArmsSlot::MainHand);
+        if (CheckActorCollisionActive(weaponActor))
+            return Cast<UItemWeapon>(weaponActor->ItemBase);
+        weaponActor = stance->GetArmsActorFromSlot(EArmsSlot::OffHand);
+        if (CheckActorCollisionActive(weaponActor))
+            return Cast<UItemWeapon>(weaponActor->ItemBase);
+        weaponActor = stance->GetArmsActorFromSlot(EArmsSlot::RightFoot);
+        if (CheckActorCollisionActive(weaponActor))
+            return Cast<UItemWeapon>(weaponActor->ItemBase);
+        weaponActor = stance->GetArmsActorFromSlot(EArmsSlot::LeftFoot);
+        if (CheckActorCollisionActive(weaponActor))
+            return Cast<UItemWeapon>(weaponActor->ItemBase);
     }
-    for (auto stance : Character->AnimInstance->DefaultStances)
+    
+    return nullptr;
+}
+
+TArray<AItemActor*> UCombatComponent::FindActiveMeleeWeapons() const
+{
+    TArray<AItemActor*> result;
+    AItemActor* weaponActor = CurrentCombatStance->GetArmsActorFromSlot(EArmsSlot::MainHand);
+    if (CheckActorCollisionActive(weaponActor))
+        result.Push(weaponActor);
+    weaponActor = CurrentCombatStance->GetArmsActorFromSlot(EArmsSlot::OffHand);
+    if (CheckActorCollisionActive(weaponActor))
+        result.Push(weaponActor);
+    weaponActor = CurrentCombatStance->GetArmsActorFromSlot(EArmsSlot::RightFoot);
+    if (CheckActorCollisionActive(weaponActor))
+        result.Push(weaponActor);
+    weaponActor = CurrentCombatStance->GetArmsActorFromSlot(EArmsSlot::LeftFoot);
+    if (CheckActorCollisionActive(weaponActor))
+        result.Push(weaponActor);
+
+    return result;
+}
+
+FStanceResolveResult UCombatComponent::ResolveNewStance(UCombatStance* NewStance, bool WeaponChanged)
+{
+    UCombatStance* newStance;
+    if (NewStance)
     {
-        if (DoesStanceFit(stance))
-        {
-            defaultStance = stance;
-            break;
-        }
+        if (DoesStanceFit(NewStance))
+            newStance = NewStance;
+        else
+            return FStanceResolveResult{false, false}; // if can't set specified stance just return negative result;
     }
-    if (newStance == BackupStance)
+    else
+        newStance = CheckStances(StanceStack);
+    FStanceResolveResult result;
+    UCombatStance* defaultStance = CheckStances(Owner->AnimInstance->DefaultStances);
+    if (newStance == nullptr)
     {
-        if (defaultStance != BackupStance)
+        if (defaultStance == nullptr)
+        {
+            if (!WeaponChanged)
+            { // if during equipment update no new stance was resolved then reinit the current one
+                Owner->Logger.Log(this, "no valid default stance on character's anim instance");
+                result.NoValidStanceFound = true;
+            }
+            return result;
+        }
+        else
             newStance = defaultStance; // apply default stance
     }
-    else
-        StanceStack.Insert(newStance, 0);
+    //else
+    //    StanceStack.Insert(newStance, 0); // TODO finish stack logic
     if (newStance != CurrentCombatStance)
     {
-        CurrentCombatStance = newStance;
-        UpdateStanceAnims(defaultStance);
-        OnStanceChanged();
-    } // TODO finish stack logic
-}
-
-void UCombatComponent::UpdateStanceAnims(const UCombatStance* DefaultStance)
-{
-    Character->AnimInstance->CurrentHitWallAnim = CurrentCombatStance->HitWallAnim ? CurrentCombatStance->HitWallAnim : DefaultStance->HitWallAnim;
-    Character->AnimInstance->CurrentWasParriedAnim = CurrentCombatStance->WasParriedAnim ? CurrentCombatStance->WasParriedAnim : DefaultStance->WasParriedAnim;
-    Character->AnimInstance->CurrentBlockedAttackAnim = CurrentCombatStance->BlockedAttackAnim ? CurrentCombatStance->BlockedAttackAnim : DefaultStance->BlockedAttackAnim;
-    Character->AnimInstance->CurrentChamberAnim = CurrentCombatStance->ChamberAnim ? CurrentCombatStance->ChamberAnim : DefaultStance->ChamberAnim;
-    Character->UpdateCCLOBAnims();
-
-    Character->AnimInstance->CurrentCrouchLocomotion = CurrentCombatStance->CrouchLocomotion ? CurrentCombatStance->CrouchLocomotion : DefaultStance->CrouchLocomotion;
-    Character->AnimInstance->CurrentStandLocomotion = CurrentCombatStance->StandLocomotion ? CurrentCombatStance->StandLocomotion : DefaultStance->StandLocomotion;;
-    Character->AnimInstance->CurrentBlockAnim = CurrentCombatStance->BlockAnim ? CurrentCombatStance->BlockAnim : DefaultStance->BlockAnim;;
-    Character->AnimInstance->CurrentParryAnim = CurrentCombatStance->ParryAnim ? CurrentCombatStance->ParryAnim : DefaultStance->ParryAnim;;
-    Character->AnimInstance->CurrentDrawAnim = CurrentCombatStance->DrawAnim ? CurrentCombatStance->DrawAnim : DefaultStance->DrawAnim;;
-    Character->AnimInstance->CurrentSheathAnim = CurrentCombatStance->SheathAnim ? CurrentCombatStance->SheathAnim : DefaultStance->SheathAnim;;
-}
-
-bool UCombatComponent::DoesStanceFit(const UCombatStance* Stance) const
-{
-    bool mainWeaponCheck = CurrentWeaponMainH && Stance->AllowedWeaponTypes.Contains(CurrentWeaponMainH->WeaponType);
-    if (!mainWeaponCheck)
-        return false;
-
-    bool offHandCheck = false;
-    if (Stance->IsTwoWeapon)
-    { // check that off hand should not be a shield
-        if (CurrentWeaponOffH && Stance->AllowedWeaponTypes.Contains(CurrentWeaponOffH->WeaponType) &&
-            !Stance->AllowedWeaponTypes.Contains(EWeaponType::Shield))
-            offHandCheck = true;
-    }
-    else
-    { // check if stance requiers shield and if offhand has it
-        if (Stance->AllowedWeaponTypes.Contains(EWeaponType::Shield))
+        if (NewStance && CurrentCombatStance)
         {
-            if (CurrentWeaponOffH && CurrentWeaponOffH->WeaponType == EWeaponType::Shield)
-                offHandCheck = true;
+            if (newStance->GetClass() == CurrentCombatStance->GetClass())
+                return result;
         }
-        else if (!CurrentWeaponOffH)
-            offHandCheck = true;
+        StanceChanged(CurrentCombatStance, newStance, defaultStance, WeaponChanged);
+        result.NewStanceWasSet = true;
     }
+    return result;
+}
 
-    if (offHandCheck && Stance->CheckRequirement(Character))
-        return true;
-    return false;
+bool UCombatComponent::DoesStanceFit(UCombatStance* Stance, bool CheckHandMode) const
+{
+    if (CurrentCombatStance == Stance)
+        return false;
+    Stance->SetWeaponVars(Owner);
+    bool correctHandMode = true;
+    if (CheckHandMode)
+    {
+        correctHandMode =  TwoHandMode ? (Stance->StanceType == EWeaponCombination::TwoHand) : 
+            (Stance->StanceType != EWeaponCombination::TwoHand);
+    }
+    bool result = Stance->IsStanceValid(Owner) && Stance->CheckRequirement(Owner) && correctHandMode;
+    if (!result)
+        Stance->ResetWeaponVars();
+    return result;
 }
 
 void UCombatComponent::ResetRotationRate()
@@ -1034,79 +781,82 @@ void UCombatComponent::ResetRotationRate()
     if (IsWeaponDrawn)
     {
         if (IsInActionState())
-            Character->GetMovementComponent()->RotationRate.Yaw = ActionRotationRate;
+            Owner->GetMovementComponent()->RotationRate.Yaw = ActionRotationRate;
         else
-            Character->GetMovementComponent()->RotationRate.Yaw = CombatModeRotationRate;
+            Owner->GetMovementComponent()->RotationRate.Yaw = CombatModeRotationRate;
     }
     else
-        Character->GetMovementComponent()->RotationRate.Yaw = Character->GetMovementComponent()->DefaultRotationRate;
+        Owner->GetMovementComponent()->RotationRate.Yaw = Owner->GetMovementComponent()->DefaultRotationRate;
 }
 
-void UCombatComponent::OnStanceChanged()
+void UCombatComponent::SetNewStance(UCombatStance* OldStance, UCombatStance* NewStance, const UCombatStance* DefaultStance)
 {
-    if (IsWeaponDrawn)
-    {// TODO call update
-        CalculateMaxCombatSpeeds();
+    bool isSwitchPending = PendingStance.IsSet();
+    if (OldStance)
+    {
+        OldStance->ResetStance();
+    }
+    CurrentCombatStance = NewStance;
+    if (NewStance)
+    {
+        TwoHandMode = NewStance->StanceType == EWeaponCombination::TwoHand ? true : false;
+        NewStance->StanceSwitched(Owner, DefaultStance);
+        if (isSwitchPending)
+            UpdateCombatFSM();
+    }
+    else if (isSwitchPending)
+        PendingStance.Reset();
+}
+
+void UCombatComponent::StanceChanged(UCombatStance* OldStance, UCombatStance* NewStance, const UCombatStance* DefaultStance, bool WeaponChanged)
+{ // if has weapons drawn and need to switch weapons, then first queue weapon sheath and then init new stance
+    if (IsWeaponDrawn && WeaponChanged)
+    {
+        PendingStance.NewStance = NewStance;
+        PendingStance.DefaultStance = DefaultStance;
+        UpdateCombatFSM();
+    }
+    else
+    {
+        SetNewStance(OldStance, NewStance, DefaultStance);
     }
 }
 
 void UCombatComponent::CalculateMaxCombatSpeeds()
 {
-    float speedMod = Character->GetMovementComponent()->GetSpeedModifier();
-    Character->GetMovementComponent()->MaxRunSpeed =
+    float speedMod = Owner->GetMovementComponent()->GetSpeedModifier();
+    Owner->GetMovementComponent()->MaxRunSpeed =
         CurrentCombatStance->MaxCombatRunSpeed * speedMod;
-    Character->GetMovementComponent()->MaxSprintSpeed =
+    Owner->GetMovementComponent()->MaxSprintSpeed =
         CurrentCombatStance->MaxCombatSprintSpeed * speedMod;
 }
 
 void UCombatComponent::CalculateMaxBlockingSpeed(float SpeedModifier)
 {
-    Character->GetMovementComponent()->MaxRunSpeed = CurrentCombatStance->MaxBlockSpeed * SpeedModifier;
+    Owner->GetMovementComponent()->MaxRunSpeed = CurrentCombatStance->MaxBlockSpeed * SpeedModifier;
 }
 
 bool UCombatComponent::CanBeInterruptedWithBlock(int CurrentState) const
 {
-    const auto state = CombatFSM.state(CurrentState);
+    const auto state = GetCombatFSM().state(CurrentState);
     return !state->Info.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && BlockPressed;
 }
 
-void UCombatComponent::WeaponsSetup(bool draw)
+void UCombatComponent::WeaponSetup(UItemArms* Weapon, AItemActor* Actor, bool Draw, FName Slot, bool MainHand)
 {
-    if (CurrentWeaponMainH != nullptr)
-    {
-        WeaponSetup(CurrentWeaponMainH, CurrentMainWeaponActor, draw, true);
-        if (CurrentWeaponOffH != nullptr)
-            WeaponSetup(CurrentWeaponOffH, CurrentOffWeaponActor, draw, false);
-    }
-    else if (DefaultWeaponMainH != nullptr)
-    {
-        WeaponSetup(DefaultWeaponMainH, CurrentMainWeaponActor, draw, true);
-        if (DefaultWeaponOffH != nullptr)
-            WeaponSetup(DefaultWeaponOffH, CurrentOffWeaponActor, draw, false);
-    }
-}
-
-void UCombatComponent::WeaponSetup(UItemWeapon* weapon, AItemActor* actor, bool draw, bool mainHand)
-{
-    const FName slot = UCombatComponent::GetSlotFromWeaponType(weapon->WeaponType, draw, mainHand);
-    if (draw)
-        actor->ItemCollision->OnComponentBeginOverlap.AddUniqueDynamic(this, &UCombatComponent::OnWeaponOverlap);
+    if (Slot.IsNone())
+        Slot = GetSlotFromWeaponType(Weapon->WeaponType, Draw, MainHand);
+    if (Draw)
+        Actor->ItemCollision->OnComponentBeginOverlap.AddUniqueDynamic(this, &UCombatComponent::OnWeaponOverlap);
     else
-        actor->ItemCollision->OnComponentBeginOverlap.RemoveDynamic(this, &UCombatComponent::OnWeaponOverlap);
-    actor->ItemCollision->SetGenerateOverlapEvents(false); // disable equipped weapon collision
-    actor->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, slot);
+        Actor->ItemCollision->OnComponentBeginOverlap.RemoveDynamic(this, &UCombatComponent::OnWeaponOverlap);
+    SetWeaponCollision(Actor, false); // disable equipped weapon collision
+    Actor->AttachToComponent(Owner->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, Slot);
 }
 
-void UCombatComponent::SetCurrentWeaponCollision(bool main, bool enable)
+void UCombatComponent::SetWeaponCollision(AItemActor* WeaponActor, bool Enable)
 {
-    if (main && CurrentMainWeaponActor != nullptr)
-    {
-        CurrentMainWeaponActor->ItemCollision->SetGenerateOverlapEvents(enable);
-    }
-    else if (CurrentOffWeaponActor != nullptr)
-    {
-        CurrentOffWeaponActor->ItemCollision->SetGenerateOverlapEvents(enable);
-    }
+    WeaponActor->ItemCollision->SetGenerateOverlapEvents(Enable);
 }
 
 void UCombatComponent::ActivateAbility()
@@ -1147,16 +897,21 @@ void UCombatComponent::SetCurrentAbility(UAbstractAbility *Ability)
         CurrentAbility->AbilitySetup(this);
     else
     {
-        Character->Logger.Log(this, *FString::Printf(TEXT("AbilitySystem Component: Ability Is Null")));
+        Owner->Logger.Log(this, *FString::Printf(TEXT("AbilitySystem Component: Ability Is Null")));
     }
 }
 
 void UCombatComponent::CalculateMaxCastingSpeed(float SpeedModifier)
 {
-    Character->GetMovementComponent()->MaxRunSpeed = MaxSpeedWhileCasting * SpeedModifier;
+    Owner->GetMovementComponent()->MaxRunSpeed = MaxSpeedWhileCasting * SpeedModifier;
 }
 
 void UCombatComponent::UseAimComponent(class UAbilityAimComponent *Component)
 {
-    Character->UseAimComponent(Component);
+    Owner->UseAimComponent(Component);
+}
+
+bool UCombatComponent::IsUsingAbility() const
+{
+    return HasCombatStance() && GetCombatFSM().isInState(ECombatState::Ability);
 }

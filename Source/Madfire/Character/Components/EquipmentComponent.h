@@ -108,6 +108,17 @@ struct FEquipmentSlot
     AItemActor *Item;
 };
 
+USTRUCT(BlueprintType)
+struct FUnarmedWeapon
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
+    UItemArms* Weapon;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FName AttachmentSlotName;
+};
+
 
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -136,6 +147,8 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     bool SwapItems(EItemSlot lhs, EItemSlot rhs);
+    UFUNCTION(BlueprintCallable)
+    AItemActor* SpawnItemActor(UItem* Item, bool EnableCollision);
 
     UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FSkillList EquipmentSkills;
@@ -151,6 +164,8 @@ public:
     float CurrentWeight;
     UPROPERTY(EditAnywhere, Category = "Equipment Component")
     FEquipmentSlot Slot[(int32)EItemSlot::Max];
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
+    TArray<FUnarmedWeapon> DefaultArmaments;
 
     //Equipment Update
     UFUNCTION(BlueprintCallable, Category = "Component Component")
