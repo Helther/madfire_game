@@ -84,6 +84,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory Component")
     bool RemoveFromStack(int32 index, int32 amount, bool removeWholeStack);
 
+    UFUNCTION(BlueprintCallable, Category = "Inventory Component")
+    static bool InventoryEquip(UInventoryComponent *Inventory, int32 ItemIndex, class UEquipmentComponent *EquipComp, EItemSlot SlotName);
+
+    UFUNCTION(BlueprintCallable, Category = "Inventory Component")
+    static bool MoveSlot(UInventoryComponent *FromInventory, UInventoryComponent *ToInventory, int32 FromIndex, int32 ToIndex);
+
+    UFUNCTION(BlueprintCallable, Category = "Inventory Component")
+    bool UseItem(int32 ItemIndex, EInteractType interractType);
+
     UFUNCTION(BlueprintPure, Category = "Inventory Component")
     bool IsFull() const;
 

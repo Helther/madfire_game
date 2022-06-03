@@ -53,7 +53,7 @@ void ACharacterBase::DropItem(UItem *item, int32 amount, FTransform transform)
 {
     AItemActor *actor = Cast<AItemActor>(GetWorld()->SpawnActor(item->ItemActor, &transform));
     SetupItemActorCollision(actor, true);
-    actor->ItemBase = item;
+    actor->ItemBase = DuplicateObject(item,actor->GetOuter());
     actor->StackCount = amount;
 }
 

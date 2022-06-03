@@ -4,6 +4,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/PlayerInput.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "AbilitySystem/Components/AbilityAimComponent.h"
 
 struct FInputKeyNames
 {
@@ -239,8 +240,7 @@ void ACharacterPlayer::MoveForward(float AxisValue)
         if (FMath::Abs(AxisValue) >= MovementDeadZone && !CCStateManager.HasCC()
             && GetMovementComponent()->CanMove())
         {
-            const auto combatState = CombatComponent->CombatFSM.currentState();
-            if (combatState != nullptr && combatState->Id == ECombatState::Ability)// check if can move during cast, interrupt then
+            if (CombatComponent->HasCombatStance() && CombatComponent->GetCombatFSM().isInState(ECombatState::Ability)) // check if can move during cast, interrupt then
             {
                 if (CombatComponent->CurrentAbility->MoveAbilities == 0)
                     InterruptAnimation(ECCState::NoCC);
@@ -310,8 +310,7 @@ void ACharacterPlayer::MoveRight(float AxisValue)
         if (FMath::Abs(AxisValue) >= MovementDeadZone && !CCStateManager.HasCC()
             && GetMovementComponent()->CanMove())
         {
-            const auto combatState = CombatComponent->CombatFSM.currentState();
-            if (combatState != nullptr && combatState->Id == ECombatState::Ability)// check if can move during cast, interrupt then
+            if (CombatComponent->HasCombatStance() && CombatComponent->GetCombatFSM().isInState(ECombatState::Ability))// check if can move during cast, interrupt then
             {
                 if (CombatComponent->CurrentAbility->MoveAbilities == 0)
                     InterruptAnimation(ECCState::NoCC);
@@ -516,12 +515,15 @@ void ACharacterPlayer::JumpAction()
                     else if (GetMovementComponent()->CanVaultOrClimb(false))
                         return;
                 }
-                int currentCombatState = CombatComponent->CombatFSM.currentState()->Id;
-                bool canInterruptAction = (currentCombatState == ECombatState::Attack || currentCombatState == ECombatState::Parry) &&
-                    !CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked) &&
-                    !CombatComponent->CombatFSM.currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed);
-                if (currentCombatState == ECombatState::Block || canInterruptAction)
-                    InterruptAnimation(ECCState::NoCC);
+                if (CombatComponent->HasCombatStance())
+                {
+                    int currentCombatState = CombatComponent->GetCombatFSM().currentState()->Id;
+                    bool canInterruptAction = (currentCombatState == ECombatState::Attack || currentCombatState == ECombatState::Parry) &&
+                        !CombatComponent->GetCombatFSM().currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked) &&
+                        !CombatComponent->GetCombatFSM().currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed);
+                    if (currentCombatState == ECombatState::Block || canInterruptAction)
+                        InterruptAnimation(ECCState::NoCC);
+                }
                 Jump();
                 return;
             }
