@@ -20,6 +20,7 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitial
     KnockdownThreshhold = 1.5f;
     ChamberThreshhold = 1.3f;
     MaxFacingAngle = 45.f;
+    ShieldWeightDamageMod = 0.5f;
     // end temp
 
     AbilityPanel.SetNum(10);
@@ -58,9 +59,11 @@ FName UCombatComponent::GetSlotFromWeaponType(EWeaponType type, bool draw, bool 
     }
 }
 
-float UCombatComponent::CalculateWeaponDamage(const UItemWeapon* weapon, float attackInfoDamageMod, float strMod)
+float UCombatComponent::CalculateWeaponDamage(const UItemArms* weapon, float attackInfoDamageMod, float strMod)
 {
-    if (weapon->WeaponType == EWeaponType::Unarmed)
+    switch (weapon->WeaponType)
+    {
+    case EWeaponType::Unarmed:
     {
         auto gloves = Owner->EquipmentComponent->GetEquipmentFromSlot(EItemSlot::HandsSlot).Item;
         if (gloves)
@@ -68,9 +71,14 @@ float UCombatComponent::CalculateWeaponDamage(const UItemWeapon* weapon, float a
         else
             return FMath::Max(UnarmedBaseDamage + strMod, UnarmedBaseDamage);
     }
-    else
+    case EWeaponType::Shield:
+        return FMath::Max(UnarmedBaseDamage, UnarmedBaseDamage + strMod + (weapon->Weight * ShieldWeightDamageMod));
+    default:
     {
-        return FMath::Max(weapon->DamageValue * attackInfoDamageMod + strMod, UnarmedBaseDamage);
+        auto theWeapon = Cast<UItemWeapon>(weapon);
+        check(theWeapon && "CalculateWeaponDamage: invalid weapon class");
+        return FMath::Max(theWeapon->DamageValue * attackInfoDamageMod + strMod, UnarmedBaseDamage);
+    }
     }
 }
 
@@ -168,11 +176,11 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
     if (GetCombatFSM().isInState(ECombatState::Attack))
     {
         const auto &info = GetCombatFSM().state(ECombatState::Attack)->Info;
-        UItemWeapon* activeWeapon = FindHitMeleeWeapon(comp);
+        auto activeWeapon = FindHitMeleeWeapon(comp);
         check(activeWeapon && "Should have a weapon");
         if (info.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && !HasAlreadyHitTarget(hitActor, activeWeapon))
         {
-            CharactersHit.Emplace(TPair<AActor*, UItemWeapon*>(hitActor, activeWeapon));
+            CharactersHit.Emplace(TPair<AActor*, UItemArms*>(hitActor, activeWeapon));
             auto hitCharacter = Cast<ACharacterBase>(hitActor);
             if (hitCharacter)
             {
@@ -183,7 +191,7 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
                 }
                 // check for chamber scenario
                 auto hitCombatCharacter = Cast<ACharacterCreature>(hitActor);
-                UItemWeapon* enemyActiveWeapon = FindCharacterActiveWeapon(hitCombatCharacter);
+                auto enemyActiveWeapon = FindCharacterActiveWeapon(hitCombatCharacter);
                 if (hitCombatCharacter && IsChamberValid(hitCombatCharacter, enemyActiveWeapon, activeWeapon))
                 {
                     EChamberRes res = ResolveChamber(hitCombatCharacter,enemyActiveWeapon, activeWeapon);
@@ -219,7 +227,7 @@ bool UCombatComponent::IsInActionState() const
     return GetCombatFSM().isInState(ECombatState::Attack) || GetCombatFSM().currentState()->Id == ECombatState::Parry;
 }
 
-bool UCombatComponent::IsChamberValid(const ACharacterCreature* HitCharacter, const UItemWeapon* HitActorActiveWeapon, const UItemWeapon* OwnerActiveWeapon) const
+bool UCombatComponent::IsChamberValid(const ACharacterCreature* HitCharacter, const UItemArms* HitActorActiveWeapon, const UItemArms* OwnerActiveWeapon) const
 {
     if (HitCharacter->CombatComponent->GetCombatFSM().isInState(ECombatState::Attack))
     {
@@ -239,7 +247,7 @@ bool UCombatComponent::IsChamberValid(const ACharacterCreature* HitCharacter, co
     return false;
 }
 
-UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(ACharacterCreature* HitCharacter, const UItemWeapon* HitActorActiveWeapon, const UItemWeapon* OwnerActiveWeapon)
+UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(ACharacterCreature* HitCharacter, const UItemArms* HitActorActiveWeapon, const UItemArms* OwnerActiveWeapon)
 {
     Owner->Logger.Log(this, "Chamber: enter!");
     // calculate characters attack powers
@@ -555,10 +563,10 @@ void UCombatComponent::ToggleHandMode()
     // TODO finish stack logic
 }
 
-bool UCombatComponent::HasAlreadyHitTarget(AActor *Target, UItemWeapon* Weapon) const
+bool UCombatComponent::HasAlreadyHitTarget(AActor *Target, UItemArms* Weapon) const
 {
     if (Target)
-        return CharactersHit.Contains(TPair<AActor*, UItemWeapon*>(Target, Weapon));
+        return CharactersHit.Contains(TPair<AActor*, UItemArms*>(Target, Weapon));
     return false;
 }
 
@@ -643,20 +651,20 @@ bool CheckHitActorCollision(const AItemActor* WeaponActor, const UPrimitiveCompo
     return (WeaponActor != nullptr) && (WeaponActor->ItemCollision == HitComp);
 }
 
-UItemWeapon* UCombatComponent::FindHitMeleeWeapon(const UPrimitiveComponent* HitComp) const
+UItemArms* UCombatComponent::FindHitMeleeWeapon(const UPrimitiveComponent* HitComp) const
 {
     AItemActor* weaponActor = CurrentCombatStance->GetArmsActorFromSlot(EArmsSlot::MainHand);
     if (CheckHitActorCollision(weaponActor, HitComp))
-        return Cast<UItemWeapon>(weaponActor->ItemBase);
+        return Cast<UItemArms>(weaponActor->ItemBase);
     weaponActor = CurrentCombatStance->GetArmsActorFromSlot(EArmsSlot::OffHand);
     if (CheckHitActorCollision(weaponActor, HitComp))
-        return Cast<UItemWeapon>(weaponActor->ItemBase);
+        return Cast<UItemArms>(weaponActor->ItemBase);
     weaponActor = CurrentCombatStance->GetArmsActorFromSlot(EArmsSlot::RightFoot);
     if (CheckHitActorCollision(weaponActor, HitComp))
-        return Cast<UItemWeapon>(weaponActor->ItemBase);
+        return Cast<UItemArms>(weaponActor->ItemBase);
     weaponActor = CurrentCombatStance->GetArmsActorFromSlot(EArmsSlot::LeftFoot);
     if (CheckHitActorCollision(weaponActor, HitComp))
-        return Cast<UItemWeapon>(weaponActor->ItemBase);
+        return Cast<UItemArms>(weaponActor->ItemBase);
 
     return nullptr;
 }
@@ -675,23 +683,23 @@ bool CheckActorCollisionActive(const AItemActor* WeaponActor)
     return (WeaponActor != nullptr) && (WeaponActor->ItemCollision->GetGenerateOverlapEvents());
 }
 
-UItemWeapon* UCombatComponent::FindCharacterActiveWeapon(const ACharacterCreature* SomeCharacter) const
+UItemArms* UCombatComponent::FindCharacterActiveWeapon(const ACharacterCreature* SomeCharacter) const
 {
     auto stance = SomeCharacter->CombatComponent->CurrentCombatStance;
     if (stance)
     {
         AItemActor* weaponActor = stance->GetArmsActorFromSlot(EArmsSlot::MainHand);
         if (CheckActorCollisionActive(weaponActor))
-            return Cast<UItemWeapon>(weaponActor->ItemBase);
+            return Cast<UItemArms>(weaponActor->ItemBase);
         weaponActor = stance->GetArmsActorFromSlot(EArmsSlot::OffHand);
         if (CheckActorCollisionActive(weaponActor))
-            return Cast<UItemWeapon>(weaponActor->ItemBase);
+            return Cast<UItemArms>(weaponActor->ItemBase);
         weaponActor = stance->GetArmsActorFromSlot(EArmsSlot::RightFoot);
         if (CheckActorCollisionActive(weaponActor))
-            return Cast<UItemWeapon>(weaponActor->ItemBase);
+            return Cast<UItemArms>(weaponActor->ItemBase);
         weaponActor = stance->GetArmsActorFromSlot(EArmsSlot::LeftFoot);
         if (CheckActorCollisionActive(weaponActor))
-            return Cast<UItemWeapon>(weaponActor->ItemBase);
+            return Cast<UItemArms>(weaponActor->ItemBase);
     }
     
     return nullptr;

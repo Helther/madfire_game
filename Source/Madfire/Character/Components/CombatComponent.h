@@ -117,11 +117,11 @@ protected:
     bool DoesStanceFit(UCombatStance* Stance, bool CheckHandMode = false) const;
     UCombatStance* CheckStances(const TArray<UCombatStance*>& Stances, bool CheckHandMode = false);
     // looks in current stance for a weapon that has the given collision
-    UItemWeapon* FindHitMeleeWeapon(const UPrimitiveComponent* HitComp) const;
+    UItemArms* FindHitMeleeWeapon(const UPrimitiveComponent* HitComp) const;
     // checks if given collision hit this characters weapon
     bool HitOwnMeleeWeapons(const UPrimitiveComponent* HitComp, const AActor* HitActor) const;
     // looks for the first weapon (starting with main-hand) that has active collision
-    UItemWeapon* FindCharacterActiveWeapon(const ACharacterCreature* SomeCharacter) const;
+    UItemArms* FindCharacterActiveWeapon(const ACharacterCreature* SomeCharacter) const;
     // looks in current stance for weapons have enabled collision
     TArray<AItemActor*> FindActiveMeleeWeapons() const;
 
@@ -176,9 +176,13 @@ public:
     // максимальный угол между направлениями бойцов
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float MaxFacingAngle;
+    // damage modifier for shield from it's weight 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float ShieldWeightDamageMod;
+
     FCombatStateChanged OnCombatStateChanged;
 
-    float CalculateWeaponDamage(const UItemWeapon* weapon, float attackInfoDamageMod, float strMod);
+    float CalculateWeaponDamage(const UItemArms* weapon, float attackInfoDamageMod, float strMod);
     // для расчета возможности применения блока или паррирования
     static float GetAngleBetweenAttackerAndDefender(const AActor *Attacker, const AActor *Defender);
     // для расчета разницы направлений
@@ -226,12 +230,12 @@ protected:
     void CalculateMaxCombatSpeeds();
     void CalculateMaxBlockingSpeed(float SpeedModifier);
     bool CanBeInterruptedWithBlock(int CurrentState) const;
-    bool HasAlreadyHitTarget(AActor *Target, UItemWeapon* Weapon) const;
+    bool HasAlreadyHitTarget(AActor *Target, UItemArms* Weapon) const;
     UFUNCTION()
     void OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
     bool IsInActionState() const;
-    bool IsChamberValid(const ACharacterCreature* HitCharacter, const UItemWeapon* HitActorActiveWeapon, const UItemWeapon* OwnerActiveWeapon) const;
-    EChamberRes ResolveChamber(ACharacterCreature* HitCharacter, const UItemWeapon* HitActorActiveWeapon, const UItemWeapon* OwnerActiveWeapon);
+    bool IsChamberValid(const ACharacterCreature* HitCharacter, const UItemArms* HitActorActiveWeapon, const UItemArms* OwnerActiveWeapon) const;
+    EChamberRes ResolveChamber(ACharacterCreature* HitCharacter, const UItemArms* HitActorActiveWeapon, const UItemArms* OwnerActiveWeapon);
     void EnterChamberState(ACharacterCreature* ChamberedCharacter);
 
     // character orientation to movement speed while weapon is drawn
@@ -246,7 +250,7 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float BlockStaminaRegenRateMod;
     // set of characters hit and with what weapon
-    TSet<TPair<AActor*, UItemWeapon*>> CharactersHit;
+    TSet<TPair<AActor*, UItemArms*>> CharactersHit;
     // works the same for ai controller, but without actually pressing buttons
     bool WeaponSwitchPressed = false;
     bool AttackPressed = false;

@@ -136,6 +136,9 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon Stats")
     EWeaponSize WeaponSize;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon Stats")
+    TSubclassOf<UPhysicDamage> DamageType;
 };
 
 
@@ -149,9 +152,6 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats")
     float DamageValue;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon Stats")
-    TSubclassOf<UPhysicDamage> DamageType;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats")
     FDamageAbsorb DamageLimit;

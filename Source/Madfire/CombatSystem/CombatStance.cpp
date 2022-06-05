@@ -192,9 +192,10 @@ UMeleeCombatStance::UMeleeCombatStance() : Super()
         bool hasStamina = Owner->AttributeComponent->Stamina->CurrentValue > 0;
         const auto state = CombatFSM.state(ECombatState::Block);
         bool hasAnim = Owner->AnimInstance->CurrentParryAnim != nullptr;
+        bool isNotFalling = !Owner->GetMovementComponent()->IsFalling();
         if (!hasAnim)
              Owner->Logger.Log(GetCombatComp(), "Stance doesn't have parry anim");
-        return hasAnim && IsParryAllowed && state->Info.CheckAnimInfo(ECombatStateAnimInfo::BlockOrParryActive) &&  GetCombatComp()->IsAttackPressed() && hasStamina;
+        return hasAnim && IsParryAllowed && isNotFalling && state->Info.CheckAnimInfo(ECombatStateAnimInfo::BlockOrParryActive) &&  GetCombatComp()->IsAttackPressed() && hasStamina;
     });
     CombatFSM.addLink(ECombatState::Block, ECombatState::Parry, req);
     req.Unbind();
@@ -230,7 +231,7 @@ UMeleeCombatStance::UMeleeCombatStance() : Super()
         bool hasAnim = Owner->AnimInstance->CurrentBlockAnim != nullptr;
         if (!hasAnim)
              Owner->Logger.Log(GetCombatComp(), "Stance doesn't have block anim");
-        return hasAnim && IsBlockAllowed && hasStamina && (checkEnd || GetCombatComp()->CanBeInterruptedWithBlock(ECombatState::Parry)) && !Owner->GetMovementComponent()->IsRootOrTeleport();
+        return hasAnim && IsBlockAllowed && hasStamina && checkEnd && !Owner->GetMovementComponent()->IsRootOrTeleport();
     });
     CombatFSM.addLink(ECombatState::Parry, ECombatState::Block, req);
     req.Unbind();

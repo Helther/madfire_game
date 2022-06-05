@@ -36,4 +36,6 @@ UItemWeapon::UItemWeapon(const class FObjectInitializer &ObjectInititalizer)
 
 UItemShield::UItemShield(const class FObjectInitializer &ObjectInititalizer)
   : Super(ObjectInititalizer)
-{}
+{
+    WeaponType = EWeaponType::Shield;
+}
