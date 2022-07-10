@@ -96,9 +96,9 @@ struct CombatStateInfo : public StateInfoBase
     // pointer to relevant attack info from current stance
     FAttackInfo *AttackInfo = nullptr;
 
-    void ChangeAnimInfo(uint16 mask, bool set) { set ? (AnimInfo |= mask) : (AnimInfo &= ~mask); }
-    bool CheckAnimInfo(uint16 mask) const { return (AnimInfo & mask) == mask; }
-    void ResetAnimInfo() { AnimInfo = 0u; }
+    FORCEINLINE void ChangeAnimInfo(uint16 mask, bool set) { set ? (AnimInfo |= mask) : (AnimInfo &= ~mask); }
+    FORCEINLINE bool CheckAnimInfo(uint16 mask) const { return (AnimInfo & mask) == mask; }
+    FORCEINLINE void ResetAnimInfo() { AnimInfo = 0u; }
     
 private:
     uint16 AnimInfo = 0u;
@@ -111,7 +111,8 @@ enum ECombatState
     Attack,
     Block,
     Parry,
-    Ability
+    Ability,
+    Reload
 };
 
 enum ECombatStateAnimInfo
@@ -155,12 +156,13 @@ class MADFIRE_API UCombatStance : public UObject
     friend class UCombatComponent;
 public:
     // called when setting to current stance in combat component
-    virtual void StanceSwitched(ACharacterCreature* NewOwner, const UCombatStance* DefaultStance) {}
+    virtual void StanceSwitched(ACharacterCreature* NewOwner, const UCombatStance* DefaultStance);
     // called before switching to another stance
-    virtual void ResetStance() {}
+    virtual void ResetStance();
     // check that weapons setup correctly
     virtual bool IsStanceValid(const ACharacterCreature* NewOwner) const { return true; }
     // custom blueprint specific check
+    virtual bool IsMelee() const { return true; }
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Stance Interface")
     bool CheckRequirement(ACharacterCreature* character) const;
     bool CheckRequirement_Implementation(ACharacterCreature* character) const { return true; }
@@ -181,7 +183,6 @@ public:
     AItemActor* GetArmsActorFromSlot(EArmsSlot Slot) const;
     ///
 
-    FAttackInfo* GetAttackInfoForSpecial(ESpecialType type);
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool IsUsingDefaultWeapons = false;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -200,20 +201,15 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Speeds")
     float MaxCombatCrouchedSpeed;
 
-    UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Combat Speeds")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Speeds")
     float MaxCombatSprintSpeed;
-    // Max move speed during blocking
-    UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Combat Speeds")
-    float MaxBlockSpeed;
+    // Max move speed during blocking or attacking if allowed (charging drawing)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Speeds")
+    float MaxBlockOrActionSpeed;
     ////////////////////////// END combat mode speeds//////////////////////////
 
     FSM<CombatStateInfo> CombatFSM;
 
-    // use size as max combo count
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<FComboInfo> ComboAttacks;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<FAttackInfo> SpecialAttacks;
     // custom equipment specific animations for unique stances
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
     UAnimMontage *BlockAnim;// TODO modify anim speed according to shield weight after stance resolve
@@ -239,9 +235,6 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
     UAnimMontage *ChamberAnim;
 
-    void ResetComboCount() { CurrentCombo = 0; }
-    int GetComboCount() const { return CurrentCombo; }
-    void IncreaseComboCount() { ++CurrentCombo; }
 
 protected:
     /// must implement in BP
@@ -252,14 +245,18 @@ protected:
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
     void OnStanceDeActivated();
     ///
+    // Ability state funcs
+    void OnAbilityEnter();
+    void OnAbilityLeave();
+    bool IdleToAbility() const;
+    bool AbilityToIdle() const;
 
     UCombatComponent* GetCombatComp() const;
     virtual void UpdateOwnerAnims(const UCombatStance* DefaultStance);
+
     // used for req checks, set when gets stance resolved
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     ACharacterCreature* Owner = nullptr;
-
-    int CurrentCombo = 0;
 };
 
 
@@ -271,25 +268,67 @@ class UMeleeCombatStance : public UCombatStance
 public:
     UMeleeCombatStance();
 
-    void StanceSwitched(ACharacterCreature* NewOwner, const UCombatStance* DefaultStance) override;
-    void ResetStance() override;
     bool IsStanceValid(const ACharacterCreature* NewOwner) const override;
+    bool IsMelee() const override { return true; }
+
+    FAttackInfo* GetAttackInfoForSpecial(ESpecialType type);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool IsParryAllowed = true;
     UPROPERTY(EditAnywhere)
     float ParryStaminaCost = 15;
+    // use size as max combo count
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<FComboInfo> ComboAttacks;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<FAttackInfo> SpecialAttacks;
+
+    void ResetComboCount() { CurrentCombo = 0; }
+    int GetComboCount() const { return CurrentCombo; }
+    void IncreaseComboCount() { ++CurrentCombo; }
+
+protected:
+    int CurrentCombo = 0;
 };
 
 
-UCLASS(BlueprintType, Blueprintable)
+UCLASS(Abstract, BlueprintType, Blueprintable)
 class URangeCombatStance : public UCombatStance
 {
     GENERATED_BODY()
 
 public:
+    URangeCombatStance() {}
+
     bool IsStanceValid(const ACharacterCreature* NewOwner) const override;
+    bool IsMelee() const override { return false; }
+    void StanceSwitched(ACharacterCreature* NewOwner, const UCombatStance* DefaultStance) override;
 
 protected:
     void UpdateOwnerAnims(const UCombatStance* DefaultStance) override;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FAttackInfo AttackInfo;
+};
+
+// TODO
+UCLASS(BlueprintType, Blueprintable)
+class UBowCombatStance : public URangeCombatStance
+{
+    GENERATED_BODY()
+
+public:
+    UBowCombatStance() {}
+
+};
+
+// TODO
+UCLASS(BlueprintType, Blueprintable)
+class UCrossbowCombatStance : public URangeCombatStance
+{
+    GENERATED_BODY()
+
+public:
+    UCrossbowCombatStance() {}
+
 };

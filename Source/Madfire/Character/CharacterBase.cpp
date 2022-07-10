@@ -13,6 +13,10 @@ ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) :
     Cheats.Invulnerable = false;
     Cheats.InvulnerableToHit = false;
 
+    // Collision
+    GetCapsuleComponent()->SetGenerateOverlapEvents(true);
+    GetMesh()->SetGenerateOverlapEvents(false);
+
     Logger.RegisterSubLogger(AttributeComponent, true);
     Logger.RegisterSubLogger(StatusEffectComponent, true);
 }
@@ -63,4 +67,6 @@ void ACharacterBase::SetupItemActorCollision(AItemActor* InActor, bool Enable)
     InActor->ItemMesh->SetCollisionEnabled(Enable ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::QueryOnly);
     InActor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
     InActor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
+    if (!Enable)
+        InActor->ItemCollision->SetGenerateOverlapEvents(false);
 }

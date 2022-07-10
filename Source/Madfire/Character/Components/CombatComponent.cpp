@@ -73,6 +73,7 @@ float UCombatComponent::CalculateWeaponDamage(const UItemArms* weapon, float att
     }
     case EWeaponType::Shield:
         return FMath::Max(UnarmedBaseDamage, UnarmedBaseDamage + strMod + (weapon->Weight * ShieldWeightDamageMod));
+    // TODO range weapons
     default:
     {
         auto theWeapon = Cast<UItemWeapon>(weapon);
@@ -103,25 +104,30 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
         if (currentState->Info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed))
         {
             currentState->Info.ChargeTime += DeltaTime;
-            auto &currentCombo = CurrentCombatStance->ComboAttacks[CurrentCombatStance->GetComboCount()];
             // check if held attack for at least some time to start charging and has charge stage
-            if ((currentState->Info.ChargeStage == -1 && currentState->Info.ChargeTime < ChargeStartTime) ||
-                currentCombo.ChargeAttackStages.Num() == 0 )
+            if (currentState->Info.ChargeStage == -1 && currentState->Info.ChargeTime < ChargeStartTime)
                 return;
-            // charged enough to go to next stage
-            if (currentState->Info.ChargeStage == -1 || ((currentState->Info.ChargeStage + 1 < currentCombo.ChargeAttackStages.Num()) && currentState->Info.ChargeTime >=
-                currentCombo.ChargeAttackStages[currentState->Info.ChargeStage + 1].ChargeTimeNeeded))
+            if (CurrentCombatStance->IsMelee())
             {
-                if (currentCombo.ChargeAttackStages[currentState->Info.ChargeStage + 1].Info.AttackMontage != nullptr)
+                auto meleeStance = Cast<UMeleeCombatStance>(CurrentCombatStance);
+                auto& currentCombo = meleeStance->ComboAttacks[meleeStance->GetComboCount()];
+                if (currentCombo.ChargeAttackStages.Num() == 0)
+                    return;
+                // charged enough to go to next stage if has any
+                if (currentState->Info.ChargeStage == -1 || ((currentState->Info.ChargeStage + 1 < currentCombo.ChargeAttackStages.Num()) && currentState->Info.ChargeTime >=
+                    currentCombo.ChargeAttackStages[currentState->Info.ChargeStage + 1].ChargeTimeNeeded))
                 {
-                    ++currentState->Info.ChargeStage;
-                    currentState->Info.ResetAnimInfo();
-                    currentState->Info.AttackInfo = &currentCombo.ChargeAttackStages[currentState->Info.ChargeStage].Info;
-                    currentState->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
-                    currentState->Info.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, true);
-                    FOnMontageBlendingOutStarted callBack;
-                    callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
-                    Owner->StartAnimation(currentState->Info.AttackInfo->AttackMontage, callBack, AttackSpeed, currentState->Info.AttackInfo->AnimSectionName);
+                    if (currentCombo.ChargeAttackStages[currentState->Info.ChargeStage + 1].Info.AttackMontage != nullptr)
+                    {
+                        ++currentState->Info.ChargeStage;
+                        currentState->Info.ResetAnimInfo();
+                        currentState->Info.AttackInfo = &currentCombo.ChargeAttackStages[currentState->Info.ChargeStage].Info;
+                        currentState->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+                        currentState->Info.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, true);
+                        FOnMontageBlendingOutStarted callBack;
+                        callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
+                        Owner->StartAnimation(currentState->Info.AttackInfo->AttackMontage, callBack, AttackSpeed, currentState->Info.AttackInfo->AnimSectionName);
+                    }
                 }
             }
         }
@@ -171,7 +177,7 @@ void UCombatComponent::OnMovementModeChanged(int oldMode, int newMode)
 void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
     auto hitActor = SweepResult.GetActor();
-    if (hitActor == nullptr || hitActor == Owner || HitOwnMeleeWeapons(comp, OtherActor))// Check self and weapon
+    if (hitActor == nullptr || OtherActor == Owner || HitOwnMeleeWeapons(comp, OtherActor))// Check self and weapon
         return;
     if (GetCombatFSM().isInState(ECombatState::Attack))
     {
@@ -202,6 +208,36 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
                 int32 strMod = UAttributeSetHelper::GetModifier(hitCharacter->AttributeComponent->Attributes, EAttributes::Str);
                 const float damage = CalculateWeaponDamage(activeWeapon, GetCombatFSM().state(ECombatState::Attack)->Info.AttackInfo->DamageMod, strMod);
                 float force = CalculateHitForce(activeWeapon->Weight, strMod, info.AttackInfo->PowerMod); // Use Force, Luke
+                // check what body part was hit
+                // TODO apply sound and particle effect based on material surface type
+                if (OtherComp)
+                {
+                    FComponentQueryParams params;
+                    params.bTraceComplex = true;
+                    params.bReturnPhysicalMaterial = true;
+                    params.AddIgnoredActor(Owner);
+                    // Avatar->GetAttachedActors(/*out*/ AttachedActors);
+                    // TraceParams.AddIgnoredActors(AttachedActors); TODO add character child actors
+                    TArray<FHitResult> hits;
+                    auto weaponCollision = Cast<UBoxComponent>(comp);
+                    FVector collisionVertExtent = weaponCollision->GetComponentTransform().GetRotation().GetUpVector() * weaponCollision->GetScaledBoxExtent().Z;
+                    FVector startTrace = weaponCollision->GetComponentTransform().GetLocation() - collisionVertExtent;
+                    FVector endTrace = weaponCollision->GetComponentTransform().GetLocation() + collisionVertExtent;
+                    GetWorld()->ComponentSweepMulti(hits, weaponCollision, startTrace, endTrace, weaponCollision->GetComponentQuat(), params);
+                    auto Pred = [OtherComp](const FHitResult& Other)
+                    {
+                        return Other.GetComponent() == OtherComp;
+                    };
+                    FHitResult* hit = hits.FindByPredicate(Pred);
+                    if (hit)
+                    {
+                        Owner->Logger.Log(this, hit->BoneName.ToString());
+                        if (hit->PhysMaterial.Get())
+                            Owner->Logger.Log(this, *FString::Printf(TEXT("has material: %s"), *hit->PhysMaterial->GetName()));
+                        else
+                            Owner->Logger.Log(this, "no material");
+                    }
+                }
                 hitCharacter->TakeDamage(damage, FForceDamageEvent(activeWeapon->DamageType, force), Owner->GetController(), Owner);
             }
             else // hit an obsticle
@@ -218,6 +254,7 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
                     hitActor->TakeDamage(damage, FDamageEvent(activeWeapon->DamageType), Owner->GetController(), Owner);
                 }
             }
+            info.AttackInfo->CustomOnHitEvent.Broadcast(Owner, hitActor);
         }
     }
 }
@@ -353,7 +390,7 @@ void UCombatComponent::OnEquipmentSwap(UEquipmentComponent* Component, EItemSlot
 
 bool UCombatComponent::IsWeaponSwapAllowed(EItemSlot lhs, EItemSlot rhs) const
 { // TODO
-    return (lhs != EItemSlot::MainWeaponSlot) && (rhs != EItemSlot::OffMeaponSlot);
+    return false;
 }
 
 void UCombatComponent::Update()
@@ -367,70 +404,76 @@ void UCombatComponent::OnAttack(bool Started)
     Owner->Logger.Log(this, *FString::Printf(TEXT("OnAttack %s"),
             Started ? TEXT("pressed") : TEXT("released")));
     AttackPressed = Started;
-    if (GetCombatFSM().isInState(ECombatState::Attack))
+    if (!HasCombatStance())
+        return;
+    if (CurrentCombatStance->IsMelee())
     {
-        auto &info = GetCombatFSM().state(ECombatState::Attack)->Info;
-        const FAttackInfo* currentAttack = info.AttackInfo;
-        if (Owner->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && Owner->CCStateManager.IsInCCSubMode(Chamber))
+        if (GetCombatFSM().isInState(ECombatState::Attack))
         {
-            if (!info.CheckAnimInfo(CanCounterChamber)) // check if not ready to strike while in chamber
-                return;
-            if (AttackPressed)
+            auto& info = GetCombatFSM().state(ECombatState::Attack)->Info;
+            const FAttackInfo* currentAttack = info.AttackInfo;
+            if (Owner->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && Owner->CCStateManager.IsInCCSubMode(Chamber))
             {
-                info.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
-                StartNextComboAttack(false);
-                return;
-            }
-        }
-        if (currentAttack->Special == ESpecialType::None)// can check combo if not special move
-        { 
-            if (AttackPressed)
-            {
-                if (info.CheckAnimInfo(ECombatStateAnimInfo::ComboCanContinue))// start pause combo
-                    StartNextComboAttack(true);
-                else
-                    info.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
-            }
-            else
-            {
-                if (info.ChargeStage != -1 && info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed))
+                if (!info.CheckAnimInfo(CanCounterChamber)) // check if not ready to strike while in chamber
+                    return;
+                if (AttackPressed)
                 {
-                    bool hasStamina = Owner->AttributeComponent->Stamina->CurrentValue > 0;
-                    auto airAttack = CurrentCombatStance->GetAttackInfoForSpecial(ESpecialType::Air);
-                    if (Owner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling && hasStamina && airAttack != nullptr)
-                    { // uncharging in air
-                        info.AttackInfo = CurrentCombatStance->GetAttackInfoForSpecial(ESpecialType::Air);
-                        info.ResetAnimInfo();
-                        info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
-                        Owner->AttributeComponent->Stamina->Consume(info.AttackInfo->StaminaCost);
-                        FOnMontageBlendingOutStarted callBack;
-                        callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
-                        Owner->StartAnimation(info.AttackInfo->AttackMontage, callBack, AttackSpeed);
-                        return;
-                    }
-                    else if (hasStamina && currentAttack->AttackMontage && info.ChargeTime >=
-                        CurrentCombatStance->ComboAttacks[CurrentCombatStance->GetComboCount()].ChargeAttackStages[GetCombatFSM().currentState()->Info.ChargeStage].ChargeTimeNeeded)
-                    { // uncharging on ground
-                        Owner->AttributeComponent->Stamina->Consume(currentAttack->StaminaCost);
+                    info.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
+                    StartNextComboAttack(false);
+                    return;
+                }
+            }
+            if (currentAttack->Special == ESpecialType::None)// can check combo if not special move
+            {
+                if (AttackPressed)
+                {
+                    if (info.CheckAnimInfo(ECombatStateAnimInfo::ComboCanContinue))// start pause combo
+                        StartNextComboAttack(true);
+                    else
+                        info.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
+                }
+                else
+                {
+                    if (info.ChargeStage != -1 && info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed))
+                    {
+                        auto meleeStance = Cast<UMeleeCombatStance>(CurrentCombatStance);
+                        bool hasStamina = Owner->AttributeComponent->Stamina->CurrentValue > 0;
+                        auto airAttack = meleeStance->GetAttackInfoForSpecial(ESpecialType::Air);
+                        if (Owner->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Falling && hasStamina && airAttack != nullptr)
+                        { // uncharging in air
+                            info.AttackInfo = meleeStance->GetAttackInfoForSpecial(ESpecialType::Air);
+                            info.ResetAnimInfo();
+                            info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+                            Owner->AttributeComponent->Stamina->Consume(info.AttackInfo->StaminaCost);
+                            FOnMontageBlendingOutStarted callBack;
+                            callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
+                            Owner->StartAnimation(info.AttackInfo->AttackMontage, callBack, AttackSpeed);
+                            return;
+                        }
+                        else if (hasStamina && currentAttack->AttackMontage && info.ChargeTime >=
+                            meleeStance->ComboAttacks[meleeStance->GetComboCount()].ChargeAttackStages[GetCombatFSM().currentState()->Info.ChargeStage].ChargeTimeNeeded)
+                        { // uncharging on ground
+                            Owner->AttributeComponent->Stamina->Consume(currentAttack->StaminaCost);
+                            info.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, false);
+                            info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+                            FOnMontageBlendingOutStarted callBack;
+                            callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
+                            Owner->StartAnimation(currentAttack->AttackMontage, callBack, AttackSpeed, FAnimSectionNames::End);
+                            return;
+                        }
+                        // charging cancelled
                         info.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, false);
                         info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
                         FOnMontageBlendingOutStarted callBack;
                         callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
-                        Owner->StartAnimation(currentAttack->AttackMontage, callBack, AttackSpeed, FAnimSectionNames::End);
-                        return;
+                        Owner->StartAnimation(currentAttack->AttackMontage, callBack, AttackSpeed, FAnimSectionNames::Cancel);
                     }
-                    // charging cancelled
-                    info.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, false);
-                    info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
-                    FOnMontageBlendingOutStarted callBack;
-                    callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
-                    Owner->StartAnimation(currentAttack->AttackMontage, callBack, AttackSpeed, FAnimSectionNames::Cancel);
                 }
             }
         }
+        else if (AttackPressed)// starting first attack
+            UpdateCombatFSM();
     }
-    else if (AttackPressed)// starting first attack
-        UpdateCombatFSM();
 }
 
 void UCombatComponent::OnBlock(bool Started) 
@@ -490,8 +533,9 @@ void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
 {
     check(GetCombatFSM().isInState(ECombatState::Attack) && "StartNextComboAttack: not in attack state");
     check(CurrentCombatStance && "StartNextComboAttack: doesn't have stance");
-    int CurrentCombo = CurrentCombatStance->GetComboCount();
-    if (CurrentCombo >= CurrentCombatStance->ComboAttacks.Num() - 1)
+    auto meleeStance = Cast<UMeleeCombatStance>(CurrentCombatStance);
+    int CurrentCombo = meleeStance->GetComboCount();
+    if (CurrentCombo >= meleeStance->ComboAttacks.Num() - 1)
         return;
     if (Owner->AttributeComponent->Stamina->CurrentValue <= 0)
         return;
@@ -500,10 +544,10 @@ void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
     FAttackInfo* nextAttackInfo = nullptr;
     if (IsPauseAttack)
     {
-        if (CurrentCombatStance->ComboAttacks[CurrentCombo + 1].PauseAttack.AttackMontage != nullptr)
+        if (meleeStance->ComboAttacks[CurrentCombo + 1].PauseAttack.AttackMontage != nullptr)
         {
             stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::PauseComboSaved, true);
-            nextAttackInfo = &CurrentCombatStance->ComboAttacks[CurrentCombo + 1].PauseAttack;
+            nextAttackInfo = &meleeStance->ComboAttacks[CurrentCombo + 1].PauseAttack;
         }
         else
             return;
@@ -512,8 +556,8 @@ void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
     {
         if (stateInfo.CheckAnimInfo(ECombatStateAnimInfo::ComboSaved))
         {
-            if (CurrentCombatStance->ComboAttacks[CurrentCombo + 1].NormalAttack.AttackMontage != nullptr)
-                nextAttackInfo = &CurrentCombatStance->ComboAttacks[CurrentCombo + 1].NormalAttack;
+            if (meleeStance->ComboAttacks[CurrentCombo + 1].NormalAttack.AttackMontage != nullptr)
+                nextAttackInfo = &meleeStance->ComboAttacks[CurrentCombo + 1].NormalAttack;
         }
         else
             return;
@@ -521,7 +565,7 @@ void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
     if (nextAttackInfo != nullptr)
     {
         bool isAttackFromChamber = stateInfo.CheckAnimInfo(ECombatStateAnimInfo::CanCounterChamber);
-        CurrentCombatStance->IncreaseComboCount();
+        meleeStance->IncreaseComboCount();
         Owner->AttributeComponent->Stamina->Consume(nextAttackInfo->StaminaCost);
         stateInfo.ResetAnimInfo();
         CharactersHit.Reset();
@@ -841,13 +885,18 @@ void UCombatComponent::CalculateMaxCombatSpeeds()
 
 void UCombatComponent::CalculateMaxBlockingSpeed(float SpeedModifier)
 {
-    Owner->GetMovementComponent()->MaxRunSpeed = CurrentCombatStance->MaxBlockSpeed * SpeedModifier;
+    Owner->GetMovementComponent()->MaxRunSpeed = CurrentCombatStance->MaxBlockOrActionSpeed * SpeedModifier;
 }
 
 bool UCombatComponent::CanBeInterruptedWithBlock(int CurrentState) const
 {
-    const auto state = GetCombatFSM().state(CurrentState);
-    return !state->Info.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && BlockPressed;
+    if (CurrentCombatStance->IsMelee())
+    {
+        const auto state = GetCombatFSM().state(CurrentState);
+        return !state->Info.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && BlockPressed;
+    }
+    else
+        return true;
 }
 
 void UCombatComponent::WeaponSetup(UItemArms* Weapon, AItemActor* Actor, bool Draw, FName Slot, bool MainHand)

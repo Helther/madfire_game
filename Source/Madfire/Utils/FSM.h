@@ -33,7 +33,7 @@ public:
 
     bool contains(int Id) const
     {
-        if (_States.FindByKey(Id))
+        if (_States.Contains(Id))
             return true;
         return false;
     }
@@ -73,7 +73,7 @@ public:
     FSM &addState(int StateId)
     {
         if (!contains(StateId))
-            _States.Emplace(State(StateId));
+            _States.Emplace(StateId, State(StateId));
         return *this;
     }
 
@@ -99,7 +99,7 @@ public:
     }
 
 private:
-    TArray<State> _States;
+    TMap<int32, State> _States;
     State *_CurrentState = nullptr;
 };
 

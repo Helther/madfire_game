@@ -9,7 +9,7 @@ UItemLegsArmor::UItemLegsArmor(const class FObjectInitializer &ObjectInititalize
   : Super(ObjectInititalizer)
 {}
 
-UItemGlovers::UItemGlovers(const class FObjectInitializer &ObjectInititalizer)
+UItemGloves::UItemGloves(const class FObjectInitializer &ObjectInititalizer)
   : Super(ObjectInititalizer)
 {}
 

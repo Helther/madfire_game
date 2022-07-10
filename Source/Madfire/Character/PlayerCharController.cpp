@@ -473,12 +473,15 @@ void APlayerCharController::JumpAction()
                         else if (Player->GetMovementComponent()->CanVaultOrClimb(false))
                             return;
                     }
-                    int currentCombatState = Player->CombatComponent->GetCombatFSM().currentState()->Id;
-                    bool canInterruptAction = (currentCombatState == ECombatState::Attack || currentCombatState == ECombatState::Parry) &&
-                        !Player->CombatComponent->GetCombatFSM().currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked) &&
-                        !Player->CombatComponent->GetCombatFSM().currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed);
-                    if (currentCombatState == ECombatState::Block || canInterruptAction)
-                        Player->InterruptAnimation(ECCState::NoCC);
+                    if (Player->CombatComponent->HasCombatStance())
+                    {
+                        int currentCombatState = Player->CombatComponent->GetCombatFSM().currentState()->Id;
+                        bool canInterruptAction = (currentCombatState == ECombatState::Attack || currentCombatState == ECombatState::Parry) &&
+                            !Player->CombatComponent->GetCombatFSM().currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked) &&
+                            !Player->CombatComponent->GetCombatFSM().currentState()->Info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed);
+                        if (currentCombatState == ECombatState::Block || canInterruptAction)
+                            Player->InterruptAnimation(ECCState::NoCC);
+                    }
                     Player->Jump();
                     return;
                 }

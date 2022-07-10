@@ -60,12 +60,12 @@ public:
 };
 
 UCLASS(config = Game, BlueprintType, Blueprintable)
-class UItemGlovers : public UItemEquipable
+class UItemGloves : public UItemEquipable
 {
     GENERATED_BODY()
 
 public:
-    UItemGlovers(const class FObjectInitializer &ObjectInititalizer);
+    UItemGloves(const class FObjectInitializer &ObjectInititalizer);
 
     UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Weapon Stats")
     FDamageAbsorb DamageLimit;
@@ -161,7 +161,6 @@ public:
 };
 
 
-
 UCLASS(config = Game, BlueprintType, Blueprintable)
 class UItemShield : public UItemArms
 {
@@ -175,4 +174,19 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats")
     FDamageResistance DamageResistance;
+};
+
+// TODO add effects on impact containter
+UCLASS(config = Game, BlueprintType, Blueprintable)
+class UItemAmmo : public UItemEquipable
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats")
+    float DamageValue;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon Stats")
+    TSubclassOf<UPhysicDamage> DamageType;
+
 };

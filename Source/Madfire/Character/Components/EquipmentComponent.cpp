@@ -11,6 +11,23 @@
 #include "Animation/Skeleton.h"
 #include "Kismet/GameplayStatics.h"
 
+
+const FName FEquipmentSlotNames::WeaponMain = "S_WeaponMain";
+const FName FEquipmentSlotNames::WeaponOff = "S_WeaponOff";
+const FName FEquipmentSlotNames::Shield = "S_Shield";
+const FName FEquipmentSlotNames::SheathMain = "S_WeaponSheathMain";
+const FName FEquipmentSlotNames::SheathOff = "S_WeaponSheathOff";
+const FName FEquipmentSlotNames::SheathWeaponBack = "S_WeaponSheathBack";
+const FName FEquipmentSlotNames::SheathShieldBack = "S_ShieldSheathBack";
+const FName FEquipmentSlotNames::Ammo = "S_Ammo";
+const FName FEquipmentSlotNames::Head = "S_EquipHead";
+const FName FEquipmentSlotNames::Chest = "S_EquipChest";
+const FName FEquipmentSlotNames::Leg = "S_EquipLeg";
+const FName FEquipmentSlotNames::Neck = "S_EquipNeck";
+const FName FEquipmentSlotNames::RingLeft = "S_EquipRingLeft";
+const FName FEquipmentSlotNames::RingRight = "S_EquiRingRight";
+
+
 static void ToMergeParams(const TArray<FSkelMeshMergeSectionMapping_BP> &InSectionMappings, TArray<FSkelMeshMergeSectionMapping> &OutSectionMappings)
 {
     if(InSectionMappings.Num() > 0)
@@ -179,6 +196,7 @@ UEquipmentComponent::UEquipmentComponent(const FObjectInitializer &ObjectInitial
     Slot[(int32)EItemSlot::OffWeaponSlotSet2].ItemClass = TSubclassOf<UItemArms>();
     Slot[(int32)EItemSlot::OffWeaponSlotSet2].SocketName = FEquipmentSlotNames::WeaponOff;
     Slot[(int32)EItemSlot::AmmoSlot].SocketName = FEquipmentSlotNames::Ammo;
+    Slot[(int32)EItemSlot::AmmoSlot].ItemClass = TSubclassOf<UItemAmmo>();
 
     Slot[(int32)EItemSlot::HeadSlot].ItemClass = TSubclassOf<UItemHelmet>();
     Slot[(int32)EItemSlot::HeadSlot].SocketName = FEquipmentSlotNames::Head;

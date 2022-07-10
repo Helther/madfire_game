@@ -31,7 +31,7 @@ ACharacterCreature::ACharacterCreature(const FObjectInitializer &ObjectInitializ
     Logger.RegisterSubLogger(InventoryComponent, true);
 }
 
-float ACharacterCreature::TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent,
+float ACharacterCreature::TakeDamage(float DamageAmount, const FDamageEvent &DamageEvent,
                                  class AController *EventInstigator,
                                  AActor *DamageCauser)
 {

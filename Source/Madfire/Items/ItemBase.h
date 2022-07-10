@@ -6,6 +6,8 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "Rules/GameRules.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+
 #include "ItemBase.generated.h"
 
 UCLASS(config = Game, EditInlineNew, BlueprintType, Blueprintable)
@@ -126,4 +128,27 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
     uint8 StackCount;
+};
+
+// TODO
+// Class for moving item actors, like arrows and bolts
+UCLASS(BlueprintType, Blueprintable)
+class AItemActorProjectile : public AItemActor
+{
+    GENERATED_BODY()
+
+public:
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
+    UProjectileMovementComponent* MovementComp;
+};
+
+// TODO
+// Actor containing skeletal mesh for animation and some sort of FSM
+UCLASS(BlueprintType, Blueprintable)
+class AAnimatedItemActor: public AItemActor
+{
+    GENERATED_BODY()
+
+public:
+
 };

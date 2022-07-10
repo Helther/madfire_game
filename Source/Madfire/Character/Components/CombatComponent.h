@@ -41,7 +41,11 @@ class UCombatComponent : public UActorComponent
 {
     GENERATED_BODY()
 
+    friend class UCombatStance;
     friend class UMeleeCombatStance;
+    friend class URangeCombatStance;
+    friend class UBowCombatStance;
+    friend class UCrossbowCombatStance;
 
 public:
     UCombatComponent(const class FObjectInitializer &ObjectInitializer);

@@ -11,6 +11,24 @@
 #include "EquipmentComponent.generated.h"
 
 
+struct FEquipmentSlotNames
+{
+    static const FName WeaponMain;
+    static const FName WeaponOff;
+    static const FName Shield;
+    static const FName SheathMain;
+    static const FName SheathOff;
+    static const FName SheathWeaponBack;
+    static const FName SheathShieldBack;
+    static const FName Ammo;
+    static const FName Head;
+    static const FName Chest;
+    static const FName Leg;
+    static const FName Neck;
+    static const FName RingLeft;
+    static const FName RingRight;
+};
+
 
 USTRUCT(BlueprintType)
 struct FSkelMeshMergeSectionMapping_BP
