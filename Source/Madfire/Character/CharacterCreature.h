@@ -6,6 +6,7 @@
 #include "Components/EquipmentComponent.h"
 #include "Components/InventoryComponent.h"
 #include "Components/MovementComponentBase.h"
+#include "Components/Camera/CameraMode.h"
 
 #include "CharacterCreature.generated.h"
 
@@ -99,6 +100,8 @@ public:
 
     float TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent, class AController *EventInstigator, AActor *DamageCauser) override;
     virtual void Update(const FCharacterLevelInfo &levelInfo);
+    virtual void SetAbilityCameraMode(TSubclassOf<UCameraMode> CameraMode) {}
+    virtual void ClearAbilityCameraMode() {}
 
     void StartAnimation(UAnimMontage *AnimMontage,
                         const FOnMontageBlendingOutStarted &EndCallBack, float InPlayRate,

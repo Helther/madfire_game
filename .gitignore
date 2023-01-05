@@ -23,4 +23,5 @@ build
 *.code-workspace
 *.kdev4
 *.workspace
+*.ipch
 Makefile

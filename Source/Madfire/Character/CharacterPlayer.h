@@ -6,7 +6,7 @@
 
 class UCameraComponent;
 class USpringArmComponent;
-
+class UPlayerPawnCameraComponent;
 
 UENUM(BlueprintType)
 enum class EGameplayReturnState : uint8
@@ -44,6 +44,10 @@ public:
     ACharacterPlayer(const FObjectInitializer &ObjectInitializer);
 
     void OnJumped_Implementation() override;
+    void SetAbilityCameraMode(TSubclassOf<UCameraMode> CameraMode) override;
+    void ClearAbilityCameraMode() override;
+    UFUNCTION()
+    void SetSprintCameraMode(bool activate);
 
     UFUNCTION(BlueprintCallable, Category = "Character Animation")
     void animTest(UAnimMontage* AnimMontage) {StartAnimation(AnimMontage, FOnMontageBlendingOutStarted(),1); }
@@ -52,23 +56,20 @@ public:
     void OnInteract(EGameplayReturnState Branches, EKeyState KeyState);
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
-	UCameraComponent* CameraComponent;
+    UPlayerPawnCameraComponent* CameraComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
-	USpringArmComponent* SpringArmComponent;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
+    USpringArmComponent* SpringArmComponent;
+    
+    void UseAimComponent(class UAbilityAimComponent *) override;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
-    float CameraDistanceMin;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
-    float CameraDistanceMax;
+    void AdjustCameraZoom(float Offset);
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
     float CameraZoomStep;
 
-
-    void UseAimComponent(class UAbilityAimComponent *) override;
-
-
 protected:
+    void BeginPlay() override;
     // Called to bind functionality to input
     virtual void SetupPlayerInputComponent(class UInputComponent *PlayerInputComponent) override;
 
@@ -76,7 +77,5 @@ protected:
                                        const FVector &PreviousFloorContactNormal,
                                        const FVector &PreviousLocation,
                                        float TimeDelta) override;
-
-    float CameraDistanceDefault;    
 
 };

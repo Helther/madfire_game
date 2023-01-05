@@ -3,6 +3,7 @@
 #include "Components/AbilityComponent.h"
 #include "Character/AbstractRequirement.h"
 #include "Character/Components/MovementComponentBase.h"
+#include "Character/Components/Camera/CameraMode.h"
 #include "CoreMinimal.h"
 #include "Engine.h"
 #include "GameFramework/Actor.h"
@@ -25,13 +26,6 @@ struct FAbilityActorSpawnParameters
     FVector Scale;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
     class APawn *Instigator = nullptr; //
-};
-
-UENUM(BlueprintType)
-enum class EAbilityCameraMode : uint8
-{
-    CameraMode1,
-    CameraMode2,
 };
 
 /*
@@ -111,8 +105,8 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
     UCombatComponent *CombatComponent;
 
-    UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AbilitySystem")
-    EAbilityCameraMode AbilityCameraMode;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+	TSubclassOf<UCameraMode> AbilityCameraMode;
 
     //Interface
     virtual void AbilityInit();

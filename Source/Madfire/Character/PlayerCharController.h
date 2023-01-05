@@ -95,7 +95,7 @@ class MADFIRE_API APlayerCharController : public APlayerController
     // activate current ability
     void AbilityOn();
     // stop activating current ability
-    void AilityOff();
+    void AbilityOff();
 
     void CameraDistanceIn();
     void CameraDistanceOut();

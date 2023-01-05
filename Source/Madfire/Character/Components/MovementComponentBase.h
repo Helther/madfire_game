@@ -10,6 +10,7 @@
 // bind these from related component to link them
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMovementModeChanged, int, OldState, int, NewState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FParkourModeChanged, uint8, OldState, uint8, NewState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSprintModeChanged, bool, Active);
 
 // values represent degrees of rotation relative to forward direction
 enum class EControlDirections : int
@@ -476,6 +477,7 @@ public:
 
     FMovementModeChanged OnMoveModeChanged;
     FParkourModeChanged OnParkourModeChanged;
+    FSprintModeChanged OnSprintModeChanged;
 
 protected:
     /// наследованный мусор

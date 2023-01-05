@@ -54,7 +54,7 @@ void UCombatStance::OnAbilityEnter()
     Owner->AttributeComponent->Stamina->Consume(GetCombatComp()->CurrentAbility->StaminaCost);
     Owner->AttributeComponent->Stamina->BlockRegen();
     Owner->GetMovementComponent()->MoveAbilitiesCurrent = GetCombatComp()->CurrentAbility->MoveAbilities;
-    GetCombatComp()->CurrentAbility->ActivateAbility();
+    GetCombatComp()->ActivateAbility();
 }
 
 void UCombatStance::OnAbilityLeave()
@@ -72,6 +72,7 @@ void UCombatStance::OnAbilityLeave()
     Owner->AttributeComponent->Stamina->UnblockRegen();
     Owner->GetMovementComponent()->MoveAbilitiesCurrent = Owner->GetMovementComponent()->MoveAbilitiesDefault;// TODO think how to restore it to last state
     GetCombatComp()->SetGlobalCooldown();
+    Owner->ClearAbilityCameraMode();
 }
 
 bool UCombatStance::IdleToAbility() const

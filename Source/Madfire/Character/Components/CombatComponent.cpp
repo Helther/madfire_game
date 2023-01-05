@@ -254,7 +254,8 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
                     hitActor->TakeDamage(damage, FDamageEvent(activeWeapon->DamageType), Owner->GetController(), Owner);
                 }
             }
-            info.AttackInfo->CustomOnHitEvent.Broadcast(Owner, hitActor);
+            if (info.AttackInfo && info.AttackInfo->CustomOnHitEvent.IsBound())
+                info.AttackInfo->CustomOnHitEvent.Broadcast(Owner, hitActor);
         }
     }
 }
@@ -510,22 +511,21 @@ void UCombatComponent::OnDrawWeapon()
 void UCombatComponent::OnUseAbility(bool Started)
 {
     AbilityPressed = Started;
+    Owner->Logger.Log(this,
+                      *FString::Printf(TEXT("OnAbility %s"),
+                                       Started ? TEXT("pressed") : TEXT("released")));
+    if (Owner->CCStateManager.HasCC())
+        return;
+
     if (CurrentAbility != nullptr)
     {
         if (AbilityPressed)
         {
             if (!CurrentAbility->bIsActive)
-            {
                 UpdateCombatFSM();
-            }
         }
         else
-        {
-            if (CurrentAbility->bIsActive)
-            {
-                CurrentAbility->ReleaseAbility();
-            }
-        }
+            ReleaseAbility();
     }
 }
 
@@ -921,15 +921,14 @@ void UCombatComponent::ActivateAbility()
     if(CurrentAbility->IsValidLowLevelFast())
     {
         CurrentAbility->ActivateAbility();
+        Owner->SetAbilityCameraMode(CurrentAbility->AbilityCameraMode);
     }
 }
 
 void UCombatComponent::ReleaseAbility()
 {
     if(CurrentAbility->IsValidLowLevelFast())
-    {
         CurrentAbility->ReleaseAbility();
-    }
 }
 
 void UCombatComponent::AddAbility(UAbstractAbility *Ability)

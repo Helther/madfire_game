@@ -4,21 +4,25 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "AbilitySystem/Components/AbilityAimComponent.h"
+#include "Components/Camera/PlayerPawnCameraComponent.h"
+
 
 ACharacterPlayer::ACharacterPlayer(const FObjectInitializer &ObjectInitializer)
   : Super(ObjectInitializer)
 {
     SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
-    CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-    SpringArmComponent->bUsePawnControlRotation = true;
-    SpringArmComponent->SetupAttachment(RootComponent);
-    CameraComponent->SetupAttachment(SpringArmComponent);
+    CameraComponent = CreateDefaultSubobject<UPlayerPawnCameraComponent>(TEXT("CameraComponent"));
+    CameraComponent->SetRelativeLocation(FVector(-300.0f, 0.0f, 75.0f));
+    GetMovementComponent()->OnSprintModeChanged.AddDynamic(this, &ACharacterPlayer::SetSprintCameraMode);
 
-    CameraDistanceDefault = 400;
-    CameraDistanceMin = 100;
-    CameraDistanceMax = 500;
     CameraZoomStep = 30;
-    SpringArmComponent->TargetArmLength = CameraDistanceDefault;
+}
+
+void ACharacterPlayer::BeginPlay()
+{
+    Super::BeginPlay();
+
+    ClearAbilityCameraMode();
 }
 
 // Called to bind functionality to input
@@ -33,6 +37,27 @@ void ACharacterPlayer::OnJumped_Implementation()
     GetMovementComponent()->bWasJustJumping = true;
 }
 
+void ACharacterPlayer::SetAbilityCameraMode(TSubclassOf<UCameraMode> CameraMode)
+{
+    CameraComponent->UpdateCameraMode(CameraMode);
+}
+
+void ACharacterPlayer::ClearAbilityCameraMode()
+{
+    CameraComponent->UpdateCameraMode(CameraComponent->DefaultCameraMode);
+}
+
+void ACharacterPlayer::SetSprintCameraMode(bool activate)
+{
+    CameraComponent->UpdateCameraMode(activate ? CameraComponent->SprintCameraMode
+                                               : CameraComponent->DefaultCameraMode);
+}
+
+void ACharacterPlayer::AdjustCameraZoom(float Offset) 
+{
+    CameraComponent->AdjustActiveCameraZoom(Offset);
+}
+
 void ACharacterPlayer::OnWalkingOffLedge_Implementation(
   const FVector &PreviousFloorImpactNormal,
   const FVector &PreviousFloorContactNormal,
@@ -40,8 +65,7 @@ void ACharacterPlayer::OnWalkingOffLedge_Implementation(
   float TimeDelta)
 {
     Logger.Log(this,*FString::Printf(TEXT("OnWalkingOffLedge")));
-    APlayerCharController *PlayerController =
-      Cast<APlayerCharController>(GetController());
+    APlayerCharController *PlayerController = Cast<APlayerCharController>(GetController());
     if (PlayerController->IsActionKeyPressed(FInputKeyNames::ClimbDownTest))
     {
         Logger.Log(this,*FString::Printf(TEXT("climb down")));

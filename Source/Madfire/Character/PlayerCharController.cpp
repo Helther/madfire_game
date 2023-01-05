@@ -138,7 +138,7 @@ void APlayerCharController::SetupInputComponent()
         InputComponent->BindAction(
             FInputKeyNames::UseAbility, IE_Pressed, this, &APlayerCharController::AbilityOn).bConsumeInput = false;
         InputComponent->BindAction(
-            FInputKeyNames::UseAbility, IE_Released, this, &APlayerCharController::AilityOff).bConsumeInput = false;
+            FInputKeyNames::UseAbility, IE_Released, this, &APlayerCharController::AbilityOff).bConsumeInput = false;
         InputComponent->BindAction(
             FInputKeyNames::CameraIn, IE_Pressed, this, &APlayerCharController::CameraDistanceIn).bConsumeInput = false;
         InputComponent->BindAction(
@@ -637,19 +637,17 @@ void APlayerCharController::AbilityOn()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (!Player->CCStateManager.HasCC())
-                Player->CombatComponent->OnUseAbility(true);
+            Player->CombatComponent->OnUseAbility(true);
         }
     }
 }
 
-void APlayerCharController::AilityOff()
+void APlayerCharController::AbilityOff()
 {
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            if (!Player->CCStateManager.HasCC())
-                Player->CombatComponent->OnUseAbility(false);
+            Player->CombatComponent->OnUseAbility(false);
         }
     }
 }
@@ -659,8 +657,7 @@ void APlayerCharController::CameraDistanceIn()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            float Length = Player->SpringArmComponent->TargetArmLength - Player->CameraZoomStep;
-            Player->SpringArmComponent->TargetArmLength = FMath::Max(Length, Player->CameraDistanceMin);
+            Player->AdjustCameraZoom(Player->CameraZoomStep);
         }
     }
 }
@@ -670,8 +667,7 @@ void APlayerCharController::CameraDistanceOut()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            float Length = Player->SpringArmComponent->TargetArmLength + Player->CameraZoomStep;
-            Player->SpringArmComponent->TargetArmLength = FMath::Min(Length, Player->CameraDistanceMax);
+            Player->AdjustCameraZoom(-Player->CameraZoomStep);
         }
     }
 }

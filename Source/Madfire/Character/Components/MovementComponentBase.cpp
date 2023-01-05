@@ -862,6 +862,7 @@ void UHumanoidMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
                 GetWorld()->GetTimerManager().ClearTimer(SprintConsumeTimer);
             Character->AttributeComponent->Stamina->UnblockRegen();
             bIsSprinting = false;
+            OnSprintModeChanged.Broadcast(false);
         }
     }
     if (prevMode == MOVE_Custom)
@@ -944,6 +945,7 @@ void UHumanoidMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
                   SprintConsumeTime, true);
             Character->AttributeComponent->Stamina->BlockRegen();
             bIsSprinting = true;
+            OnSprintModeChanged.Broadcast(true);
         }
     }
     else
@@ -954,6 +956,7 @@ void UHumanoidMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
                 GetWorld()->GetTimerManager().ClearTimer(SprintConsumeTimer);
             Character->AttributeComponent->Stamina->UnblockRegen();
             bIsSprinting = false;
+            OnSprintModeChanged.Broadcast(false);
         }
     }
     //Character->Logger.Log(this, *FString::Printf(TEXT("velocity %f"), Velocity.Size());
