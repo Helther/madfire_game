@@ -105,8 +105,8 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
     UCombatComponent *CombatComponent;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
-	TSubclassOf<UCameraMode> AbilityCameraMode;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    TSubclassOf<UCameraMode> AbilityCameraMode;
 
     //Interface
     virtual void AbilityInit();

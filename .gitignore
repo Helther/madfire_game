@@ -8,6 +8,7 @@ build
 .kdev4
 .vscode
 .vs
+.vsconfig
 *.VC.db
 *.opensdf
 *.opendb

@@ -87,12 +87,9 @@ TScriptInterface<IInteractableInterface> UPlayerInteractComponent::GetInteractab
 
     if (actor != nullptr)
     {
-        const bool isInteractable = hit.GetActor()->GetClass()->ImplementsInterface(UInteractableInterface::StaticClass());
+        const bool isInteractable = actor->GetClass()->ImplementsInterface(UInteractableInterface::StaticClass());
         if (isInteractable)
-        {
-            result.SetInterface(actor);
-            result.SetObject(hit.GetActor());
-        }
+            result = TScriptInterface<IInteractableInterface>(actor);
     }
 
     return result;

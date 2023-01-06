@@ -38,7 +38,7 @@ static void ToMergeParams(const TArray<FSkelMeshMergeSectionMapping_BP> &InSecti
     }
 }
 
-static void ToMergeParams(const TArray<FSkelMeshMergeUVTransformMapping> &InUVTransformPerMesh, TArray<FSkelMeshMergeUVTransforms> &OutUVTransformsPerMesh)
+static void ToMergeParams(const TArray<FSkelMeshMergeUVTransformMap> &InUVTransformPerMesh, TArray<FSkelMeshMergeUVTransforms> &OutUVTransformsPerMesh)
 {
     if(InUVTransformPerMesh.Num() > 0)
     {

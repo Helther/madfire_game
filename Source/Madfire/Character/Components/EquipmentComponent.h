@@ -49,7 +49,7 @@ struct FSkelMeshMergeUVTransform
 };
 
 USTRUCT(BlueprintType)
-struct FSkelMeshMergeUVTransformMapping
+struct FSkelMeshMergeUVTransformMap
 {
     GENERATED_BODY()
 
@@ -74,7 +74,7 @@ struct FSkeletalMeshMergeParams
     TArray<FSkelMeshMergeSectionMapping_BP> MeshSectionMappings;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<FSkelMeshMergeUVTransformMapping> UVTransformsPerMesh;
+    TArray<FSkelMeshMergeUVTransformMap> UVTransformsPerMesh;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<USkeletalMesh*> MeshesToMerge;

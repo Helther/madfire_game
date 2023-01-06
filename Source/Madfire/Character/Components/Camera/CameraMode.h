@@ -157,7 +157,7 @@ protected:
     float ViewPitchMax;
 
     // How long it takes to blend in this mode.
-    UPROPERTY(EditDefaultsOnly, Category = "Blending")
+    UPROPERTY(EditDefaultsOnly, Category = "Blending", Meta = (UIMin = "0.0", ClampMin = "0.0"))
     float BlendTime;
 
     // Function used for blending.
@@ -168,18 +168,17 @@ protected:
     UPROPERTY(EditDefaultsOnly, Category = "Blending")
     float BlendExponent;
 
-    // TODO use RuntimeFloatCurves after UE5 update for inline editing of offsets
     // Curve that defines local-space offsets from the target using the view pitch to evaluate the curve.
     UPROPERTY(EditDefaultsOnly, Category = "Third Person")
     UCurveVector* TargetOffsetCurve;
     // Alters the speed that a crouch offset is blended in or out
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Third Person")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Third Person", Meta = (UIMin = "1.0", ClampMin = "1.0"))
     float CrouchOffsetBlendMultiplier = 5.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Third Person")
     bool AllowZoom = true;
     // zoom speed
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Third Person")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Third Person", Meta = (UIMin = "1.0", ClampMin = "1.0"))
     float ZoomBlendMultiplier = 5.0f;
     // max zoom ratio from default
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Third Person", Meta = (UIMin = "1.0", ClampMin = "1.0"))
@@ -239,6 +238,6 @@ public:
      */
     UPROPERTY(EditDefaultsOnly, Category = "Collision")
     TArray<FPenetrationAvoidanceWhisker> PenetrationAvoidanceWhiskers;
-
+    // used as lvalue because it needed
     float AimLineToDesiredPosBlockedPct;
 };

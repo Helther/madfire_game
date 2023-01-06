@@ -141,7 +141,7 @@ FTraceSpawnParams UHumanoidMovementComponent::GetTraceSpawnParams(bool IsLow)
     Rotation              = Character->GetActorRotation().Quaternion();
     sParamsH.Rotation     = Rotation;
     auto LedgeTraceHeight = Character->GetDefaultHalfHeight();
-    auto crouchHeightDiff = Character->GetDefaultHalfHeight() - CrouchedHalfHeight;
+    auto crouchHeightDiff = Character->GetDefaultHalfHeight() - GetCrouchedHalfHeight();
     if (IsLow)
     {
         if (IsCrouching())
@@ -211,7 +211,7 @@ bool UHumanoidMovementComponent::DoVault(const StartClimbData &LocationData, boo
 
     if (IsCrouching())
         charPelvisheight = Character->GetActorLocation().Z
-          + Character->GetDefaultHalfHeight() - CrouchedHalfHeight;
+          + Character->GetDefaultHalfHeight() - GetCrouchedHalfHeight();
     // коррекция по высоте
     FVector VaultAnimationStartLocation = LocationData.Location
       + FVector::UpVector * LocationVertOffset
@@ -254,7 +254,7 @@ bool UHumanoidMovementComponent::DoClimbLedge(const StartClimbData &LocationData
     float charPelvisheight      = Character->GetActorLocation().Z;
     if (IsCrouching())
         charPelvisheight = Character->GetActorLocation().Z
-          + Character->GetDefaultHalfHeight() - CrouchedHalfHeight;
+          + Character->GetDefaultHalfHeight() - GetCrouchedHalfHeight();
     // коррекция по высоте
     FVector ClimbledgeAnimationStartLocation = LocationData.Location+ FVector::UpVector * LocationVertOffset + wallNormalDir.Vector()
                                                * (Character->GetCapsuleComponent()->GetScaledCapsuleRadius() + LocationHorizOffset);
@@ -271,7 +271,7 @@ bool UHumanoidMovementComponent::DoClimbLedge(const StartClimbData &LocationData
       + Character->GetDefaultHalfHeight() + LocationVertOffset;    // todo temp
     if (IsCrouching())    // todo temp
         ClimbledgeAnimationEndLocation.Z +=
-          -Character->GetDefaultHalfHeight() + CrouchedHalfHeight;
+          -Character->GetDefaultHalfHeight() + GetCrouchedHalfHeight();
 
     // check for available space at the start position before anim
     if (Character->AttributeComponent->Stamina->CurrentValue <= 0)
@@ -320,12 +320,12 @@ bool UHumanoidMovementComponent::VaultSpaceCheck(const StartClimbData &LedgeData
     //trace на наличие места для капсулы сидя во время волта
     const FRotator WallNormalDir(0, LedgeData.Rotation.Yaw, 0);
     sParams.Start =
-      LedgeData.Location + FVector(0, 0, CrouchedHalfHeight + LocationVertOffset);
+      LedgeData.Location + FVector(0, 0, GetCrouchedHalfHeight() + LocationVertOffset);
     sParams.End = sParams.Start + WallNormalDir.Vector() * MaxVaultLedgeSize;
 
     UTraceManager::CapsuleTraceSingleByChannel(
       Character->GetWorld(),
-      CrouchedHalfHeight,
+      GetCrouchedHalfHeight(),
       Character->GetCapsuleComponent()->GetScaledCapsuleRadius(),
       params,
       sParams,
@@ -359,7 +359,7 @@ TSharedPtr<StartClimbData>
     auto charBottomHeight =
       Character->GetActorLocation().Z - Character->GetDefaultHalfHeight();
     if (IsCrouching())
-        charBottomHeight = Character->GetActorLocation().Z - CrouchedHalfHeight;
+        charBottomHeight = Character->GetActorLocation().Z - GetCrouchedHalfHeight();
     FHitResult HitWallH;
     FTraceSpawnParams sParamsH  = StartTrace;
     auto traceCapsuleHalfHeight = (MaxHeight - MinHeight) / 2;
@@ -479,7 +479,7 @@ EClimbTraceResult UHumanoidMovementComponent::IsEnoughSpace(const FVector &Start
         {
             Character->Logger.Log(this, *FString::Printf(TEXT("IsEnoughSpace error: not enough space for stand anim end")));
             auto tempEnd = EndLocation
-              + FVector(0, 0, -Character->GetDefaultHalfHeight() + CrouchedHalfHeight);
+              + FVector(0, 0, -Character->GetDefaultHalfHeight() + GetCrouchedHalfHeight());
             if (!IsCharacterCapsuleOk(tempEnd, true, true, EndCC)
                 || !IsCharacterCapsuleOk(tempEnd, true, false, EndCC))
             {
@@ -508,9 +508,9 @@ bool UHumanoidMovementComponent::IsCharacterCapsuleOk(const FVector &CenterLoc,
     sParams.Start = sParams.End = CenterLoc;
     if (Crouching)
     {
-        sParams.Start.Z +=
-          CrouchedHalfHeight - Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
-        sParams.End.Z += -CrouchedHalfHeight
+        sParams.Start.Z += GetCrouchedHalfHeight()
+          - Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
+        sParams.End.Z += -GetCrouchedHalfHeight()
           + Character->GetCapsuleComponent()->GetScaledCapsuleRadius();
     }
     else
@@ -552,7 +552,7 @@ void UHumanoidMovementComponent::ClimbDownWall()
     auto charBottomHeight =
       Character->GetActorLocation().Z - Character->GetDefaultHalfHeight();
     if (IsCrouching())
-        charBottomHeight = Character->GetActorLocation().Z - CrouchedHalfHeight;
+        charBottomHeight = Character->GetActorLocation().Z - GetCrouchedHalfHeight();
     const auto res = FQuat(FRotator(0, Character->GetActorRotation().Yaw, 0))
       * FQuat(FRotator(0, 180, 0));
     const FRotator charBackDir(res.Rotator());
