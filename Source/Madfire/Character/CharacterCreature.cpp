@@ -10,6 +10,7 @@ ACharacterCreature::ACharacterCreature(const FObjectInitializer &ObjectInitializ
     CombatComponent = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
     EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
     InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
+    AbilityManager = CreateDefaultSubobject<UAbilityManagerComponent>("AbilityComponent");
     CCInterruptDelegates.Emplace(ECCState::LossOfBalance, &ACharacterCreature::CCLOBEnded);
     CCInterruptDelegates.Emplace(ECCState::Stun, &ACharacterCreature::CCStunEnded);
     CCInterruptDelegates.Emplace(ECCState::KnockDown, &ACharacterCreature::CCKnockDownEnded);

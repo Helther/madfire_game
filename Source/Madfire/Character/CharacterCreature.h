@@ -7,7 +7,7 @@
 #include "Components/InventoryComponent.h"
 #include "Components/MovementComponentBase.h"
 #include "Components/Camera/CameraMode.h"
-
+#include "Components/AbilityManagerComponent.h"
 #include "CharacterCreature.generated.h"
 
 UENUM(BlueprintType)
@@ -154,6 +154,8 @@ public:
     UEquipmentComponent *EquipmentComponent;
     UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
     UCombatComponent *CombatComponent;
+    UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
+    UAbilityManagerComponent *AbilityManager;
 
     UCharacterAnimInstance* AnimInstance;
 

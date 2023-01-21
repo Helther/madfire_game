@@ -7,8 +7,39 @@
 #include "UObject/NoExportTypes.h"
 #include "Rules/GameRules.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-
+#include "Engine/DataTable.h"
 #include "ItemBase.generated.h"
+
+
+
+USTRUCT(BlueprintType)
+struct FInventoryItemInfo : public FTableRowBase
+{
+
+    GENERATED_USTRUCT_BODY()
+
+    FInventoryItemInfo() :
+        ItemIcon(nullptr),
+        Description(FText::FromString("Undefined")),
+        Name(FText::FromString("Undefined"))
+    {}
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    UTexture2D *ItemIcon;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    FText Description;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    FText Name;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    int32 MaxCharges = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    TSubclassOf<class UItem> AbilityClass;
+};
+
 
 UCLASS(config = Game, EditInlineNew, BlueprintType, Blueprintable)
 class UItem : public UObject, public IInteractableInterface

@@ -61,6 +61,11 @@ void ACharacterBase::DropItem(UItem *item, int32 amount, FTransform transform)
     actor->StackCount = amount;
 }
 
+int32 ACharacterBase::AddMaterial()
+{
+    return 0;
+}
+
 void ACharacterBase::SetupItemActorCollision(AItemActor* InActor, bool Enable)
 {
     InActor->ItemMesh->SetSimulatePhysics(Enable);

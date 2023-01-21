@@ -28,11 +28,40 @@ struct FAbilityActorSpawnParameters
     class APawn *Instigator = nullptr; //
 };
 
+
+USTRUCT(BlueprintType)
+struct FAbilityInfo : public FTableRowBase
+{
+
+    GENERATED_USTRUCT_BODY()
+
+    FAbilityInfo() :
+        AbilityIcon(nullptr),
+        Description(FText::FromString("Undefined")),
+        Name(FText::FromString("Undefined"))
+    {}
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    UTexture2D *AbilityIcon;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    FText Description;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    FText Name;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    int32 MaxCharges = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+    TSubclassOf<class UAbstractAbility> AbilityClass;
+};
+
+
 /*
 * Тут я удалил всякие ненужные функции
 * Интерфейс я тоже много поменял Должно сработать
 */
-
 UCLASS(BlueprintType, Blueprintable, Abstract)
 class UAbstractAbility : public UObject, public FTickableGameObject
 {
@@ -43,6 +72,7 @@ class UAbstractAbility : public UObject, public FTickableGameObject
 public:
     UAbstractAbility(const FObjectInitializer &);
 
+    UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
     bool bIsActive = false;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
@@ -56,6 +86,9 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
     TArray<UAbilityComponent *> AbilityComponents;
+
+    UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
+    UCombatComponent *CombatComponent;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
     float CooldownTime = 3;
@@ -78,35 +111,18 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
     int32 MaxCharges = 1;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
-    UTexture2D *AbilityIcon;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
-    FText Description;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
-    FText SkillName;
-
-    UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
-    float GetCooldownTimeRemaining() const;
-
-    UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
-    void ActivateAbility();
-
-    UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
-    void ReleaseAbility();
-
-    UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
-    void CancelAbility();
-
     UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "AbilitySystem")
     bool bIsCooldown = false;
 
-    UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
-    UCombatComponent *CombatComponent;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    FName AbilityName;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
     TSubclassOf<UCameraMode> AbilityCameraMode;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    UDataTable *InfoDataTable = nullptr;
+
 
     //Interface
     virtual void AbilityInit();
@@ -126,7 +142,27 @@ public:
 
     UWorld* GetWorld() const override;
 
-    //Blueprint Inteface
+    //Blueprint Inteface    
+    //Helper functions
+    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
+    float GetCooldownTimeRemaining() const;
+
+    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
+    class ACharacterBase *GetOwner() const;
+
+    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
+    const FAbilityInfo &GetInfo() const;
+
+    //Controll interface
+    UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
+    void ActivateAbility();
+
+    UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
+    void ReleaseAbility();
+
+    UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
+    void CancelAbility();
+    //Blueprint Events
     UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
     void OnAbilityInit();
 
@@ -145,8 +181,6 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
     void OnExecute(const TArray<AActor*> &Target, FVector InstigatorLocation, FRotator InstigatorRotation);
 
-
-
     //Functional
     UFUNCTION(BlueprintCallable, Meta=(DefaultToSelf="Parent", DeterminesOutputType="AbilityClass"), Category = "AbilitySystem")
     static UAbstractAbility *SpawnAbility(UObject *Parent, TSubclassOf<UAbstractAbility> AbilityClass, FName Name = NAME_None);
@@ -156,6 +190,9 @@ public:
 
     UFUNCTION(BlueprintCallable, meta = (DeterminesOutputType = "ActorClass"), Category = "AbilitySystem")
     static AActor *SpawnAbilityActor(AActor *Owner, TSubclassOf<AActor> ActorClass, FAbilityActorSpawnParameters param, FName Name = NAME_None);
+
+    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
+    static const FAbilityInfo &GetAbilityInfo(UDataTable *AbilityInfoDT, FName AblName);
 
 protected:
     FTimerHandle CastTimer;
@@ -195,6 +232,8 @@ protected:
     bool StopAnimation();
 
     bool bUserAnimInterrupt = false;
+
+    static constexpr auto DataTablePath = "AbilitySystem/AbilityTable";
 };
 
 

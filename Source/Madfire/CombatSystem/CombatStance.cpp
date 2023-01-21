@@ -78,7 +78,11 @@ void UCombatStance::OnAbilityLeave()
 bool UCombatStance::IdleToAbility() const
 { // check if not active and not in cooldown and more
     bool hasStamina = Owner->AttributeComponent->Stamina->CurrentValue > 0;
-    return GetCombatComp()->IsAbilityPressed() && hasStamina && GetCombatComp()->CurrentAbility.IsValid() && !GetCombatComp()->CurrentAbility->bIsCooldown && !GetCombatComp()->IsOnGlobalCooldown();
+
+    bool bIsCooldown = true;
+    if (GetCombatComp()->CurrentAbility.IsValid())
+        bIsCooldown = (!GetCombatComp()->CurrentAbility->bIsCooldown || GetCombatComp()->CurrentAbility->CurrentCharges > 0);
+    return GetCombatComp()->IsAbilityPressed() && hasStamina && GetCombatComp()->CurrentAbility.IsValid() && bIsCooldown && !GetCombatComp()->IsOnGlobalCooldown();
 }
 
 bool UCombatStance::AbilityToIdle() const

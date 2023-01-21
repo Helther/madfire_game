@@ -1,13 +1,14 @@
 ﻿#include "AbstractAbility.h"
 #include "Character/Components/CombatComponent.h"
-
+#include "Character/CharacterBase.h"
 
 DEFINE_LOG_CATEGORY(AbilitySystemLog);
 
 
 UAbstractAbility::UAbstractAbility(const FObjectInitializer &f) :
     Super(f)
-{}
+{
+}
 
 void UAbstractAbility::AbilitySetup(UCombatComponent *Component)
 {
@@ -87,6 +88,19 @@ TStatId UAbstractAbility::GetStatId() const
 float UAbstractAbility::GetCooldownTimeRemaining() const
 {
     return CooldownTime - CurrentCooldownTime;
+}
+
+const FAbilityInfo &UAbstractAbility::GetInfo() const
+{
+    return GetAbilityInfo(InfoDataTable, AbilityName);
+}
+
+ACharacterBase *UAbstractAbility::GetOwner() const
+{
+    check(CombatComponent && "No Combat Component owner");
+    auto Character = Cast<ACharacterBase>(CombatComponent->GetOwner());
+    check(Character && "No owner");
+    return Character;
 }
 
 UWorld* UAbstractAbility::GetWorld() const
@@ -221,3 +235,30 @@ AActor *UAbstractAbility::SpawnAbilityActor(AActor *Owner, TSubclassOf<AActor> A
     else
         return nullptr;
 }
+
+const FAbilityInfo &UAbstractAbility::GetAbilityInfo(UDataTable *AbilityInfoDT, FName AblName)
+{
+    static FAbilityInfo s;
+    FString ContextString;
+
+    if(!IsValid(AbilityInfoDT))
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("Ability: Info Data Table invalid"));
+        return s;
+    }
+
+    auto info = AbilityInfoDT->FindRow<FAbilityInfo>(AblName,ContextString);
+
+    if(info)
+    {
+        return *info;
+    }
+    else
+    {
+        UE_LOG(AbilitySystemLog, Error, TEXT("Ability: Info not found"));
+    }
+
+    return s;
+}
+
+

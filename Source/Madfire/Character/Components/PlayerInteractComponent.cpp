@@ -76,7 +76,7 @@ TScriptInterface<IInteractableInterface> UPlayerInteractComponent::GetInteractab
 
     hit = FHitResult(ForceInit);
 
-    UTraceManager::SphereTraceSingleByChannel(GetWorld(),SphereRadius,traceParams, traceSpawnParams, hit,EInteractChannel);
+    UTraceManager::SphereTraceSingleByChannel(GetWorld(),SphereRadius,traceParams, traceSpawnParams, hit, EInteractChannel);
 
     TScriptInterface<IInteractableInterface> result;
 

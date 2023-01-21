@@ -205,10 +205,6 @@ public:
     void ActivateAbility();
     UFUNCTION(BlueprintCallable, Category = "Ability System")
     void ReleaseAbility();
-    UFUNCTION(BlueprintCallable, Category = "Ability System")
-    void AddAbility(UAbstractAbility *Ability);
-    UFUNCTION(BlueprintCallable, Category = "Ability System")
-    void RemoveAbility(UAbstractAbility *Ability);
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability System")
     TSoftObjectPtr<UAbstractAbility> CurrentAbility;
     FORCEINLINE bool IsAbilityPressed() const { return AbilityPressed; }
@@ -273,10 +269,6 @@ protected:
     float MaxSpeedWhileCasting;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability System")
     float GlobalCooldownTime = 1;
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ability System")
-    TArray<UAbstractAbility*> AbilityList;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability System")
-    TArray<TSoftObjectPtr<UAbstractAbility>> AbilityPanel;
 
     bool AbilityPressed = false;
     FTimerHandle GlobalCooldownTimer;

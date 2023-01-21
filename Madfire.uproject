@@ -26,10 +26,6 @@
 			"Enabled": false
 		},
 		{
-			"Name": "VisualStudioSourceCodeAccess",
-			"Enabled": false
-		},
-		{
 			"Name": "XCodeSourceCodeAccess",
 			"Enabled": false,
 			"SupportedTargetPlatforms": [
@@ -195,6 +191,10 @@
 		},
 		{
 			"Name": "CodeView",
+			"Enabled": true
+		},
+		{
+			"Name": "NiagaraFluids",
 			"Enabled": true
 		}
 	]

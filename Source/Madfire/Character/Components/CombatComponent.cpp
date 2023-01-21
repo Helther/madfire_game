@@ -22,8 +22,6 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitial
     MaxFacingAngle = 45.f;
     ShieldWeightDamageMod = 0.5f;
     // end temp
-
-    AbilityPanel.SetNum(10);
 }
 
 FName UCombatComponent::GetSlotFromWeaponType(EWeaponType type, bool draw, bool mainHand)
@@ -929,16 +927,6 @@ void UCombatComponent::ReleaseAbility()
 {
     if(CurrentAbility->IsValidLowLevelFast())
         CurrentAbility->ReleaseAbility();
-}
-
-void UCombatComponent::AddAbility(UAbstractAbility *Ability)
-{
-    AbilityList.Emplace(Ability);
-}
-
-void UCombatComponent::RemoveAbility(UAbstractAbility *Ability)
-{
-    AbilityList.Remove(Ability);
 }
 
 void UCombatComponent::SetCurrentAbility(UAbstractAbility *Ability)

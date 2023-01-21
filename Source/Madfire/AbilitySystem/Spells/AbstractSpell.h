@@ -4,25 +4,39 @@
 #include "AbstractSpell.generated.h"
 
 
+USTRUCT(BlueprintType)
+struct FSpell
+{
+    GENERATED_BODY()
+
+    FSpell();
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    FName AbilityName;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    UDataTable *InfoDataTable = nullptr;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    int32 SpellLevel;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    EMagicSchool MagicSchool;
+
+    const FAbilityInfo &GetAbilityInfo() const;
+};
+
+/*
 UCLASS()
-class USpell : public UClass
+class USpell : public UObject
 {
 
     GENERATED_BODY()
 public:
-
-
-    UPROPERTY()
-    FText Description;
-    UPROPERTY()
-    FText Name;
-    UPROPERTY()
+    USpell();
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    FName AbilityName;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    UDataTable *InfoDataTable = nullptr;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
     int32 SpellLevel;
-    //UPROPERTY()
-
-    UPROPERTY()
-    TSubclassOf<UAbstractAbility> Ability;
-
-private:
-
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
+    EMagicSchool MagicSchool;
 };
+*/

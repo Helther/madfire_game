@@ -45,6 +45,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character Function")
     void DropItem(UItem *item, int32 amount, FTransform transform);
 
+
+    UFUNCTION(BlueprintCallable, Category = "Character Function")
+    int32 AddMaterial();
+
     UFUNCTION(BlueprintCallable, Category = "Character Function")
     static void SetupItemActorCollision(AItemActor* InActor, bool Enable);
 

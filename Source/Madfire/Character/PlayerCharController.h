@@ -103,6 +103,12 @@ class MADFIRE_API APlayerCharController : public APlayerController
 
     ACharacterPlayer *Player;
 
+
+    //Note: TEST SHIT
+    void SaveAction();
+    void LoadAction();
+
+
 public:
     bool IsActionKeyPressed(const FName &ActionKey);
 
