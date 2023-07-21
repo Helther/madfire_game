@@ -12,6 +12,7 @@
 
 const FName FTransitionSectionNames::Start = "transition_start";
 const FName FTransitionSectionNames::End   = "transition_finish";
+using namespace MadFireUtils;
 
 UHumanoidMovementComponent::UHumanoidMovementComponent(
   const class FObjectInitializer &ObjectInitilizer)

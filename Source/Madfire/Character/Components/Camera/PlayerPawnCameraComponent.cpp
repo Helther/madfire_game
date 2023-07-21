@@ -1,5 +1,6 @@
 #include "PlayerPawnCameraComponent.h"
 #include "CameraMode.h"
+#include "../../CharacterCreature.h"
 
 
 UPlayerPawnCameraComponent::UPlayerPawnCameraComponent(const FObjectInitializer& ObjectInitializer)
@@ -17,6 +18,21 @@ void UPlayerPawnCameraComponent::AdjustActiveCameraZoom(float Offset)
 {
     if (auto camera = CameraBlender->GetActiveCamera())
         camera->AdjustCameraZoom(Offset);
+}
+
+TSubclassOf<UCameraMode> UPlayerPawnCameraComponent::GetDefaultCameraMode() const
+{
+    auto Owner = CastChecked<ACharacterCreature>(GetOwner());
+    if (Owner->CombatComponent->WeaponDrawn())
+    {
+        check(Owner->CombatComponent->HasCombatStance())
+        if (Owner->CombatComponent->GetCurrentCombatStance()->IsMelee())
+            return DefaultCameraModeArmedMelee;
+        else
+            return DefaultCameraModeArmedRange;
+    }
+    else
+        return DefaultCameraModeUnarmed;
 }
 
 void UPlayerPawnCameraComponent::OnRegister()

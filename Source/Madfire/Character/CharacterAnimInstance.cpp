@@ -21,6 +21,25 @@ void UCharacterAnimInstance::OnWeaponSwitch()
     CharacterInstance->CombatComponent->GetCurrentCombatStance()->ArmsSetup(!CharacterInstance->CombatComponent->WeaponDrawn());
 }
 
+void UCharacterAnimInstance::OnAmmoGrab()
+{
+    auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().state(ECombatState::Reload)->Info;
+    stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::AmmoGrabbed, true);
+    Cast<URangeCombatStance>(CharacterInstance->CombatComponent->GetCurrentCombatStance())->SpawnAttachAmmoActor();
+}
+
+void UCharacterAnimInstance::OnAmmoAttach()
+{
+    auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().state(ECombatState::Reload)->Info;
+    stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::AmmoAttach, true);
+    Cast<URangeCombatStance>(CharacterInstance->CombatComponent->GetCurrentCombatStance())->AttachAmmoActorToWeapon();
+}
+
+void UCharacterAnimInstance::OnProjectileFired()
+{
+    Cast<URangeCombatStance>(CharacterInstance->CombatComponent->GetCurrentCombatStance())->FireLoadedAmmo();
+}
+
 void UCharacterAnimInstance::OnBlockActivation(bool activate)
 {
     if (CharacterInstance->CombatComponent->GetCombatFSM().isInState(ECombatState::Block))
@@ -71,9 +90,14 @@ void UCharacterAnimInstance::OnComboCanContinue()
 
 void UCharacterAnimInstance::OnCollisionActivation(EArmsSlot WeaponSlot, bool activate)
 {
-    if (CharacterInstance->CombatComponent->GetCombatFSM().isInState(ECombatState::Attack))
+    auto combatStance = CharacterInstance->CombatComponent->GetCurrentCombatStance();
+    if (!combatStance)
+        return;
+
+    ECombatState state = combatStance->IsMelee() ? ECombatState::Attack : ECombatState::Parry;  // ranged attack can come from parry only
+    if (CharacterInstance->CombatComponent->GetCombatFSM().isInState(state))
     {
-        auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().state(ECombatState::Attack)->Info;
+        auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().state(state)->Info;
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CollisionOn, activate);
         if (activate)
             stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, false);
@@ -85,9 +109,14 @@ void UCharacterAnimInstance::OnCollisionActivation(EArmsSlot WeaponSlot, bool ac
 
 void UCharacterAnimInstance::OnParriableActivation(bool activate)
 {
-    if (CharacterInstance->CombatComponent->GetCombatFSM().isInState(ECombatState::Attack))
+    auto combatStance = CharacterInstance->CombatComponent->GetCurrentCombatStance();
+    if (!combatStance)
+        return;
+
+    ECombatState state = combatStance->IsMelee() ? ECombatState::Attack : ECombatState::Parry;
+    if (CharacterInstance->CombatComponent->GetCombatFSM().isInState(state))
     {
-        auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().state(ECombatState::Attack)->Info;
+        auto& stateInfo = CharacterInstance->CombatComponent->GetCombatFSM().state(state)->Info;
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanBeParried, activate);
     }
 }

@@ -60,7 +60,6 @@ UCameraMode::UCameraMode()
 AActor* UCameraMode::GetTargetActor() const
 {
     auto cameraComponent = CastChecked<UPlayerPawnCameraComponent>(GetOuter());
-    check(cameraComponent);
     return cameraComponent->GetTargetActor();
 }
 
@@ -237,8 +236,7 @@ void UCameraMode::UpdatePreventPenetration(float DeltaTime)
     AController *TargetController = TargetPawn ? TargetPawn->GetController() : nullptr;
 
 
-    const UPrimitiveComponent *PPActorRootComponent =
-      Cast<UPrimitiveComponent>(TargetPawn->GetRootComponent());
+    const UPrimitiveComponent *PPActorRootComponent = Cast<UPrimitiveComponent>(TargetPawn->GetRootComponent());
     if (PPActorRootComponent)
     {
         // Attempt at picking SafeLocation automatically, so we reduce camera translation when aiming.

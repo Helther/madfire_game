@@ -55,7 +55,7 @@ void ACharacterBase::BeginPlay()
 
 void ACharacterBase::DropItem(UItem *item, int32 amount, FTransform transform)
 {
-    AItemActor *actor = Cast<AItemActor>(GetWorld()->SpawnActor(item->ItemActor, &transform));
+    AItemActor *actor = Cast<AItemActor>(GetWorld()->SpawnActor(item->ItemActorInWorld, &transform));
     SetupItemActorCollision(actor, true);
     actor->ItemBase = item;
     actor->StackCount = amount;
@@ -74,4 +74,16 @@ void ACharacterBase::SetupItemActorCollision(AItemActor* InActor, bool Enable)
     InActor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
     if (!Enable)
         InActor->ItemCollision->SetGenerateOverlapEvents(false);
+}
+
+FVector ACharacterBase::GetProjectileSpawnLocation(ESpawnPivot Pivot,
+                                                   FVector Offset) const
+{
+    Offset = GetActorRotation().RotateVector(Offset);
+    switch (Pivot)
+    {
+        case ESpawnPivot::Root:
+        default:  
+            return GetMesh()->GetSocketLocation("Root") + Offset;
+    }
 }

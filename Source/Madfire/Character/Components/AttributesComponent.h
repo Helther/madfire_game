@@ -99,6 +99,8 @@ public:
     void PostEditChangeProperty(struct FPropertyChangedEvent &e);
 #endif
 
+    float GetAnimRateFromModifier(EAttributes Attribute, float* OverrideCoefficient = nullptr);
+
     //For external use only
     UFUNCTION(BlueprintCallable, Category = "Component Update")
     void ModifyAttribute(FAttributeSet Attribute);
@@ -122,6 +124,9 @@ public:
 
     UPROPERTY(BlueprintReadWrite, Category = "Character Attributes")
     FAttributeSet BaseAttribute;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Attributes")
+    float ModifierAnimRateCoefficient;
 
     // Used for effects buffs/debuffs
     FAttributeSet BonusAttribute;

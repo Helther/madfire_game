@@ -77,5 +77,24 @@ protected:
                                        const FVector &PreviousFloorContactNormal,
                                        const FVector &PreviousLocation,
                                        float TimeDelta) override;
+    UFUNCTION()
+    void ApplyCameraShakeForCCState(unsigned NewState, unsigned NewSubState);
 
+    UFUNCTION()
+    void UpdateDefaultCameraMode(int OldState, int NewState);
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    TSubclassOf<UCameraShakeBase> CCCameraShake;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    float LossOfBalanceShakeScale;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    float StunShakeScale;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    float KnockDownShakeScale;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    float BlockedHitShakeScale;
 };

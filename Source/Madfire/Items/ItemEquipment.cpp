@@ -34,6 +34,10 @@ UItemWeapon::UItemWeapon(const class FObjectInitializer &ObjectInititalizer)
   : Super(ObjectInititalizer)
 {}
 
+UItemWeaponRanged::UItemWeaponRanged(const class FObjectInitializer &ObjectInititalizer)
+    : Super(ObjectInititalizer)
+{}
+
 UItemShield::UItemShield(const class FObjectInitializer &ObjectInititalizer)
   : Super(ObjectInititalizer)
 {

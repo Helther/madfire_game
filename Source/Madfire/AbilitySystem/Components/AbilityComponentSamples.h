@@ -23,7 +23,7 @@ class UAbilityProjectileSpawn : public UAbilityTargetSelection
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
-    float SpawnOffset;
+    FVector SpawnOffset;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
     TSubclassOf<AAbstractProjectile> ProjectileClass;

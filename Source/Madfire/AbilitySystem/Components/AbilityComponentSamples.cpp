@@ -42,15 +42,12 @@ void UAbilityProjectileSpawn::ActivateComponent_Implementation()
         return;
     }
 
-    FVector Location;
-    FRotator CameraRotation;
-
-    Controller->GetPlayerViewPoint(Location,CameraRotation);
-    Location = Owner->GetMesh()->GetSocketLocation(SocketName);
-    Location += CameraRotation.Vector() * SpawnOffset;
-    //Location.ForwardVector*=SpawnOffset;
-
-    auto Actor = Owner->GetWorld()->SpawnActor(ProjectileClass, &Location, &CameraRotation);
+    FRotator CameraRotation = FRotator(0., Controller->GetControlRotation().Yaw, 0.);
+    
+    FVector Location = Owner->GetProjectileSpawnLocation(ESpawnPivot::Root, SpawnOffset);
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.Owner = Owner;
+    auto Actor = Owner->GetWorld()->SpawnActor(ProjectileClass, &Location, &CameraRotation, SpawnParams);
     AAbstractProjectile *projectile = Cast<AAbstractProjectile>(Actor);
     //projectile->OnTargetCoosed = OnTargetChoosed;
     projectile->OnExecuteEvent = OnExecuteEvent;

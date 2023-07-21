@@ -10,6 +10,7 @@ UAttributeComponent::UAttributeComponent(const FObjectInitializer& ObjectInitial
     PrimaryComponentTick.bCanEverTick = true;
 
     CharacterRace = ObjectInitializer.CreateDefaultSubobject<URaceInfo>(this,"Race",false);
+    ModifierAnimRateCoefficient = 0.02;
 }
 
 void UAttributeComponent::AddExperience(float Amount)
@@ -219,6 +220,12 @@ void UAttributeComponent::PostEditChangeProperty(FPropertyChangedEvent &e)
     }
 }
 #endif
+
+float UAttributeComponent::GetAnimRateFromModifier(EAttributes Attribute, float* OverrideCoefficient)
+{
+    float coeff = OverrideCoefficient ? *OverrideCoefficient : ModifierAnimRateCoefficient;
+    return 1.f + UAttributeSetHelper::GetModifier(Attributes, Attribute) * coeff;
+}
 
 void UAttributeComponent::CallUpdate()
 {

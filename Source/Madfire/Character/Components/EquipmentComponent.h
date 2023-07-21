@@ -149,6 +149,8 @@ public:
 
     void OnComponentCreated() override;
 
+    static void AttachItemActor(ACharacter* Owner, AItemActor* ItemActor, FName OwnerSocketName, FName ItemSocketName);
+
     UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     UItem *Equip(UItem *Item);
     UFUNCTION(BlueprintCallable, Category = "Equipment Component")
@@ -166,7 +168,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     bool SwapItems(EItemSlot lhs, EItemSlot rhs);
     UFUNCTION(BlueprintCallable)
-    AItemActor* SpawnItemActor(UItem* Item, bool EnableCollision);
+    AItemActor* SpawnItemActor(UItem* Item, bool EnableCollision, FName SocketName);
 
     UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FSkillList EquipmentSkills;

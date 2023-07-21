@@ -28,12 +28,9 @@ public:
     FORCEINLINE AActor* GetTargetActor() const { return GetOwner(); }
     void UpdateCameraMode(TSubclassOf<UCameraMode> CameraMode);
     void AdjustActiveCameraZoom(float Offset);
+    TSubclassOf<UCameraMode> GetDefaultCameraMode() const;
 
-    // Default camera mode used by player controlled pawns.
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-    TSubclassOf<UCameraMode> DefaultCameraMode;
-
-    // activates during sprint only
+    // Activates during sprint only
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
     TSubclassOf<UCameraMode> SprintCameraMode;
 
@@ -41,8 +38,20 @@ protected:
     void OnRegister() override;
     void GetCameraView(float DeltaTime, FMinimalViewInfo& DesiredView) override;
 
+    // Default camera mode used by player controlled pawns.
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+    TSubclassOf<UCameraMode> DefaultCameraModeUnarmed;
+
+    // Default camera mode when melee weapon drawn.
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+    TSubclassOf<UCameraMode> DefaultCameraModeArmedMelee;
+
+    // Default camera mode used when ranged weapon drawn.
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+    TSubclassOf<UCameraMode> DefaultCameraModeArmedRange;
+
 private:
-    // used to blend the camera modes.
+    // Used to blend the camera modes.
     UPROPERTY()
     UCameraModeBlender* CameraBlender;
 };

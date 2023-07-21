@@ -195,8 +195,8 @@ UEquipmentComponent::UEquipmentComponent(const FObjectInitializer &ObjectInitial
     Slot[(int32)EItemSlot::MainWeaponSlotSet2].SocketName = FEquipmentSlotNames::WeaponMain;
     Slot[(int32)EItemSlot::OffWeaponSlotSet2].ItemClass = TSubclassOf<UItemArms>();
     Slot[(int32)EItemSlot::OffWeaponSlotSet2].SocketName = FEquipmentSlotNames::WeaponOff;
-    Slot[(int32)EItemSlot::AmmoSlot].SocketName = FEquipmentSlotNames::Ammo;
     Slot[(int32)EItemSlot::AmmoSlot].ItemClass = TSubclassOf<UItemAmmo>();
+    Slot[(int32)EItemSlot::AmmoSlot].SocketName = FEquipmentSlotNames::Ammo;
 
     Slot[(int32)EItemSlot::HeadSlot].ItemClass = TSubclassOf<UItemHelmet>();
     Slot[(int32)EItemSlot::HeadSlot].SocketName = FEquipmentSlotNames::Head;
@@ -205,6 +205,25 @@ UEquipmentComponent::UEquipmentComponent(const FObjectInitializer &ObjectInitial
 void UEquipmentComponent::OnComponentCreated()
 {
     Super::OnComponentCreated();
+}
+
+void UEquipmentComponent::AttachItemActor(ACharacter* Owner, AItemActor* ItemActor, FName OwnerSocketName, FName ItemSocketName)
+{
+    if (ItemActor->ItemMesh->DoesSocketExist(ItemSocketName))
+    {
+        FTransform socketTransform = ItemActor->ItemMesh->GetSocketTransform(ItemSocketName);
+        FVector relativeLocation = socketTransform.InverseTransformPosition(ItemActor->GetActorLocation());
+        FQuat relativeRot = socketTransform.InverseTransformRotation(ItemActor->GetActorQuat());
+        ItemActor->SetActorRelativeLocation(relativeLocation);
+        ItemActor->SetActorRelativeRotation(relativeRot);
+    }
+    else
+    {
+        ItemActor->SetActorRelativeLocation(FVector::ZeroVector);
+        ItemActor->SetActorRelativeRotation(FQuat::Identity);
+    }
+    FAttachmentTransformRules rules(EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, false);
+    ItemActor->AttachToComponent(Owner->GetMesh(), rules, OwnerSocketName);
 }
 
 UItem *UEquipmentComponent::Equip(UItem *Item)
@@ -239,7 +258,7 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
     }
 
     if(!Item->IsA(slot.ItemClass))
-    {
+    {  // item can be of subclass, so check if the slot is correct
         auto weapon = Cast<UItemWeapon>(Item);
         auto shield = Cast<UItemShield>(Item);
         if (!weapon)
@@ -255,9 +274,18 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
                 return Item;
             }
         }
+        else
+        {
+            if ((SlotName != EItemSlot::MainWeaponSlot) && (SlotName != EItemSlot::OffMeaponSlot) && 
+                (SlotName != EItemSlot::MainWeaponSlotSet2) && (SlotName != EItemSlot::OffWeaponSlotSet2))
+            {
+                UE_LOG(LogTemp, Warning, TEXT("EquipToSlot: invalid slot for weapon"));
+                return Item;
+            }
+        }
     }
 
-    AItemActor *itemActor = SpawnItemActor(Item, false);
+    AItemActor *itemActor = SpawnItemActor(Item, false, slot.SocketName);
 
     auto tmp = Unequip(SlotName);
 
@@ -297,6 +325,7 @@ UItem *UEquipmentComponent::Unequip(EItemSlot SlotName)
     {
         EquipItem->OnUnequip(this);
     }
+    EquipmentSlotUpdated.Broadcast(this, SlotName);
 
     return tmp;
 }
@@ -345,13 +374,13 @@ bool UEquipmentComponent::SwapItems(EItemSlot lhs, EItemSlot rhs)
     return false;
 }
 
-AItemActor* UEquipmentComponent::SpawnItemActor(UItem* Item, bool EnableCollision)
+AItemActor* UEquipmentComponent::SpawnItemActor(UItem* Item, bool EnableCollision, FName SocketName)
 {
-    AItemActor *itemActor = GetWorld()->SpawnActor<AItemActor>(Item->ItemActor);
+    FVector socketLoc = Cast<ACharacterCreature>(GetOwner())->GetMesh()->GetSocketLocation(SocketName);
+    AItemActor *itemActor = Cast<AItemActor>(GetWorld()->SpawnActor(Item->ItemActorInEquipment, &socketLoc));
     check(itemActor != nullptr && "ItemActor is invalid");
     itemActor->SetOwner(GetOwner());
     itemActor->ItemBase = Item;
-    Item->ItemActor = itemActor->GetClass();
     ACharacterBase::SetupItemActorCollision(itemActor, EnableCollision);
     return itemActor;
 }
@@ -381,8 +410,6 @@ void UEquipmentComponent::EquipAttach(EItemSlot SlotName)
             check(arms && "invalid weapon item");
             socketName = UCombatComponent::GetSlotFromWeaponType(arms->WeaponType, false, SlotName == EItemSlot::MainWeaponSlot);
         }
-
-        slot.Item->AttachToComponent(owner->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, socketName);
+        AttachItemActor(owner, slot.Item, socketName, FItemActorEquipmentSlotNames::EquipSocket);
     }
 }
-

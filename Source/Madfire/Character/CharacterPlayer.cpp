@@ -14,8 +14,13 @@ ACharacterPlayer::ACharacterPlayer(const FObjectInitializer &ObjectInitializer)
     CameraComponent = CreateDefaultSubobject<UPlayerPawnCameraComponent>(TEXT("CameraComponent"));
     CameraComponent->SetRelativeLocation(FVector(-300.0f, 0.0f, 75.0f));
     GetMovementComponent()->OnSprintModeChanged.AddDynamic(this, &ACharacterPlayer::SetSprintCameraMode);
-
-    CameraZoomStep = 30;
+    OnCCStateChanged.AddDynamic(this, &ACharacterPlayer::ApplyCameraShakeForCCState);
+    CombatComponent->OnCombatStateChanged.AddDynamic(this, &ACharacterPlayer::UpdateDefaultCameraMode);
+    CameraZoomStep = 70;
+    LossOfBalanceShakeScale = 1.f;
+    StunShakeScale = 1.5f;
+    KnockDownShakeScale = 2.f;
+    BlockedHitShakeScale = 0.8f;
 }
 
 void ACharacterPlayer::BeginPlay()
@@ -44,13 +49,13 @@ void ACharacterPlayer::SetAbilityCameraMode(TSubclassOf<UCameraMode> CameraMode)
 
 void ACharacterPlayer::ClearAbilityCameraMode()
 {
-    CameraComponent->UpdateCameraMode(CameraComponent->DefaultCameraMode);
+    CameraComponent->UpdateCameraMode(CameraComponent->GetDefaultCameraMode());
 }
 
 void ACharacterPlayer::SetSprintCameraMode(bool activate)
 {
     CameraComponent->UpdateCameraMode(activate ? CameraComponent->SprintCameraMode
-                                               : CameraComponent->DefaultCameraMode);
+                                               : CameraComponent->GetDefaultCameraMode());
 }
 
 void ACharacterPlayer::AdjustCameraZoom(float Offset) 
@@ -71,6 +76,39 @@ void ACharacterPlayer::OnWalkingOffLedge_Implementation(
         Logger.Log(this,*FString::Printf(TEXT("climb down")));
         GetMovementComponent()->ClimbDownWall();
     }
+}
+
+void ACharacterPlayer::ApplyCameraShakeForCCState(unsigned NewState, unsigned NewSubState)
+{
+    APlayerController *PlayerController = Cast<APlayerController>(GetController());
+    if (!PlayerController)
+        return;
+
+    float scale;
+    switch (NewState)
+    {
+        case ECCState::LossOfBalance:
+            if (NewSubState == ELossOfBalanceCCSubState::BlockedAttack)
+                scale = BlockedHitShakeScale;
+            else
+                scale = LossOfBalanceShakeScale;
+            break;
+        case ECCState::Stun:
+            scale = StunShakeScale;
+            break;
+        case ECCState::KnockDown:
+            scale = KnockDownShakeScale;
+            break;
+        default:
+            return;
+    }
+    PlayerController->PlayerCameraManager->StartCameraShake(CCCameraShake, scale);
+}
+
+void ACharacterPlayer::UpdateDefaultCameraMode(int OldState, int NewState)
+{
+    if(NewState == ECombatState::Idle)  // Switches cam after weapon switch, if there was one, otherwise same cam remains
+        CameraComponent->UpdateCameraMode(CameraComponent->GetDefaultCameraMode());
 }
 
 void ACharacterPlayer::UseAimComponent(UAbilityAimComponent *AimComp)

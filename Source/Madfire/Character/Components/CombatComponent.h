@@ -158,22 +158,21 @@ public:
     // current active directions for special moves
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     uint8 SpecialDirections = 0u;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (UIMin = "0.0", ClampMin = "0.0"))
     float BlockStaminaCost;
     // max ratio of hit power to character balance to not get kd
     // should be higher than 1
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (UIMin = "1.0", ClampMin = "1.0"))
     float KnockdownThreshhold;
     // max ratio between characters attack powers during chamber 
     // (if ration is lower than max, then both charactera enter chamber mode)
     // should be higher than 1 and lower than KnockdownThreshhold
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (UIMin = "1.0", ClampMin = "1.0"))
     float ChamberThreshhold;
     // значение относительно нормы (коэффициент)
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     float AttackSpeed;
-    // TODO add check when switching, that current stance is unarmed or ranged->noop
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     bool TwoHandMode = false;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float UnarmedBaseDamage;
@@ -233,6 +232,8 @@ protected:
     bool HasAlreadyHitTarget(AActor *Target, UItemArms* Weapon) const;
     UFUNCTION()
     void OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
+    UFUNCTION()
+    void OnRangedWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
     bool IsInActionState() const;
     bool IsChamberValid(const ACharacterCreature* HitCharacter, const UItemArms* HitActorActiveWeapon, const UItemArms* OwnerActiveWeapon) const;
     EChamberRes ResolveChamber(ACharacterCreature* HitCharacter, const UItemArms* HitActorActiveWeapon, const UItemArms* OwnerActiveWeapon);

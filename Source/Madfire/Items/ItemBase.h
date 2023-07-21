@@ -10,7 +10,12 @@
 #include "Engine/DataTable.h"
 #include "ItemBase.generated.h"
 
-
+struct FItemActorEquipmentSlotNames
+{
+    static const FName WeaponLoadedAmmo;  // Specifies the place for attaching loaded ammo to a weapon
+    static const FName EquipSocket;  // Place for attaching equipped items
+    static const FName WeaponEquipSocket;  // Place for attaching a held weapon actor
+};
 
 USTRUCT(BlueprintType)
 struct FInventoryItemInfo : public FTableRowBase
@@ -69,7 +74,7 @@ public:
     bool OnEndFocus_Implementation();
 
     //Item Interaction
-    UPROPERTY(EditAnywhere, meta = (Bitmask, BitmaskEnum = "EInteractType"), Category = "Interactable Interface")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Bitmask, BitmaskEnum = "EInteractType"), Category = "Interactable Interface")
     int32 ItemInteractFlags;
 
 
@@ -100,15 +105,17 @@ public:
 
     //Item spawn parameters
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
-    TSubclassOf<class AItemActor> ItemActor;
+    TSubclassOf<class AItemActor> ItemActorInEquipment;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    TSubclassOf<class AItemActor> ItemActorInWorld;
 };
 
 
 class UBoxComponent;
 
-//TODO: Basic Interract
-
-UCLASS(BlueprintType, Blueprintable)
+// Actor containing skeletal mesh for animation and some sort of FSM
+// item classes of actors: for equipment and world
+UCLASS(BlueprintType, Blueprintable, Abstract)
 class AItemActor : public AActor, public IInteractableInterface
 {
     GENERATED_BODY()
@@ -138,48 +145,83 @@ public:
 public:
     // Sets default values for this actor's properties
     AItemActor();
+    AItemActor(const FObjectInitializer& ObjectInitializer);
 
-    virtual void OnConstruction(const FTransform &Transform) override;
     float TakeDamage(float DamageAmount, const FDamageEvent &DamageEvent, AController *EventInstigator, AActor *DamageCauser) override;
-protected:
-    // Called when the game starts or when spawned
-    virtual void BeginPlay() override;
-    // Called every frame
-    virtual void Tick(float DeltaTime) override;
 
-public:
-    UPROPERTY(Instanced, EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    UPROPERTY(Instanced, EditAnywhere, BlueprintReadWrite)
     UItem *ItemBase = nullptr;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     UMeshComponent *ItemMesh;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     UBoxComponent *ItemCollision;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
     uint8 StackCount;
+
+protected:
+    void InitializeActor();
+    void InitMesh();
 };
 
-// TODO
+
+// Use if item has skeletal mesh when equipped
+UCLASS(BlueprintType, Blueprintable)
+class AItemActorEquipment : public AItemActor
+{
+    GENERATED_BODY()
+
+public:
+    AItemActorEquipment();
+    AItemActorEquipment(const FObjectInitializer& ObjectInitializer);
+
+protected:
+    void InitSkeletalMesh();
+};
+
+
+UCLASS(BlueprintType, Blueprintable)
+class AItemActorWorld : public AItemActor
+{
+    GENERATED_BODY()
+
+public:
+    AItemActorWorld();
+    AItemActorWorld(const FObjectInitializer& ObjectInitializer);
+
+protected:
+    void InitStaticMesh();
+};
+
+
 // Class for moving item actors, like arrows and bolts
 UCLASS(BlueprintType, Blueprintable)
-class AItemActorProjectile : public AItemActor
+class AItemActorProjectile : public AItemActorWorld
 {
     GENERATED_BODY()
 
 public:
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
+    AItemActorProjectile();
+
+    void LaunchProjectile(FVector Direction, float Speed, float DamageCoefficient);
+    UFUNCTION()
+    void OnOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+    UFUNCTION()
+    void OnStop(const FHitResult& SweepResult);
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     UProjectileMovementComponent* MovementComp;
-};
 
-// TODO
-// Actor containing skeletal mesh for animation and some sort of FSM
-UCLASS(BlueprintType, Blueprintable)
-class AAnimatedItemActor: public AItemActor
-{
-    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float LifeTime;
 
-public:
+private:
+    void OnTimeout();
+    void AttachToHitActor(USceneComponent* ActorMesh, FVector HitLocation);
 
+    FTimerHandle DestroyTimer;
+    float InitialSpeed = 0.f;
+    float WeaponDamageCoefficient = 0.f;
 };

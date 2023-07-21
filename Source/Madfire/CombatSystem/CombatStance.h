@@ -130,7 +130,9 @@ enum ECombatStateAnimInfo
     RotationBlocked    = 0x0400, // is set in sync with MovementBlocked, but for combo anims, resets just before ComboCanContinue is set, to allow character to realign with camera
     ChargeAllowed      = 0x0800, // is set when starting combo attack and has chargable atacks, unset when released attack
     CanCounterChamber  = 0x1000, // is set during chamber to indicate that character can attack again, unset after exit chamber mode
-    CheckedForChamber  = 0x2000  // is set during chamber to indicate that there is no need to check again with same character
+    CheckedForChamber  = 0x2000, // is set during chamber to indicate that there is no need to check again with same character
+    AmmoGrabbed        = 0x4000, // is set during reload, when reached the ammo
+    AmmoAttach         = 0x8000  // set during reload, when actor brought ammo to the weapon
 };
 
 UENUM(BlueprintType)
@@ -291,44 +293,71 @@ protected:
     int CurrentCombo = 0;
 };
 
-
+// load ammo handling, make a copy of ammo actor and store it in a stance, substact from equipment ammo
+// if fired the ammo or resetstance add ammo item to inventory and destroy the actor
+class AItemActorProjectile;
+class UItemWeaponRanged;
 UCLASS(Abstract, BlueprintType, Blueprintable)
 class URangeCombatStance : public UCombatStance
 {
     GENERATED_BODY()
 
 public:
-    URangeCombatStance() {}
+    URangeCombatStance();
 
     bool IsStanceValid(const ACharacterCreature* NewOwner) const override;
     bool IsMelee() const override { return false; }
     void StanceSwitched(ACharacterCreature* NewOwner, const UCombatStance* DefaultStance) override;
-
+    void ResetStance() override;
+    void FireLoadedAmmo();
+    // called when character reached ammo during reload
+    void SpawnAttachAmmoActor();
+    void AttachAmmoActorToWeapon();
 protected:
     void UpdateOwnerAnims(const UCombatStance* DefaultStance) override;
+    virtual float CalculateAmmoInitialSpeed(UItemWeaponRanged* Weapon) const;
+
+    // called when switched stance
+    void CleanUpAmmoActor();
+    UFUNCTION()
+    void OnReloadEnded(UAnimMontage* AnimMontage, bool bInterrupted);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FAttackInfo AttackInfo;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float ReloadStaminaCost = 10;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float MeleeAttackStaminaCost = 20;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
+    UAnimMontage* ReloadAnim;
+    bool IsWeaponLoaded = false;
+    UPROPERTY()
+    AItemActorProjectile* LoadedAmmo = nullptr;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    uint8 LoadAmmoCount = 1;
+
+    virtual EAttributes GetAnimRateAttribute() const;
 };
 
-// TODO
+
+// TODO finish shooting and aiming
 UCLASS(BlueprintType, Blueprintable)
 class UBowCombatStance : public URangeCombatStance
 {
     GENERATED_BODY()
 
 public:
-    UBowCombatStance() {}
-
+    UBowCombatStance();
 };
 
-// TODO
+
 UCLASS(BlueprintType, Blueprintable)
 class UCrossbowCombatStance : public URangeCombatStance
 {
     GENERATED_BODY()
 
 public:
-    UCrossbowCombatStance() {}
+    UCrossbowCombatStance();
 
+    EAttributes GetAnimRateAttribute() const override;
 };

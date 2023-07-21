@@ -87,6 +87,10 @@ private:
 };
 
 
+// used to start camera shakes for player if got CC'ed
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCCStateChanged, unsigned int, NewState, unsigned int, NewSubState);
+
+
 UCLASS()
 class MADFIRE_API ACharacterCreature : public ACharacterBase
 {
@@ -100,7 +104,9 @@ public:
 
     float TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent, class AController *EventInstigator, AActor *DamageCauser) override;
     virtual void Update(const FCharacterLevelInfo &levelInfo);
+    UFUNCTION(BlueprintCallable, Category = "Camera")
     virtual void SetAbilityCameraMode(TSubclassOf<UCameraMode> CameraMode) {}
+    UFUNCTION(BlueprintCallable, Category = "Camera")
     virtual void ClearAbilityCameraMode() {}
 
     void StartAnimation(UAnimMontage *AnimMontage,
@@ -175,4 +181,5 @@ protected:
     TMap<ECCState, UAnimMontage *> CCAnims;
     // loss of balance sub mode anims
     TMap<ELossOfBalanceCCSubState, UAnimMontage *> CCLOBAnims;
+    FCCStateChanged OnCCStateChanged;
 };

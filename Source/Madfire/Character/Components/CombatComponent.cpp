@@ -71,8 +71,7 @@ float UCombatComponent::CalculateWeaponDamage(const UItemArms* weapon, float att
     }
     case EWeaponType::Shield:
         return FMath::Max(UnarmedBaseDamage, UnarmedBaseDamage + strMod + (weapon->Weight * ShieldWeightDamageMod));
-    // TODO range weapons
-    default:
+    default:  // includes ranged weapon melee damage
     {
         auto theWeapon = Cast<UItemWeapon>(weapon);
         check(theWeapon && "CalculateWeaponDamage: invalid weapon class");
@@ -248,7 +247,54 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
                 else // try to damage the actor
                 {
                     Owner->Logger.Log(this, "OnBeginOverlap Hit actor!");
-                    const float damage = CalculateWeaponDamage(activeWeapon, GetCombatFSM().state(ECombatState::Attack)->Info.AttackInfo->DamageMod, 0);
+                    float damage = CalculateWeaponDamage(activeWeapon, GetCombatFSM().state(ECombatState::Attack)->Info.AttackInfo->DamageMod, 0);
+                    hitActor->TakeDamage(damage, FDamageEvent(activeWeapon->DamageType), Owner->GetController(), Owner);
+                }
+            }
+            if (info.AttackInfo && info.AttackInfo->CustomOnHitEvent.IsBound())
+                info.AttackInfo->CustomOnHitEvent.Broadcast(Owner, hitActor);
+        }
+    }
+}
+
+void UCombatComponent::OnRangedWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{  // TODO refactor
+    auto hitActor = SweepResult.GetActor();
+    if (hitActor == nullptr || OtherActor == Owner || HitOwnMeleeWeapons(comp, OtherActor))// Check self and weapon
+        return;
+    if (GetCombatFSM().isInState(ECombatState::Parry))
+    {
+        const auto& info = GetCombatFSM().state(ECombatState::Parry)->Info;
+        auto activeWeapon = FindHitMeleeWeapon(comp);
+        check(activeWeapon && "Should have a weapon");
+        if (info.CheckAnimInfo(ECombatStateAnimInfo::CollisionOn) && !HasAlreadyHitTarget(hitActor, activeWeapon))
+        {
+            CharactersHit.Emplace(TPair<AActor*, UItemArms*>(hitActor, activeWeapon));
+            auto hitCharacter = Cast<ACharacterBase>(hitActor);
+            if (hitCharacter)
+            {
+                if (hitCharacter->Cheats.InvulnerableToHit)
+                {
+                    Owner->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap: invul character!")));
+                    return;
+                }
+                Owner->Logger.Log(this, "OnBeginOverlap: Hit character!");
+                int32 strMod = UAttributeSetHelper::GetModifier(hitCharacter->AttributeComponent->Attributes, EAttributes::Str);
+                const float damage = CalculateWeaponDamage(activeWeapon, 1.f, strMod);
+                float force = CalculateHitForce(activeWeapon->Weight, strMod, 1.f); // Use Force, Luke, again
+                hitCharacter->TakeDamage(damage, FForceDamageEvent(activeWeapon->DamageType, force), Owner->GetController(), Owner);
+            }
+            else // hit an obsticle
+            {
+                if (SweepResult.GetComponent()->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic) // check if hit a wall and interrupt with loss of balance
+                {
+                    Owner->Logger.Log(this, "OnBeginOverlap Hit wall!");
+                    Owner->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::HitWall);
+                }
+                else // try to damage the actor
+                {
+                    Owner->Logger.Log(this, "OnBeginOverlap Hit actor!");
+                    float damage = CalculateWeaponDamage(activeWeapon, 1.f, 0);
                     hitActor->TakeDamage(damage, FDamageEvent(activeWeapon->DamageType), Owner->GetController(), Owner);
                 }
             }
@@ -401,7 +447,7 @@ void UCombatComponent::Update()
 void UCombatComponent::OnAttack(bool Started)
 {
     Owner->Logger.Log(this, *FString::Printf(TEXT("OnAttack %s"),
-            Started ? TEXT("pressed") : TEXT("released")));
+        Started ? TEXT("pressed") : TEXT("released")));
     AttackPressed = Started;
     if (!HasCombatStance())
         return;
@@ -422,11 +468,11 @@ void UCombatComponent::OnAttack(bool Started)
                     return;
                 }
             }
-            if (currentAttack->Special == ESpecialType::None)// can check combo if not special move
+            if (currentAttack->Special == ESpecialType::None) // can check combo if not special move
             {
                 if (AttackPressed)
                 {
-                    if (info.CheckAnimInfo(ECombatStateAnimInfo::ComboCanContinue))// start pause combo
+                    if (info.CheckAnimInfo(ECombatStateAnimInfo::ComboCanContinue)) // start pause combo
                         StartNextComboAttack(true);
                     else
                         info.ChangeAnimInfo(ECombatStateAnimInfo::ComboSaved, true);
@@ -471,6 +517,19 @@ void UCombatComponent::OnAttack(bool Started)
             }
         }
         else if (AttackPressed)// starting first attack
+            UpdateCombatFSM();
+    }
+    else
+    {
+        if (GetCombatFSM().isInState(ECombatState::Attack))
+        {
+            auto& info = GetCombatFSM().state(ECombatState::Attack)->Info;
+            if (info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed) && !AttackPressed)
+            {
+                // TODO check bow charging time and maybe fire
+            }
+        }
+        else if (AttackPressed && !GetCombatFSM().isInState(ECombatState::Reload))
             UpdateCombatFSM();
     }
 }
@@ -585,7 +644,7 @@ void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
 
 void UCombatComponent::ToggleHandMode()
 {
-    if (IsBusy())
+    if (IsBusy() || (HasCombatStance() && !CurrentCombatStance->IsMelee()))
         return;
 
     TwoHandMode = !TwoHandMode;
@@ -901,12 +960,22 @@ void UCombatComponent::WeaponSetup(UItemArms* Weapon, AItemActor* Actor, bool Dr
 {
     if (Slot.IsNone())
         Slot = GetSlotFromWeaponType(Weapon->WeaponType, Draw, MainHand);
-    if (Draw)
-        Actor->ItemCollision->OnComponentBeginOverlap.AddUniqueDynamic(this, &UCombatComponent::OnWeaponOverlap);
+    if (CurrentCombatStance->IsMelee())
+    {
+        if (Draw)
+            Actor->ItemCollision->OnComponentBeginOverlap.AddUniqueDynamic(this, &UCombatComponent::OnWeaponOverlap);
+        else
+            Actor->ItemCollision->OnComponentBeginOverlap.RemoveDynamic(this, &UCombatComponent::OnWeaponOverlap);
+    }
     else
-        Actor->ItemCollision->OnComponentBeginOverlap.RemoveDynamic(this, &UCombatComponent::OnWeaponOverlap);
+    {
+        if (Draw)
+            Actor->ItemCollision->OnComponentBeginOverlap.AddUniqueDynamic(this, &UCombatComponent::OnRangedWeaponOverlap);
+        else
+            Actor->ItemCollision->OnComponentBeginOverlap.RemoveDynamic(this, &UCombatComponent::OnRangedWeaponOverlap);
+    }
     SetWeaponCollision(Actor, false); // disable equipped weapon collision
-    Actor->AttachToComponent(Owner->GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, Slot);
+    UEquipmentComponent::AttachItemActor(Owner, Actor, Slot, Draw ? FItemActorEquipmentSlotNames::WeaponEquipSocket : FItemActorEquipmentSlotNames::EquipSocket);
 }
 
 void UCombatComponent::SetWeaponCollision(AItemActor* WeaponActor, bool Enable)

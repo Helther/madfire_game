@@ -160,6 +160,30 @@ public:
     FDamageResistance DamageResistance;
 };
 
+UCLASS(config = Game, BlueprintType, Blueprintable)
+class UItemWeaponRanged : public UItemWeapon
+{
+    GENERATED_BODY()
+
+public:
+    UItemWeaponRanged(const class FObjectInitializer &ObjectInititalizer);
+    // tension scales linearly with projectile speed, this is a value for instant bow shooting when just started drawing
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", Meta = (UIMin = "0.0", ClampMin = "0.0", UIMax = "5000.0", ClampMax = "5000.0"))
+    float MinTensionStrength = 500.f;
+    // used as default speed for crossbows
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", Meta = (UIMin = "0.0", ClampMin = "0.0", UIMax = "5000.0", ClampMax = "5000.0"))
+    float MaxTensionStrength = 3000.f;
+    // base speed modifier
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", Meta = (UIMin = "0.1", ClampMin = "0.1", UIMax = "2.0", ClampMax = "2.0"))
+    float TensionCoefficient = 1.f;
+    // speed modifier from an attribute
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", Meta = (UIMin = "0.1", ClampMin = "0.1", UIMax = "2.0", ClampMax = "2.0"))
+    float AttributeTensionCoefficient = 1.f;
+    // ammo damage modifier based on initial speed
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", Meta = (UIMin = "0.01", ClampMin = "0.01", UIMax = "2.0", ClampMax = "2.0"))
+    float AmmoDamageCoefficient = 0.1f;
+};
+
 
 UCLASS(config = Game, BlueprintType, Blueprintable)
 class UItemShield : public UItemArms
@@ -183,10 +207,18 @@ class UItemAmmo : public UItemEquipable
     GENERATED_BODY()
 
 public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", Meta = (UIMin = "0.0", ClampMin = "0.0"))
     float DamageValue;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon Stats")
     TSubclassOf<UPhysicDamage> DamageType;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item Info")
+    TSubclassOf<AItemActorProjectile> ProjectileActor;
+    // defines actor gravity coefficient, the more the heavier projectile becomes
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", Meta = (UIMin = "0.1", ClampMin = "0.1", UIMax = "2.0", ClampMax = "2.0"))
+    float WeightCoefficient = 1.f;
+    // defines strike force modifier
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon Stats", Meta = (UIMin = "0.1", ClampMin = "0.1", UIMax = "2.0", ClampMax = "2.0"))
+    float ForceCoefficient = 1.f;
 };

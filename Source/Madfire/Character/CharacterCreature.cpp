@@ -373,6 +373,7 @@ void FCCStateManager::SetCCMode(ECCState Mode, unsigned int SubMode, float *Time
     CCLocks[Mode].Value++;
     CurrentCCState |= 1u << Mode;
     CurrentCCSubState |= 1u << SubMode;
+    Character->OnCCStateChanged.Broadcast(Mode, SubMode);
 }
 
 void FCCStateManager::ResetCCMode(ECCState Mode)
@@ -383,6 +384,7 @@ void FCCStateManager::ResetCCMode(ECCState Mode)
         CurrentCCSubState = 0u;
         FTimerDelegate lockDelegate = FTimerDelegate::CreateLambda([this, Mode]() { ResetCCLock(Mode); });
         Character->GetWorld()->GetTimerManager().SetTimer(CCLocks[Mode].Key.StunLockTimer, lockDelegate, CCLockTime, false );
+        Character->OnCCStateChanged.Broadcast(0u, 0u);
     }
 }
 

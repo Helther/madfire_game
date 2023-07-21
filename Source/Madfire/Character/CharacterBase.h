@@ -20,6 +20,13 @@ struct FCheats
     unsigned int InvulnerableToHit : 1;
 };
 
+UENUM(BlueprintType)
+enum class ESpawnPivot : uint8
+{
+    Root = 0
+};
+
+
 /**
  * Obvious Class Decription
  */
@@ -41,7 +48,7 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
     UStatusEffectQueueComponent *StatusEffectComponent;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
-	UPawnNoiseEmitterComponent* NoiseEmitterComponent;
+    UPawnNoiseEmitterComponent* NoiseEmitterComponent;
     UFUNCTION(BlueprintCallable, Category = "Character Function")
     void DropItem(UItem *item, int32 amount, FTransform transform);
 
@@ -53,6 +60,9 @@ public:
     static void SetupItemActorCollision(AItemActor* InActor, bool Enable);
 
     virtual void UseAimComponent(class UAbilityAimComponent *) {}
+    // Offset is in character's local space (X-axis is forward)
+    UFUNCTION(BlueprintCallable, Category = "Character Function")
+    FVector GetProjectileSpawnLocation(ESpawnPivot Pivot, FVector Offset) const;
 
     FCheats Cheats;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)

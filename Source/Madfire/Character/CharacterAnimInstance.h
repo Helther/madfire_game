@@ -31,6 +31,16 @@ public:
     void OnWeaponSwitch();
 
     UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
+    void OnAmmoGrab();
+
+
+    UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
+    void OnAmmoAttach();
+
+    UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
+    void OnProjectileFired();
+
+    UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
     void OnBlockActivation(bool activate);
     
     UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
