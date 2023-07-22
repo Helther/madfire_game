@@ -4,7 +4,7 @@
 ```
 %ue4%/GenerateProjectFiles.sh -cmakefile-game -project "/path/to/Game.uproject"
 ```
-add -vscode  for vscode (duh)
+add -vscode for vscode (duh)
 
 ## Use the following command in bash to format all source files:
 ```
@@ -16,6 +16,30 @@ convertFilesToUnix.sh "Source_path"
 ```
 ## MadFire docs repo url  
 https://bitbucket.org/helther/madfire_docs.git
+## Madfire content repo url
+http://helther.asuscomm.com:8000/git/Content.git
 
-## Content shared cloud folder link  
-https://drive.google.com/drive/folders/1Zw-ae0WFjMi5ui1thgywPe13kvgAhotJ?usp=sharing
+## Cloning the project
+Because MadFire tracks it's content as submodule, there are additional commands needed to run, when working with repository.
+
+### Cloning
+```
+$ git clone $URL
+$ git submodule update --init 
+
+OR
+
+$ git clone --recurse-submodules $URL
+```
+
+### Pulling
+```
+$ git pull
+$ git submodule update --init
+```
+
+### Pushing
+We need to push main repo as well, as submodule
+```
+$ git push --recurse-submodules=on-demand
+```
