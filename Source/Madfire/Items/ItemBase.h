@@ -117,7 +117,7 @@ class UBoxComponent;
 // Actor containing skeletal mesh for animation and some sort of FSM
 // item classes of actors: for equipment and world
 UCLASS(BlueprintType, Blueprintable, Abstract)
-class AItemActor : public AActor, public ISaveable, public IInteractableInterface
+class AItemActor : public AActor, public IInteractableInterface
 {
     GENERATED_BODY()
 
@@ -184,7 +184,7 @@ protected:
 
 
 UCLASS(BlueprintType, Blueprintable)
-class AItemActorWorld : public AItemActor
+class AItemActorWorld : public AItemActor, public ISaveable
 {
     GENERATED_BODY()
 
