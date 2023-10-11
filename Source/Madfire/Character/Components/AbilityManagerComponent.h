@@ -37,7 +37,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "")
     UAbstractAbility *GetAbility(FName AbilityName);
 
-    UPROPERTY(BlueprintReadOnly, Category = "")
+    UPROPERTY(SaveGame, BlueprintReadOnly, Category = "")
     TMap<FName,UAbstractAbility*> AbilityList;
 
     UPROPERTY()
@@ -54,12 +54,12 @@ public:
     UFUNCTION(BlueprintCallable, Category = "")
     void UpdateSpellBook();
 
-    UPROPERTY(BlueprintReadWrite, Category = "")
+    UPROPERTY(SaveGame, BlueprintReadWrite, Category = "")
     int32 MaxLevel;
-    UPROPERTY(BlueprintReadWrite, Category = "")
+    UPROPERTY(SaveGame, BlueprintReadWrite, Category = "")
     TArray<FLevelSpell> LevelSpellList;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "")
+    UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "")
     TArray<FSpell> SpellList;
-    UPROPERTY(BlueprintReadWrite, Category = "")
+    UPROPERTY(SaveGame, BlueprintReadWrite, Category = "")
     TMap<FName,UAbstractAbility*> SpellAbilityList;
 };

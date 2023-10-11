@@ -8,6 +8,7 @@
 #include "Rules/GameRules.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Engine/DataTable.h"
+#include "SaveSystem/SaveInterface.h"
 #include "ItemBase.generated.h"
 
 struct FItemActorEquipmentSlotNames
@@ -116,7 +117,7 @@ class UBoxComponent;
 // Actor containing skeletal mesh for animation and some sort of FSM
 // item classes of actors: for equipment and world
 UCLASS(BlueprintType, Blueprintable, Abstract)
-class AItemActor : public AActor, public IInteractableInterface
+class AItemActor : public AActor, public ISaveable, public IInteractableInterface
 {
     GENERATED_BODY()
 

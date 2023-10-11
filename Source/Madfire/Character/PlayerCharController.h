@@ -104,13 +104,10 @@ class MADFIRE_API APlayerCharController : public APlayerController
     ACharacterPlayer *Player;
 
 
-    //Note: TEST SHIT
-    void SaveAction();
-    void LoadAction();
-
-
 public:
     bool IsActionKeyPressed(const FName &ActionKey);
+
+    void OnPossess(APawn *pawn) override;
 
     // temp value for min input amount to register
     UPROPERTY(EditAnywhere, BlueprintReadWrite)

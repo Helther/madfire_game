@@ -1212,9 +1212,9 @@ void UHumanoidMovementComponent::TransitionCleanUp()
     if(TransitionFinishMode != EMovementMode::MOVE_Custom)
         SetMovementMode(TransitionFinishMode);
     CurrentTransitionAnim = nullptr;
-    TransitionLocEnd.Release();
-    TransitionRotEnd.Release();
-    TransitionDirection.Release();
+    TransitionLocEnd.Reset();
+    TransitionRotEnd.Reset();
+    TransitionDirection.Reset();
 }
 
 void UHumanoidMovementComponent::BeginPlay()

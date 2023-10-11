@@ -6,7 +6,6 @@
 
 #include "GameFramework/PlayerInput.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "SaveSystem/CharacterSave.h"
 #include "Character/CharacterPlayer.h"
 
 const FName FInputKeyNames::MoveForward   = "MoveForward";
@@ -146,9 +145,6 @@ void APlayerCharController::SetupInputComponent()
             FInputKeyNames::CameraOut, IE_Pressed, this, &APlayerCharController::CameraDistanceOut).bConsumeInput = false;
         InputComponent->BindAction(
             FInputKeyNames::Interact, IE_Pressed, this, &APlayerCharController::InteractAction).bConsumeInput = false;
-        //Note: Save TEST SHIT
-        InputComponent->BindAction("Save", IE_Pressed, this, &APlayerCharController::SaveAction).bConsumeInput = false;
-        InputComponent->BindAction("Load", IE_Pressed, this, &APlayerCharController::LoadAction).bConsumeInput = false;
     }
 }
 
@@ -686,26 +682,8 @@ void APlayerCharController::InteractAction()
     }
 }
 
-
-void APlayerCharController::SaveAction() 
-{ 
-    UCharacterSave *save = Cast<UCharacterSave>(UGameplayStatics::CreateSaveGameObject(UCharacterSave::StaticClass()));
-
-    save->PlayerLocation = Player->GetActorLocation();
-
-    UGameplayStatics::SaveGameToSlot(save, TEXT("MySlot"), 0);
-
-    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Game Saved."));
-
-}
-
-void APlayerCharController::LoadAction() 
+void APlayerCharController::OnPossess(APawn *pawn)
 {
-    UCharacterSave *save = Cast<UCharacterSave>(UGameplayStatics::CreateSaveGameObject(UCharacterSave::StaticClass()));
-
-    save = Cast<UCharacterSave>(UGameplayStatics::LoadGameFromSlot("MySlot",0));
-    
-    Player->SetActorLocation(save->PlayerLocation);
-
-    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Game Loaded."));
+    APlayerController::OnPossess(pawn);
+    Player = Cast<ACharacterPlayer>(Player);
 }
