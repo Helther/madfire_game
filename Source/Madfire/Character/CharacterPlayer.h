@@ -55,18 +55,26 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "Interact", Meta = (ExpandEnumAsExecs = "Branches"))
     void OnInteract(EGameplayReturnState Branches, EKeyState KeyState);
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
-    UPlayerPawnCameraComponent* CameraComponent;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Components")
-    USpringArmComponent* SpringArmComponent;
-    
     void UseAimComponent(class UAbilityAimComponent *) override;
 
     void AdjustCameraZoom(float Offset);
 
+
+    UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
+    FORCEINLINE UPlayerPawnCameraComponent *GetCameraComponent() const {return CameraComponent;}
+    UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
+    FORCEINLINE USpringArmComponent *GetSpringArmComponent() const {return SpringArmComponent;}
+    
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
     float CameraZoomStep;
+
+private:
+    UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Character Components", meta=(AllowPrivateAccess = "true"))
+    TObjectPtr<UPlayerPawnCameraComponent>  CameraComponent;
+    UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Character Components", meta=(AllowPrivateAccess = "true"))
+    TObjectPtr<USpringArmComponent>         SpringArmComponent;
+
 
 protected:
     void BeginPlay() override;

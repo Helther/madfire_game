@@ -211,7 +211,7 @@ protected:
         CurrentCooldownTime = 0;
     }
 
-    void StartCooldown()
+    void StartCooldown() 
     {
         bIsCooldown = true;
         CurrentCooldownTime = 0;

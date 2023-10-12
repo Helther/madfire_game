@@ -461,22 +461,12 @@ void UMadfireSerializer::LoadActorFinish(AActor *a, const FActorRecord &rec)
                     }
                 }
 
-                auto cc = Cast<UCombatComponent>(c);
-                if (cc)
-                {
-                    auto ch = Cast<ACharacterCreature>(a);
-                    if (ch)
-                    {
-                        ch->CombatComponent = cc;
-                    }
-                }
-
                 auto mc = Cast<UMovementComponent>(c);
                 if (mc != nullptr)
                 {
                     mc->Velocity = compRec.Velocity;
                     mc->UpdateComponentVelocity();
-                }
+                }                
                 break;
             }
         }

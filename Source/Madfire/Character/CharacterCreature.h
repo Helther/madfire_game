@@ -126,7 +126,7 @@ public:
 
     // TODO уточнить при балансировке
     FORCEINLINE float CalculateMaxWeight() const
-    { return MaxWeightBase + MaxWeightModBase * UAttributeSetHelper::GetModifier(AttributeComponent->Attributes, EAttributes::Str); }
+    { return MaxWeightBase + MaxWeightModBase * UAttributeSetHelper::GetModifier(GetAttributeComponent()->Attributes, EAttributes::Str); }
     // TODO уточнить при балансировке
     float CalculateKnockDownTime() const;
     void UpdateCCLOBAnims();
@@ -154,16 +154,26 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
     float MaxWeightModBase;
 
-    UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
-    UInventoryComponent *InventoryComponent;
-    UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
-    UEquipmentComponent *EquipmentComponent;
-    UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
-    UCombatComponent *CombatComponent;
-    UPROPERTY(BlueprintReadOnly, Category = "Character Components", VisibleAnywhere)
-    UAbilityManagerComponent *AbilityManager;
+    UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
+    FORCEINLINE UInventoryComponent *GetInventoryComponent() const{return InventoryComponent;}
+    UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
+    FORCEINLINE UEquipmentComponent *GetEquipmentComponent() const{return EquipmentComponent;}
+    UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
+    FORCEINLINE UCombatComponent *GetCombatComponent() const { return CombatComponent; }
+    UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
+    FORCEINLINE UAbilityManagerComponent *GetAbilityManager() const{ return AbilityManager; }
 
     UCharacterAnimInstance* AnimInstance;
+
+private:
+    UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Character Components", meta=(AllowPrivateAccess = "true"))
+    TObjectPtr<UInventoryComponent>     InventoryComponent;
+    UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Character Components", meta=(AllowPrivateAccess = "true"))
+    TObjectPtr<UEquipmentComponent>     EquipmentComponent;
+    UPROPERTY(BlueprintReadOnly, VisibleAnywhere,Category = "Character Components", meta=(AllowPrivateAccess = "true"))
+    TObjectPtr<UCombatComponent>        CombatComponent;
+    UPROPERTY(BlueprintReadOnly, VisibleAnywhere,Category = "Character Components", meta=(AllowPrivateAccess = "true"))
+    TObjectPtr<UAbilityManagerComponent> AbilityManager;
 
 protected:
     void PostInitializeComponents() override;
@@ -171,11 +181,11 @@ protected:
 
     // clang-format off
     UFUNCTION(BlueprintCallable, Category = "Character Animation")
-        void CCStunEnded(UAnimMontage *animMontage, bool bInterrupted);
+    void CCStunEnded(UAnimMontage *animMontage, bool bInterrupted);
     UFUNCTION(BlueprintCallable, Category = "Character Animation")
-        void CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted); 
+    void CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted); 
     UFUNCTION(BlueprintCallable, Category = "Character Animation")
-        void CCKnockDownEnded(UAnimMontage *animMontage, bool bInterrupted);
+    void CCKnockDownEnded(UAnimMontage *animMontage, bool bInterrupted);
 
     TMap<ECCState, void (ACharacterCreature::*)(UAnimMontage *, bool)> CCInterruptDelegates;
     TMap<ECCState, UAnimMontage *> CCAnims;

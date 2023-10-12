@@ -23,10 +23,10 @@ void UPlayerPawnCameraComponent::AdjustActiveCameraZoom(float Offset)
 TSubclassOf<UCameraMode> UPlayerPawnCameraComponent::GetDefaultCameraMode() const
 {
     auto Owner = CastChecked<ACharacterCreature>(GetOwner());
-    if (Owner->CombatComponent->WeaponDrawn())
+    if (Owner->GetCombatComponent()->WeaponDrawn())
     {
-        check(Owner->CombatComponent->HasCombatStance())
-        if (Owner->CombatComponent->GetCurrentCombatStance()->IsMelee())
+        check(Owner->GetCombatComponent()->HasCombatStance())
+        if (Owner->GetCombatComponent()->GetCurrentCombatStance()->IsMelee())
             return DefaultCameraModeArmedMelee;
         else
             return DefaultCameraModeArmedRange;

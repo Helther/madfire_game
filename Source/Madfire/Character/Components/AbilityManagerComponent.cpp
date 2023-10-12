@@ -11,7 +11,7 @@ UAbilityManagerComponent::UAbilityManagerComponent(const FObjectInitializer &Obj
 void UAbilityManagerComponent::Update()
 {
     auto character = Cast<ACharacterBase>(GetOwner());
-    auto attributes = character->AttributeComponent;
+    auto attributes = character->GetAttributeComponent();
     auto intelect = attributes->Attributes.AttributeMap[(int32)EAttributes::Int];
     auto wisdom = attributes->Attributes.AttributeMap[(int32)EAttributes::Wis];
 

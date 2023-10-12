@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "CharacterPlayer.h"
+#include "Widgets/MenuWidgetInterface.h"
+#include "Widgets/HUDCharacter.h"
 
 #include "PlayerCharController.generated.h"
 
@@ -27,6 +29,8 @@ struct FInputKeyNames
     static const FName CameraIn;
     static const FName CameraOut;
     static const FName Interact;
+    static const FName OpenMainMenu;
+    static const FName OpenCharacterMenu;
 };
 
 //состояние персонажа с точки зрения режима контроллера
@@ -100,18 +104,41 @@ class MADFIRE_API APlayerCharController : public APlayerController
     void CameraDistanceIn();
     void CameraDistanceOut();
 
+    void OpenCharacterMenu();
+    void OpenMainMenu();
+    
 
-    ACharacterPlayer *Player;
+    ACharacterPlayer *PlayerRef;
 
+public:
+    void ReturnToGameplay();
+    
 
 public:
     bool IsActionKeyPressed(const FName &ActionKey);
 
     void OnPossess(APawn *pawn) override;
+    void OnUnPossess() override;
+
 
     // temp value for min input amount to register
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float MovementDeadZone;
+
+    UWidgetTree *PlayerWidgetTree;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+    TSubclassOf<UHUDCharacter> CharacterHUDClass;
+
+    UPROPERTY(BlueprintReadOnly)
+    UHUDCharacter* CharacterHUD;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+    TSubclassOf<UMenuWidgetInterface> MenuWidgetClass;
+
+    FInputModeUIOnly UIMode;
+    FInputModeGameOnly GameMode;
+
 
 protected:
     APlayerCharController();

@@ -37,7 +37,7 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const FDamageEvent &Dam
                                  AActor *DamageCauser)
 {
     if (Cheats.Invulnerable)
-        return AttributeComponent->Health->CurrentValue;
+        return GetAttributeComponent()->Health->CurrentValue;
 
     const auto DamageType = DamageEvent.DamageTypeClass.GetDefaultObject();
     const auto DamageBase = Cast<UDamageBase>(DamageType);
@@ -46,8 +46,8 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const FDamageEvent &Dam
     float force = forceType ? forceType->Force : 0.f;
     bool blocked = false;
     float balance;
-    int32 strMod = UAttributeSetHelper::GetModifier(AttributeComponent->Attributes, EAttributes::Str);
-    int32 balanceSkill = USkillHelper::GetValue(AttributeComponent->Skills, ESkill::Balance);
+    int32 strMod = UAttributeSetHelper::GetModifier(GetAttributeComponent()->Attributes, EAttributes::Str);
+    int32 balanceSkill = USkillHelper::GetValue(GetAttributeComponent()->Skills, ESkill::Balance);
     Logger.Log(this, *FString::Printf(TEXT("take damage before block %f"), DamageAmount));
     auto attackerChar = Cast<ACharacterCreature>(DamageCauser);
     // check if had shield and what kind
@@ -64,7 +64,7 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const FDamageEvent &Dam
         !attackerCombatStateInfo.AttackInfo->IsNotParriable)
     {
         attackerChar->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::WasParried);
-        return AttributeComponent->Health->CurrentValue; 
+        return GetAttributeComponent()->Health->CurrentValue; 
     }
     if (CombatComponent->GetCombatFSM().isInState(ECombatState::Block))
     {
@@ -74,7 +74,7 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const FDamageEvent &Dam
         {
             balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, shield->Weight);
             // check if block succeeded
-            if (AttributeComponent->Stamina->Consume(CombatComponent->BlockStaminaCost) && (force <= balance))
+            if (GetAttributeComponent()->Stamina->Consume(CombatComponent->BlockStaminaCost) && (force <= balance))
             {
                 if (DamageBase && !isAbsolute)
                 {
@@ -108,7 +108,7 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const FDamageEvent &Dam
     }
     Logger.Log(this,*FString::Printf(TEXT("take damage after block %f"), DamageAmount));
     if (DamageAmount <= 0)
-        return AttributeComponent->Health->CurrentValue; 
+        return GetAttributeComponent()->Health->CurrentValue; 
     return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 }
 
@@ -226,7 +226,7 @@ UHumanoidMovementComponent *ACharacterCreature::GetMovementComponent() const
 
 void ACharacterCreature::DoLevelUp(const FCharacterLevelInfo &levelInfo)
 {
-    AttributeComponent->LevelUp(levelInfo);
+    GetAttributeComponent()->LevelUp(levelInfo);
     bool dexChanged = UAttributeSetHelper::GetAttribute(levelInfo.Attributes, EAttributes::Dex) != 0;
     bool strChanged = UAttributeSetHelper::GetAttribute(levelInfo.Attributes, EAttributes::Str) != 0;
     bool acrobaticsChanged = USkillHelper::GetValue(levelInfo.SkillList, ESkill::Tumble) != 0;
@@ -253,7 +253,7 @@ bool ACharacterCreature::PickupItem(AItemActor *ItemActor)
 
 float ACharacterCreature::CalculateKnockDownTime() const
 {
-    int skillVal = USkillHelper::GetValue(AttributeComponent->Skills, ESkill::Tumble);
+    int skillVal = USkillHelper::GetValue(GetAttributeComponent()->Skills, ESkill::Tumble);
     float weightMod = EquipmentComponent->CurrentWeight / MaxWeight;
     return KnockDownBaseTime - KnockDownModBase * skillVal - KnockDownWeightModBase * weightMod;
 }
@@ -284,7 +284,7 @@ void ACharacterCreature::BeginPlay()
     CCStateManager.Init(this);
     Logger.Init(this);
     // init components
-    AttributeComponent->SetDirty();
+    GetAttributeComponent()->SetDirty();
     GetMovementComponent()->SetDirty();
     Update(FCharacterLevelInfo());
 }

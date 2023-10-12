@@ -175,11 +175,11 @@ void UEquipmentComponent::Update()
     //CalculateWeight(); debug temp
     auto Owner = Cast<ACharacterCreature>(GetOwner());
     check(Owner != nullptr && "No Owner!");
-    Owner->AttributeComponent->Attributes += EquipmentAttributes;
-    Owner->AttributeComponent->Skills += EquipmentSkills;
-    Owner->AttributeComponent->DamageAbsorb += EqipmentDamageAbsorb;
-    Owner->AttributeComponent->DamageResistance += EqipmentDamageResistance;
-    Owner->AttributeComponent->DamageBonus += EqipmentDamageBonus;
+    Owner->GetAttributeComponent()->Attributes += EquipmentAttributes;
+    Owner->GetAttributeComponent()->Skills += EquipmentSkills;
+    Owner->GetAttributeComponent()->DamageAbsorb += EqipmentDamageAbsorb;
+    Owner->GetAttributeComponent()->DamageResistance += EqipmentDamageResistance;
+    Owner->GetAttributeComponent()->DamageBonus += EqipmentDamageBonus;
 
     UnSetUpdate();
 }
@@ -237,7 +237,7 @@ UItem *UEquipmentComponent::EquipToSlot(UItem *Item, EItemSlot SlotName)
 {
     // check in widgets EquipFromInventory if combat is busy before calling that
     auto owner = Cast<ACharacterCreature>(GetOwner());
-    if (owner && owner->CombatComponent->IsBusy())
+    if (owner && owner->GetCombatComponent()->IsBusy())
         return Item;
     auto &slot = Slot[(int32)SlotName];
 
@@ -356,8 +356,7 @@ bool UEquipmentComponent::SwapItems(EItemSlot lhs, EItemSlot rhs)
 {
     auto owner = Cast<ACharacterCreature>(GetOwner());
     check(owner != nullptr && "Equipment: No owner");
-    if(Slot[(int32)lhs].ItemClass == Slot[(int32)rhs].ItemClass &&
-        owner->CombatComponent->IsWeaponSwapAllowed(lhs, rhs))
+    if(Slot[(int32)lhs].ItemClass == Slot[(int32)rhs].ItemClass && owner->GetCombatComponent()->IsWeaponSwapAllowed(lhs, rhs))
     {
         auto ownerMesh = owner->GetMesh();
 

@@ -15,7 +15,7 @@ ACharacterPlayer::ACharacterPlayer(const FObjectInitializer &ObjectInitializer)
     CameraComponent->SetRelativeLocation(FVector(-300.0f, 0.0f, 75.0f));
     GetMovementComponent()->OnSprintModeChanged.AddDynamic(this, &ACharacterPlayer::SetSprintCameraMode);
     OnCCStateChanged.AddDynamic(this, &ACharacterPlayer::ApplyCameraShakeForCCState);
-    CombatComponent->OnCombatStateChanged.AddDynamic(this, &ACharacterPlayer::UpdateDefaultCameraMode);
+    GetCombatComponent()->OnCombatStateChanged.AddDynamic(this, &ACharacterPlayer::UpdateDefaultCameraMode);
     CameraZoomStep = 70;
     LossOfBalanceShakeScale = 1.f;
     StunShakeScale = 1.5f;

@@ -128,7 +128,7 @@ void UHumanoidMovementComponent::CalculateMaxSpeeds(float SpeedModifier)
 
 float UHumanoidMovementComponent::GetSpeedModifier() const 
 {
-    const auto dexMod = UAttributeSetHelper::GetModifier(Character->AttributeComponent->Attributes, EAttributes::Dex);
+    const auto dexMod = UAttributeSetHelper::GetModifier(Character->GetAttributeComponent()->Attributes, EAttributes::Dex);
     return GetSigmoidValue(dexMod + WeightFactorBalanceMod * (-WeightFactor), WeightMod,
                         1.f - SpeedScale, 1.f + SpeedScale); // нормально
 }
@@ -227,9 +227,9 @@ bool UHumanoidMovementComponent::DoVault(const StartClimbData &LocationData, boo
            + LocationHorizOffset + MaxVaultLedgeSize);    // todo temp
 
     if (IsEnoughSpace(VaultAnimationStartLocation) == EClimbTraceResult::SuccessStand
-        && Character->AttributeComponent->Stamina->CurrentValue > 0)
+        && Character->GetAttributeComponent()->Stamina->CurrentValue > 0)
     {
-        Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Vault);
+        Character->GetAttributeComponent()->Stamina->Consume(StaminaCostValues.Vault);
         if (IsLow)
             //todo сделать на время выполнения анимации капсуле размер капсулы в присяде
             TransitionStart(VaultAnimationStartLocation, LocationData.Rotation,
@@ -275,13 +275,13 @@ bool UHumanoidMovementComponent::DoClimbLedge(const StartClimbData &LocationData
           -Character->GetDefaultHalfHeight() + GetCrouchedHalfHeight();
 
     // check for available space at the start position before anim
-    if (Character->AttributeComponent->Stamina->CurrentValue <= 0)
+    if (Character->GetAttributeComponent()->Stamina->CurrentValue <= 0)
         return false;
     switch (IsEnoughSpace(ClimbledgeAnimationStartLocation, ClimbledgeAnimationEndLocation))
     {
         case EClimbTraceResult::SuccessStand:
         {
-            Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Climb);
+            Character->GetAttributeComponent()->Stamina->Consume(StaminaCostValues.Climb);
             if (IsLow)
                 TransitionStart(ClimbledgeAnimationStartLocation, LocationData.Rotation,
                                 ClimbLedgeMontageLow, AnimTypes::Parkour,
@@ -294,7 +294,7 @@ bool UHumanoidMovementComponent::DoClimbLedge(const StartClimbData &LocationData
         }
         case EClimbTraceResult::SuccessCrouch:
         {
-            Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Climb);
+            Character->GetAttributeComponent()->Stamina->Consume(StaminaCostValues.Climb);
             //if(!IsCrouching())
             //bWantsToCrouch = true; // todo temp
             if (IsLow)
@@ -678,15 +678,15 @@ bool UHumanoidMovementComponent::CheckWallGeometry(const StartClimbData &Data)
 
 void UHumanoidMovementComponent::DoDodge(const EControlDirections& Direction)
 {
-    if (Character->AttributeComponent->Stamina->CurrentValue <= 0 || !(MoveAbilitiesCurrent & EMoveAbilities::CanDodge))
+    if (Character->GetAttributeComponent()->Stamina->CurrentValue <= 0 || !(MoveAbilitiesCurrent & EMoveAbilities::CanDodge))
         return;
     if (IsCrouching())
     {
         bWantsToCrouch = false;
         UnCrouch();
     }
-    Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Dodge);
-    Character->AttributeComponent->Stamina->BlockRegen();
+    Character->GetAttributeComponent()->Stamina->Consume(StaminaCostValues.Dodge);
+    Character->GetAttributeComponent()->Stamina->BlockRegen();
     EControlDirections dir = Direction;
     if(Direction == EControlDirections::Default)
         dir = EControlDirections::BackD;
@@ -827,7 +827,7 @@ void UHumanoidMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
                 bOrientRotationToMovement = true;
         }
         if (bWasJustJumping)
-            Character->AttributeComponent->Stamina->UnblockRegen();
+            Character->GetAttributeComponent()->Stamina->UnblockRegen();
         bWasJustJumping = false;
     }
     if (MovementMode == MOVE_Walking)
@@ -846,7 +846,7 @@ void UHumanoidMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
                 bOrientRotationToMovement = true;
         }
         if (bWasJustJumping)
-            Character->AttributeComponent->Stamina->UnblockRegen();
+            Character->GetAttributeComponent()->Stamina->UnblockRegen();
         bWasJustJumping = false;
     }
     if (prevMode == MOVE_Falling && MovementMode == MOVE_Walking)
@@ -861,7 +861,7 @@ void UHumanoidMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
         {
             if (GetWorld()->GetTimerManager().IsTimerActive(SprintConsumeTimer))
                 GetWorld()->GetTimerManager().ClearTimer(SprintConsumeTimer);
-            Character->AttributeComponent->Stamina->UnblockRegen();
+            Character->GetAttributeComponent()->Stamina->UnblockRegen();
             bIsSprinting = false;
             OnSprintModeChanged.Broadcast(false);
         }
@@ -869,7 +869,7 @@ void UHumanoidMovementComponent::OnMovementModeChanged(EMovementMode prevMode,
     if (prevMode == MOVE_Custom)
     {
         if(prevCustomMode == static_cast<int>(ECustomMovementMode::Dodge))
-            Character->AttributeComponent->Stamina->UnblockRegen();
+            Character->GetAttributeComponent()->Stamina->UnblockRegen();
     }
     if (prevMode != MovementMode)
         OnMoveModeChanged.Broadcast(prevMode, MovementMode);
@@ -882,7 +882,7 @@ float UHumanoidMovementComponent::GetMaxSpeed() const
 {
     float speedMod = 1.f;
     // странный алгоритм рассчета направления персонажа для уменьшения скорости бега в стороны и назад
-    if (Character->CombatComponent->WeaponDrawn())
+    if (Character->GetCombatComponent()->WeaponDrawn())
     {
         const auto velocity = Character->GetVelocity();
         const auto controlRot = Character->Controller->GetControlRotation();
@@ -907,7 +907,7 @@ float UHumanoidMovementComponent::GetMaxSpeed() const
             else if (!bWantToSprint && bIsRunning && WeightFactor <= 1)
                 return MaxRunSpeed * speedMod;
             else if (bWantToSprint
-                     && Character->AttributeComponent->Stamina->CurrentValue > 0
+                     && Character->GetAttributeComponent()->Stamina->CurrentValue > 0
                      && WeightFactor <= 1)
                 return MaxSprintSpeed;
             else if (WeightFactor <= 1)
@@ -934,7 +934,7 @@ void UHumanoidMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
     Super::PhysWalking(deltaTime, Iterations);
 
     if (bWantToSprint && Velocity.Size() > MaxWalkSpeedCrouched - 1.f && !IsCrouching()
-        && Character->AttributeComponent->Stamina->CurrentValue > 0
+        && Character->GetAttributeComponent()->Stamina->CurrentValue > 0
         && WeightFactor <= 1)
     {
         if (!bIsSprinting)
@@ -944,7 +944,7 @@ void UHumanoidMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
                 GetWorld()->GetTimerManager().SetTimer(
                   SprintConsumeTimer, this, &UHumanoidMovementComponent::OnSprintConsume,
                   SprintConsumeTime, true);
-            Character->AttributeComponent->Stamina->BlockRegen();
+            Character->GetAttributeComponent()->Stamina->BlockRegen();
             bIsSprinting = true;
             OnSprintModeChanged.Broadcast(true);
         }
@@ -955,7 +955,7 @@ void UHumanoidMovementComponent::PhysWalking(float deltaTime, int32 Iterations)
         {
             if (GetWorld()->GetTimerManager().IsTimerActive(SprintConsumeTimer))
                 GetWorld()->GetTimerManager().ClearTimer(SprintConsumeTimer);
-            Character->AttributeComponent->Stamina->UnblockRegen();
+            Character->GetAttributeComponent()->Stamina->UnblockRegen();
             bIsSprinting = false;
             OnSprintModeChanged.Broadcast(false);
         }
@@ -1057,8 +1057,8 @@ bool UHumanoidMovementComponent::FallDamageCheck()
     fallLocationHeight = 0; // reset location
     if (MinFallHeightThreshold < FallDistance)
     {
-        check(MinFallHeightThreshold != 0.f && "ApplyFallDamage: div by zero")
-        float damage = Character->AttributeComponent->Health->GetMaxValue();
+        check(MinFallHeightThreshold != 0.f && "ApplyFallDamage: div by zero") float damage =
+          Character->GetAttributeComponent()->Health->GetMaxValue();
         if (FallDistance < MaxfallHeightThreshold)
             damage *= (FallDistance - MinFallHeightThreshold) / MinFallHeightThreshold;
         damage *= FallDamageMod;
@@ -1121,7 +1121,7 @@ void UHumanoidMovementComponent::TransitionStart(UCurveVector *Curve, const ECon
         !AnimToPlay->IsValidSectionName(FTransitionSectionNames::End))
     {
         if(Type == AnimTypes::Dodge)
-            Character->AttributeComponent->Stamina->UnblockRegen();
+            Character->GetAttributeComponent()->Stamina->UnblockRegen();
         Character->Logger.Log(this, *FString::Printf(TEXT("TransitionStart error: bad animation to play")));
         return;
     }
@@ -1183,7 +1183,7 @@ void UHumanoidMovementComponent::TransitionProcess(float deltaTime)
         else
         {
             CurrentCurveTime += deltaTime;
-            const auto dexMod = UAttributeSetHelper::GetModifier(Character->AttributeComponent->Attributes, EAttributes::Dex);
+            const auto dexMod = UAttributeSetHelper::GetModifier(Character->GetAttributeComponent()->Attributes, EAttributes::Dex);
             const FVector posDelta = TransitionCurve->GetVectorValue(CurrentCurveTime);
             const bool locSweep = Character->SetActorLocation(TransitionStartPos + 
                 *TransitionDirection * (posDelta.X + dexMod * DodgeAbilityMod * CurrentCurveTime) + 
@@ -1255,7 +1255,7 @@ void UHumanoidMovementComponent::TickComponent(float DeltaTime, enum ELevelTick 
 
 void UHumanoidMovementComponent::OnSprintConsume()
 {
-    if (Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Sprint))
+    if (Character->GetAttributeComponent()->Stamina->Consume(StaminaCostValues.Sprint))
         GetWorld()->GetTimerManager().SetTimer(SprintConsumeTimer, this,
                                                &UHumanoidMovementComponent::OnSprintConsume,
                                                SprintConsumeTime, true);
@@ -1263,17 +1263,12 @@ void UHumanoidMovementComponent::OnSprintConsume()
 
 void UHumanoidMovementComponent::Update()
 {
-    const auto tumble = USkillHelper::GetValue(
-        Character->AttributeComponent->Skills, ESkill::Tumble);
-    const auto dexMod = UAttributeSetHelper::GetModifier(
-        Character->AttributeComponent->Attributes, EAttributes::Dex);
+    const auto tumble = USkillHelper::GetValue(Character->GetAttributeComponent()->Skills, ESkill::Tumble);
+    const auto dexMod = UAttributeSetHelper::GetModifier(Character->GetAttributeComponent()->Attributes, EAttributes::Dex);
     // более verbose способ получения модификатора
-    const auto tumbleMod = UAttributeSetHelper::GetModifier(
-        Character->AttributeComponent->Attributes, FSkillList::ModifierMap[(int)ESkill::Tumble]);
-    Character->Logger.Log(this, *FString::Printf(TEXT("skill val %d"),
-        USkillHelper::GetValue(Character->AttributeComponent->Skills, ESkill::Tumble)));
-    Character->Logger.Log(this, *FString::Printf(TEXT("skill mod %d"),
-        UAttributeSetHelper::GetModifier(Character->AttributeComponent->Attributes, FSkillList::ModifierMap[(int)ESkill::Tumble])));
+    const auto tumbleMod = UAttributeSetHelper::GetModifier(Character->GetAttributeComponent()->Attributes, FSkillList::ModifierMap[(int)ESkill::Tumble]);
+    Character->Logger.Log(this, *FString::Printf(TEXT("skill val %d"), USkillHelper::GetValue(Character->GetAttributeComponent()->Skills, ESkill::Tumble)));
+    Character->Logger.Log(this, *FString::Printf(TEXT("skill mod %d"), UAttributeSetHelper::GetModifier(Character->GetAttributeComponent()->Attributes, FSkillList::ModifierMap[(int)ESkill::Tumble])));
         // ловкость
 
         MinFallHeightThreshold = GetSigmoidValue(
@@ -1392,12 +1387,12 @@ bool UHumanoidMovementComponent::DoJump(bool bReplayingMoves)
         Character->Logger.Log(this, *FString::Printf(TEXT("blocked jump")));
         return false;
     }
-    if (Character->AttributeComponent->Stamina->CurrentValue <= 0)
+    if (Character->GetAttributeComponent()->Stamina->CurrentValue <= 0)
         return false;
     if (!Character->bWasJumping)
-        Character->AttributeComponent->Stamina->Consume(StaminaCostValues.Jump);
+        Character->GetAttributeComponent()->Stamina->Consume(StaminaCostValues.Jump);
     if (MovementMode != EMovementMode::MOVE_Falling)
-        Character->AttributeComponent->Stamina->BlockRegen();
+        Character->GetAttributeComponent()->Stamina->BlockRegen();
     if (bWasJumpingOff)
     {
         if (bOrientRotationToMovement)
@@ -1423,8 +1418,8 @@ float UHumanoidMovementComponent::GetWeightFactor() const
     const float eqMod     = 1.f;
     if (maxWeight < epsilon)
         return 0;
-    return (Character->InventoryComponent->CurrentWeight * invMod
-            + Character->EquipmentComponent->CurrentWeight * eqMod)
+    return (Character->GetInventoryComponent()->CurrentWeight * invMod
+            + Character->GetEquipmentComponent()->CurrentWeight * eqMod)
       / maxWeight;
 }
 
