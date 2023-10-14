@@ -27,6 +27,8 @@ const FName FInputKeyNames::CameraIn      = "Camera zoom in";
 const FName FInputKeyNames::CameraOut     = "Camera zoom out";
 const FName FInputKeyNames::Interact      = "Interact";
 const FName FInputKeyNames::OpenMainMenu  = "OpenMainMenu";
+const FName FInputKeyNames::OpenInventoryMenu = "OpenInventoryMenu";
+const FName FInputKeyNames::OpenAbilityManager = "OpenAbilityManager";
 const FName FInputKeyNames::OpenCharacterMenu = "OpenCharacterMenu";
 
 
@@ -86,7 +88,7 @@ void APlayerCharController::BeginPlay()
     PlayerRef = Cast<ACharacterPlayer>(GetPawn());
     check(Player != nullptr && "APlayerCharController: No pawn");
     CurrentGameplayState = EPawnGameplayState::InWorld;    // debug
-
+    PlayerWidgetTree     = NewObject<UWidgetTree>(this);
 }
 
 void APlayerCharController::Tick(float DeltaTime)
@@ -108,10 +110,7 @@ void APlayerCharController::SetupInputComponent()
           FInputKeyNames::Run, IE_Pressed, this, &APlayerCharController::RunAction).bConsumeInput = false;
         InputComponent->BindAction(
           FInputKeyNames::Sprint, IE_Pressed, this, &APlayerCharController::SprintAction).bConsumeInput = false;
-        InputComponent->BindAction(FInputKeyNames::Sprint,
-                                   IE_Released,
-                                   this,
-                                   &APlayerCharController::UnSprintAction).bConsumeInput = false;
+        InputComponent->BindAction(FInputKeyNames::Sprint, IE_Released, this, &APlayerCharController::UnSprintAction).bConsumeInput = false;
         InputComponent->BindAction(
           FInputKeyNames::Crouch, IE_Pressed, this, &APlayerCharController::CrouchAction).bConsumeInput = false;
         InputComponent->BindAction(
@@ -152,6 +151,10 @@ void APlayerCharController::SetupInputComponent()
             FInputKeyNames::OpenMainMenu, IE_Pressed, this, &APlayerCharController::OpenMainMenu).bConsumeInput = false;
         InputComponent->BindAction(
             FInputKeyNames::OpenCharacterMenu, IE_Pressed, this, &APlayerCharController::OpenCharacterMenu).bConsumeInput = false;
+        InputComponent->BindAction(
+            FInputKeyNames::OpenInventoryMenu, IE_Pressed, this, &APlayerCharController::OpenInventory).bConsumeInput = false;
+        InputComponent->BindAction(
+            FInputKeyNames::OpenAbilityManager, IE_Pressed, this, &APlayerCharController::OpenAbilityManager).bConsumeInput = false;
 
     }
 }
@@ -689,26 +692,84 @@ void APlayerCharController::OpenCharacterMenu()
     SetInputMode(UIMode);
 }
 
-void APlayerCharController::OpenMainMenu() 
+void APlayerCharController::OpenInventory() 
+{
+    UE_LOG(LogTemp, Warning, TEXT("Open Inventory Menu"));
+
+    if (CurrentGameplayState == EPawnGameplayState::InInventory)
+    {
+        return;
+    }
+
+    auto InventoryWidget = CreateWidget(PlayerRef->GetWorld(), InventoryWidgetClass, "InventoryWidget");
+    CurrentWidget = Cast<UCharacterWidgetInterface>(InventoryWidget);
+
+    if (InventoryWidget)
+    {
+        InventoryWidget->AddToViewport();
+        //InventoryWidget->SetKeyboardFocus();        
+
+        CurrentGameplayState = EPawnGameplayState::InInventory;
+        SetInputMode(UIMode);
+        SetShowMouseCursor(true);
+    }
+}
+
+void APlayerCharController::OpenAbilityManager()
+{
+    UE_LOG(LogTemp, Warning, TEXT("Open Ability Menu"));
+
+    if (CurrentGameplayState == EPawnGameplayState::InInventory)
+    {
+        return;
+    }
+
+    auto AbilityManagerWidget = CreateWidget(PlayerRef->GetWorld(), AbilityWidgetClass, "AbilityWidget");
+    CurrentWidget = Cast<UCharacterWidgetInterface>(AbilityManagerWidget);
+
+    if (AbilityManagerWidget)
+    {
+        AbilityManagerWidget->AddToViewport();
+        //AbilityManagerWidget->SetKeyboardFocus();
+        CurrentGameplayState = EPawnGameplayState::InInventory;
+        SetInputMode(UIMode);
+        SetShowMouseCursor(true);        
+    }
+}
+
+void APlayerCharController::OpenMainMenu()
 {
     UE_LOG(LogTemp, Warning, TEXT("Open Main Menu"));
 
-    if (CurrentGameplayState == EPawnGameplayState::InMenu)
+    if ((CurrentGameplayState == EPawnGameplayState::InInventory)
+    ||  (CurrentGameplayState == EPawnGameplayState::InMenu))
+    {        
+        if (CurrentWidget)
+        {
+            CurrentWidget->RemoveFromParent();
+            CurrentWidget = nullptr;
+        }
+            
         return;
+    }
 
-    CurrentGameplayState = EPawnGameplayState::InMenu;    
-    SetInputMode(UIMode);
-    SetShowMouseCursor(true);
-
-    auto MenuWidget = CreateWidget(PlayerRef->GetWorld(), MenuWidgetClass, "MainMenu");
+    auto MenuWidget = CreateWidget(PlayerRef->GetWorld(), MenuWidgetClass, FName("MainMenu"));
+    CurrentWidget = Cast<UCharacterWidgetInterface>(MenuWidget);
+    //auto MenuWidget = PlayerWidgetTree->ConstructWidget<UCharacterWidgetInterface>(MenuWidgetClass, FName("MainMenu"));
 
     if (MenuWidget)
+    {
         MenuWidget->AddToViewport();
+        //MenuWidget->SetKeyboardFocus();
+        CurrentGameplayState = EPawnGameplayState::InMenu;
+        SetInputMode(UIMode);
+        SetShowMouseCursor(true);
+    }
 }
 
 void APlayerCharController::ReturnToGameplay() 
 {    
-    UE_LOG(LogTemp, Warning, TEXT("Close Main Menu"));
+    UE_LOG(LogTemp, Warning, TEXT("Close Menu"));
     if (CurrentGameplayState == EPawnGameplayState::InWorld)
         return;
 
@@ -738,6 +799,8 @@ void APlayerCharController::OnPossess(APawn *pawn)
 
     if (CharacterHUD)
         CharacterHUD->AddToViewport();
+
+    ReturnToGameplay();
 }
 
 void APlayerCharController::OnUnPossess() 

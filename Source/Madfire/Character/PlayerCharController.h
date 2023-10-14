@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "CharacterPlayer.h"
-#include "Widgets/MenuWidgetInterface.h"
+#include "Widgets/CharacterWidgetInterface.h"
 #include "Widgets/HUDCharacter.h"
 
 #include "PlayerCharController.generated.h"
@@ -30,6 +30,8 @@ struct FInputKeyNames
     static const FName CameraOut;
     static const FName Interact;
     static const FName OpenMainMenu;
+    static const FName OpenInventoryMenu;
+    static const FName OpenAbilityManager;
     static const FName OpenCharacterMenu;
 };
 
@@ -106,7 +108,8 @@ class MADFIRE_API APlayerCharController : public APlayerController
 
     void OpenCharacterMenu();
     void OpenMainMenu();
-    
+    void OpenInventory();
+    void OpenAbilityManager();
 
     ACharacterPlayer *PlayerRef;
 
@@ -134,7 +137,15 @@ public:
     UHUDCharacter* CharacterHUD;
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-    TSubclassOf<UMenuWidgetInterface> MenuWidgetClass;
+    TSubclassOf<UCharacterWidgetInterface> MenuWidgetClass;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+    TSubclassOf<UCharacterWidgetInterface> InventoryWidgetClass;
+
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+    TSubclassOf<UCharacterWidgetInterface> AbilityWidgetClass;
+
+    UCharacterWidgetInterface *CurrentWidget;
 
     FInputModeUIOnly UIMode;
     FInputModeGameOnly GameMode;

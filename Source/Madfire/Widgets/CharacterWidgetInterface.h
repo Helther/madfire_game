@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "MenuWidgetInterface.generated.h"
+#include "CharacterWidgetInterface.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class MADFIRE_API UMenuWidgetInterface : public UUserWidget
+class UCharacterWidgetInterface : public UUserWidget
 {
 	GENERATED_BODY()
 
@@ -20,3 +20,5 @@ public:
 
 	
 };
+
+
