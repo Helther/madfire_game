@@ -313,6 +313,9 @@ public:
     // called when character reached ammo during reload
     void SpawnAttachAmmoActor();
     void AttachAmmoActorToWeapon();
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FAttackInfo AttackInfo;
 protected:
     void UpdateOwnerAnims(const UCombatStance* DefaultStance) override;
     virtual float CalculateAmmoInitialSpeed(UItemWeaponRanged* Weapon) const;
@@ -322,8 +325,7 @@ protected:
     UFUNCTION()
     void OnReloadEnded(UAnimMontage* AnimMontage, bool bInterrupted);
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FAttackInfo AttackInfo;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float ReloadStaminaCost = 10;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -336,11 +338,10 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     uint8 LoadAmmoCount = 1;
 
-    virtual EAttributes GetAnimRateAttribute() const;
+    virtual EAttributes GetAnimRateModifier() const;
 };
 
 
-// TODO finish shooting and aiming
 UCLASS(BlueprintType, Blueprintable)
 class UBowCombatStance : public URangeCombatStance
 {
@@ -348,6 +349,18 @@ class UBowCombatStance : public URangeCombatStance
 
 public:
     UBowCombatStance();
+
+    // set same as corresponding segment in attack montage for bow drawing
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UAnimSequence* BowDrawingAnim;
+    // time in seconds between stamina consume tick during draw
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float ChargeStaminaConsumeDelta;
+
+    float LastChargeTimeStaminaConsume;
+    float LastChargeTime;
+private:
+    float CalculateAmmoInitialSpeed(UItemWeaponRanged* Weapon) const override;
 };
 
 
@@ -359,5 +372,5 @@ class UCrossbowCombatStance : public URangeCombatStance
 public:
     UCrossbowCombatStance();
 
-    EAttributes GetAnimRateAttribute() const override;
+    EAttributes GetAnimRateModifier() const override;
 };

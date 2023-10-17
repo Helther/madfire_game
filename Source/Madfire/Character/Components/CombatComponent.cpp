@@ -21,6 +21,7 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitial
     ChamberThreshhold = 1.3f;
     MaxFacingAngle = 45.f;
     ShieldWeightDamageMod = 0.5f;
+    DrawTimeModFromTension = 1500.f;
     // end temp
 }
 
@@ -96,16 +97,16 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     auto currentState = CurrentCombatStance ? GetCombatFSM().currentState() : nullptr;
-    if (currentState && CurrentCombatStance && currentState->Id == ECombatState::Attack && AttackPressed)// check if charging
+    if (currentState && currentState->Id == ECombatState::Attack && AttackPressed)  // check if charging
     {
         if (currentState->Info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed))
         {
             currentState->Info.ChargeTime += DeltaTime;
-            // check if held attack for at least some time to start charging and has charge stage
-            if (currentState->Info.ChargeStage == -1 && currentState->Info.ChargeTime < ChargeStartTime)
-                return;
             if (CurrentCombatStance->IsMelee())
             {
+                // check if held attack for at least some time to start charging and has charge stage
+                if (currentState->Info.ChargeStage == -1 && currentState->Info.ChargeTime < ChargeStartTime)
+                    return;
                 auto meleeStance = Cast<UMeleeCombatStance>(CurrentCombatStance);
                 auto& currentCombo = meleeStance->ComboAttacks[meleeStance->GetComboCount()];
                 if (currentCombo.ChargeAttackStages.Num() == 0)
@@ -124,6 +125,23 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                         FOnMontageBlendingOutStarted callBack;
                         callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
                         Owner->StartAnimation(currentState->Info.AttackInfo->AttackMontage, callBack, AttackSpeed, currentState->Info.AttackInfo->AnimSectionName);
+                    }
+                }
+            }
+            else
+            {
+                auto stance = Cast<UBowCombatStance>(CurrentCombatStance);
+                if (stance && (currentState->Info.ChargeTime - stance->LastChargeTimeStaminaConsume >= stance->ChargeStaminaConsumeDelta))
+                {
+                    stance->LastChargeTimeStaminaConsume = currentState->Info.ChargeTime;
+                    if (!Owner->GetAttributeComponent()->Stamina->Consume(stance->AttackInfo.StaminaCost))
+                    {
+                        // draw cancelled
+                        currentState->Info.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, false);
+                        currentState->Info.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, true);
+                        FOnMontageBlendingOutStarted callBack;
+                        callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
+                        Owner->StartAnimation(stance->AttackInfo.AttackMontage, callBack, 1.f, FAnimSectionNames::Cancel);
                     }
                 }
             }
@@ -525,8 +543,15 @@ void UCombatComponent::OnAttack(bool Started)
         {
             auto& info = GetCombatFSM().state(ECombatState::Attack)->Info;
             if (info.CheckAnimInfo(ECombatStateAnimInfo::ChargeAllowed) && !AttackPressed)
-            {
-                // TODO check bow charging time and maybe fire
+            {  // check bow charging time and maybe fire
+                auto stance = Cast<URangeCombatStance>(CurrentCombatStance);
+                check(stance);
+                FOnMontageBlendingOutStarted callBack;
+                callBack.BindUObject(this, &UCombatComponent::OnAttackEnded);
+                if (info.ChargeTime < ChargeStartTime)  // fire if drew enough, cancel otherwise TODO calculate min charge time for different bows
+                    Owner->StartAnimation(stance->AttackInfo.AttackMontage, callBack, 1.f, FAnimSectionNames::Cancel);
+                else
+                    Owner->StartAnimation(stance->AttackInfo.AttackMontage, callBack, 1.f, FAnimSectionNames::End);
             }
         }
         else if (AttackPressed && !GetCombatFSM().isInState(ECombatState::Reload))
@@ -725,11 +750,11 @@ void UCombatComponent::OnParryEnded(UAnimMontage* animMontage, bool bInterrupted
 
 void UCombatComponent::OnAttackEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
-    if (GetCombatFSM().currentState()->Id != ECombatState::Attack)// interrupted
+    if (GetCombatFSM().currentState()->Id != ECombatState::Attack)  // interrupted
         return;
     auto& stateInfo = GetCombatFSM().state(ECombatState::Attack)->Info;
     if (stateInfo.CheckAnimInfo(ECombatStateAnimInfo::UserInterrupt))
-        stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, false);// continued combo
+        stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::UserInterrupt, false);  // continued combo
     else
     {
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::AnimEnded, true);

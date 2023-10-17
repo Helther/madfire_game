@@ -250,6 +250,8 @@ protected:
     float ChargeStartTime;
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float BlockStaminaRegenRateMod;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float DrawTimeModFromTension;
     // set of characters hit and with what weapon
     TSet<TPair<AActor*, UItemArms*>> CharactersHit;
     // works the same for ai controller, but without actually pressing buttons
