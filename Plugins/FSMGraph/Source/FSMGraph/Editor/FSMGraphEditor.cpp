@@ -94,6 +94,7 @@ void FSMGraphAssetEditor::InitGraphAssetEditor(const EToolkitMode::Type InMode, 
 	FGenericCommands::Register();
 	FGraphEditorCommands::Register();
 	BindToolkitCommands();
+	
 
 	TSharedRef<FTabManager::FLayout> Layout = FTabManager::NewLayout("LayoutName")
         ->AddArea
@@ -103,7 +104,8 @@ void FSMGraphAssetEditor::InitGraphAssetEditor(const EToolkitMode::Type InMode, 
 			->Split
 			(
 				FTabManager::NewStack()
-				->AddTab(GetToolbarTabId(), ETabState::OpenedTab)
+				//->AddTab(GetToolbarTabId(), ETabState::OpenedTab)
+				->AddTab(DetailsTabId, ETabState::OpenedTab)
 				->SetHideTabWell(true)
 				->SetSizeCoefficient(0.2f)
 			)
@@ -115,16 +117,16 @@ void FSMGraphAssetEditor::InitGraphAssetEditor(const EToolkitMode::Type InMode, 
 				->Split
 				(
 					FTabManager::NewStack()
-					->AddTab(DetailsTabId, ETabState::OpenedTab)
+					->AddTab(GraphTabId, ETabState::OpenedTab)
 					->SetHideTabWell(true)
-					->SetSizeCoefficient(0.15f)
+					->SetSizeCoefficient(0.85f)
 				)
 				->Split
 				(
 					FTabManager::NewStack()
-					->AddTab(GraphTabId, ETabState::OpenedTab)
+					->AddTab(DetailsTabId, ETabState::OpenedTab)
 					->SetHideTabWell(true)
-					->SetSizeCoefficient(0.85f)
+					->SetSizeCoefficient(0.15f)
 				)
 			)
 		);
@@ -238,6 +240,11 @@ TSharedRef<SDockTab> FSMGraphAssetEditor::HandleTabManagerSpawnTabGraph(const FS
 			EdGraphEditor.ToSharedRef()
 		];
 }
+/*
+TSharedRef<SDockTab> FSMGraphAssetEditor::HandleTabManagerSpawnTabGraphDetails(const FSpawnTabArgs &Args)
+{
+
+}*/
 
 //Delegates
 bool FSMGraphAssetEditor::CanSelectAllNodes()

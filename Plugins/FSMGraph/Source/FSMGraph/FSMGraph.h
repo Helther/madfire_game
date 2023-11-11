@@ -4,6 +4,9 @@
 #include "FSMGraph.generated.h"
 
 
+DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(bool, FSMCondition, class ACharacter*, Character, class UFSMGraph *, BaseParams);
+
+
 USTRUCT(BlueprintType)
 struct FSMLink
 {
@@ -13,7 +16,7 @@ struct FSMLink
     int32 LinkedStateID;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-    int32 ConditionDelegate;
+    FSMCondition ConditionDelegate;
 };
 
 USTRUCT(BlueprintType)
@@ -22,8 +25,10 @@ struct FSMState
     GENERATED_BODY()
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-    TMap<int32, int32> Links;
+    TArray<FSMLink> Links;
     
+    
+
     friend class UFSMGraph;
 };
 
@@ -36,9 +41,21 @@ public:
     UPROPERTY()
     UEdGraph *EdGraph;
 
-    UPROPERTY()
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     TArray<FSMState> TestData;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+    TMap<FName, FSMState> StatesMap;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+    FName InitStateName;
+
+    void AddState();
+
+
 
     UFUNCTION()
     void Modify() {}
 };
+
+

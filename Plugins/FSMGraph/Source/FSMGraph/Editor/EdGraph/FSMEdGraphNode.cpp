@@ -71,12 +71,12 @@ void UFSMEdGraphNode::AutowireNewNode(UEdGraphPin *FromPin)
     }
 }
 
-void UFSMEdGraphNode::SetAssetNode(UFSMGraph *graph, int32 index)
+void UFSMEdGraphNode::SetAssetNode(UFSMGraph *graph, FName index)
 {
-    AssetNode = TPair<UFSMGraph*,int32>(graph,index);
+    AssetNode = TPair<UFSMGraph*,FName>(graph,index);
 }
 
-TPair<UFSMGraph *, int32> UFSMEdGraphNode::GetAssetNode() const
+TPair<UFSMGraph *, FName> UFSMEdGraphNode::GetAssetNode() const
 {
     return AssetNode;
 }
@@ -115,11 +115,22 @@ TSharedPtr<SWidget> UFSMEdGraphNode::GetContentWidget()
     DetailsViewArgs.bLockable = false;
     DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
 
-    FPropertyEditorModule &PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
-    TSharedPtr<IDetailsView> View = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
-    //TSharedPtr<IStructureDetailsView> View = PropertyEditorModule.CreateStructureDetailView(DetailsViewArgs);
+    /** Camera Feed Info Details View */
+	FStructureDetailsViewArgs StructDetailsView;
     
-    return View;
+    FPropertyEditorModule &PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+    TSharedPtr<IDetailsView> DefaultView = PropertyEditorModule.CreateDetailView(DetailsViewArgs); 
+
+    UFSMGraph *graph = AssetNode.Get<0>();
+    auto name = AssetNode.Get<1>();
+    if(!graph)
+        return DefaultView;
+
+    auto &structinfo = graph->StatesMap[name];
+    TSharedRef<FStructOnScope> LensInfoStructOnScope = MakeShared<FStructOnScope>(FSMState::StaticStruct(), reinterpret_cast<uint8*>(&structinfo));
+    TSharedPtr<IStructureDetailsView> View = PropertyEditorModule.CreateStructureDetailView(DetailsViewArgs, StructDetailsView, LensInfoStructOnScope);
+    
+    return View->GetWidget();
 }
 
 void UFSMEdGraphNode::UpdateVisualNode()
