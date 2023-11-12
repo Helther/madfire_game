@@ -16,6 +16,6 @@ struct FSMEdGraphSchemaAction_NewNode : public FEdGraphSchemaAction
 
 	UEdGraphNode *PerformAction(class UEdGraph *ParentGraph, UEdGraphPin *FromPin, const FVector2D Location, bool bSelectedNewNode = true) override;
 
-	UEdGraphNode * CreateEditorNode(UEdGraph *ParentGraph, bool bSelectNewNode);
+	UEdGraphNode * CreateEditorNode(UEdGraph *ParentGraph, bool bSelectNewNode, FName NodeName);
 
 };

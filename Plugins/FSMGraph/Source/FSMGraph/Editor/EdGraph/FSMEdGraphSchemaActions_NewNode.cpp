@@ -18,9 +18,10 @@ UEdGraphNode *FSMEdGraphSchemaAction_NewNode::PerformAction(class UEdGraph *Pare
 	ParentGraph->Modify();
 
 	UFSMGraph *GraphAsset = CastChecked<UFSMGraph>(ParentGraph->GetOuter());
+	FName NodeName = GraphAsset->SpawnNode();
 	GraphAsset->Modify();
 
-	UEdGraphNode *EditorNode = CreateEditorNode(ParentGraph, bSelectNewNode);
+	UEdGraphNode *EditorNode = CreateEditorNode(ParentGraph, bSelectNewNode, NodeName);
 
 	EditorNode->AutowireNewNode(FromPin);
 	EditorNode->NodePosX = Location.X;
@@ -29,12 +30,12 @@ UEdGraphNode *FSMEdGraphSchemaAction_NewNode::PerformAction(class UEdGraph *Pare
 	return EditorNode;
 }
 
-UEdGraphNode *FSMEdGraphSchemaAction_NewNode::CreateEditorNode(UEdGraph *ParentGraph, bool bSelectNewNode)
+UEdGraphNode *FSMEdGraphSchemaAction_NewNode::CreateEditorNode(UEdGraph *ParentGraph, bool bSelectNewNode, FName NodeName)
 {
 	FGraphNodeCreator<UFSMEdGraphNode> Creator(*ParentGraph);
 
 	UFSMEdGraphNode *EdNode = Creator.CreateNode(bSelectNewNode);
-	//EdNode->SetAssetNode(AssetNode);
+	EdNode->SetAssetNode(NodeName);
 	Creator.Finalize();
 
 	return EdNode;

@@ -2,6 +2,7 @@
 #include "FSMGraph.h"
 #include "../SlateGraph/SFSMGraphNode.h"
 #include "IStructureDetailsView.h"
+#include "FSMEdGraph.h"
 
 UFSMEdGraphNode::UFSMEdGraphNode() 
 {
@@ -31,7 +32,7 @@ FText UFSMEdGraphNode::GetNodeTitle(ENodeTitleType::Type TitleType) const
     switch(TitleType)
     {
         case ENodeTitleType::Type::MenuTitle:
-            return FText::FromString("FUCK");
+            return FText::FromName(AssetNode);
         default:
             FText Title = GetEdNodeName();
             return Title;
@@ -71,12 +72,12 @@ void UFSMEdGraphNode::AutowireNewNode(UEdGraphPin *FromPin)
     }
 }
 
-void UFSMEdGraphNode::SetAssetNode(UFSMGraph *graph, FName index)
+void UFSMEdGraphNode::SetAssetNode(FName index)
 {
-    AssetNode = TPair<UFSMGraph*,FName>(graph,index);
+    AssetNode = index;
 }
 
-TPair<UFSMGraph *, FName> UFSMEdGraphNode::GetAssetNode() const
+FName UFSMEdGraphNode::GetAssetNode() const
 {
     return AssetNode;
 }
@@ -121,8 +122,8 @@ TSharedPtr<SWidget> UFSMEdGraphNode::GetContentWidget()
     FPropertyEditorModule &PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
     TSharedPtr<IDetailsView> DefaultView = PropertyEditorModule.CreateDetailView(DetailsViewArgs); 
 
-    UFSMGraph *graph = AssetNode.Get<0>();
-    auto name = AssetNode.Get<1>();
+    UFSMGraph *graph = Cast<UFSMEdGraph>(GetGraph())->GetGraphAsset();
+    auto name = AssetNode;
     if(!graph)
         return DefaultView;
 

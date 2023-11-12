@@ -50,12 +50,16 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
     FName InitStateName;
 
-    void AddState();
+    FName SpawnNode();
 
+    void AddState(FName &);
 
+    bool Validate(FName &);
 
     UFUNCTION()
     void Modify() {}
+
+
 };
 
 

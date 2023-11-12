@@ -26,8 +26,8 @@ public:
 	void AutowireNewNode(UEdGraphPin *FromPin) override;
 
 
-	void SetAssetNode(UFSMGraph *graph, FName index);
-	TPair<UFSMGraph *, FName> GetAssetNode() const;
+	void SetAssetNode(FName index);
+	FName GetAssetNode() const;
 
 
 	void PostCopyNode();
@@ -39,7 +39,7 @@ public:
 	void UpdateVisualNode();
 	void SaveNodesAsChildren(TArray<UEdGraphNode*> &Children);
 
-	TPair<UFSMGraph *, FName> AssetNode;
+	FName AssetNode;
 
 protected:
 	bool HasOutputPins();
