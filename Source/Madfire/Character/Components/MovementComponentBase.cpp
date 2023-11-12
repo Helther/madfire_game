@@ -1348,23 +1348,23 @@ void UHumanoidMovementComponent::Update()
     //Max Speed update
     CalculateMaxSpeeds(GetSpeedModifier());
 
-        Character->Logger.Log(this, *FString::Printf(TEXT("MinFallHeightThreshold %f"), MinFallHeightThreshold));
-        Character->Logger.Log(this, *FString::Printf(TEXT("MaxfallHeightThreshold %f"), MaxfallHeightThreshold));
-        Character->Logger.Log(this, *FString::Printf(TEXT("JumpWallZVelocity %f"), JumpWallZVelocity));
-        Character->Logger.Log(this, *FString::Printf(TEXT("JumpWallXYVelocity %f"), JumpWallXYVelocity));
-        Character->Logger.Log(this, *FString::Printf(TEXT("JumpZVelocity %f"), JumpZVelocity));
-        Character->Logger.Log(this, *FString::Printf(TEXT("AnimPlayRate %f"), AnimPlayRate));
-        Character->Logger.Log(this, *FString::Printf(TEXT("AirControl %f"), AirControl));
-        Character->Logger.Log(this, *FString::Printf(TEXT("BrakingDecelerationFalling %f"),
-            BrakingDecelerationFalling));
-        Character->Logger.Log(this, *FString::Printf(TEXT("FallingLateralFriction %f"), FallingLateralFriction));
-        Character->Logger.Log(this, *FString::Printf(TEXT("JumpMaxHoldTime %f"), Character->JumpMaxHoldTime));
-        Character->Logger.Log(this, *FString::Printf(TEXT("MaxAcceleration %f"), MaxAcceleration));
-        Character->Logger.Log(this, *FString::Printf(TEXT("BrakingDecelerationWalking %f"),
-            BrakingDecelerationWalking));
-        Character->Logger.Log(this, *FString::Printf(TEXT("BrakingFriction %f"), BrakingFriction));
+    Character->Logger.Log(this, *FString::Printf(TEXT("MinFallHeightThreshold %f"), MinFallHeightThreshold));
+    Character->Logger.Log(this, *FString::Printf(TEXT("MaxfallHeightThreshold %f"), MaxfallHeightThreshold));
+    Character->Logger.Log(this, *FString::Printf(TEXT("JumpWallZVelocity %f"), JumpWallZVelocity));
+    Character->Logger.Log(this, *FString::Printf(TEXT("JumpWallXYVelocity %f"), JumpWallXYVelocity));
+    Character->Logger.Log(this, *FString::Printf(TEXT("JumpZVelocity %f"), JumpZVelocity));
+    Character->Logger.Log(this, *FString::Printf(TEXT("AnimPlayRate %f"), AnimPlayRate));
+    Character->Logger.Log(this, *FString::Printf(TEXT("AirControl %f"), AirControl));
+    Character->Logger.Log(this, *FString::Printf(TEXT("BrakingDecelerationFalling %f"),
+        BrakingDecelerationFalling));
+    Character->Logger.Log(this, *FString::Printf(TEXT("FallingLateralFriction %f"), FallingLateralFriction));
+    Character->Logger.Log(this, *FString::Printf(TEXT("JumpMaxHoldTime %f"), Character->JumpMaxHoldTime));
+    Character->Logger.Log(this, *FString::Printf(TEXT("MaxAcceleration %f"), MaxAcceleration));
+    Character->Logger.Log(this, *FString::Printf(TEXT("BrakingDecelerationWalking %f"),
+        BrakingDecelerationWalking));
+    Character->Logger.Log(this, *FString::Printf(TEXT("BrakingFriction %f"), BrakingFriction));
 
-    UnSetUpdate();
+    SetUpdate(false);
 }
 
 void UHumanoidMovementComponent::Crouch(bool bClientSimulation)

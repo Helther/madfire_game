@@ -1,10 +1,12 @@
 ﻿#include "CharacterCreature.h"
 #include "CharacterAnimInstance.h"
+#include "Components/CharacterMeshComponent.h"
 
 
 ACharacterCreature::ACharacterCreature(const FObjectInitializer &ObjectInitializer) :
-    Super(ObjectInitializer.SetDefaultSubobjectClass<UHumanoidMovementComponent>(
-      ACharacter::CharacterMovementComponentName))
+    Super(ObjectInitializer
+        .SetDefaultSubobjectClass<UHumanoidMovementComponent>(ACharacter::CharacterMovementComponentName)
+        .SetDefaultSubobjectClass<UCharacterMeshComponent>(ACharacter::MeshComponentName))
 {
     PrimaryActorTick.bCanEverTick = true;
     CombatComponent = CreateDefaultSubobject<UCombatComponent>("CombatComponent");
@@ -42,34 +44,38 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const FDamageEvent &Dam
     const auto DamageType = DamageEvent.DamageTypeClass.GetDefaultObject();
     const auto DamageBase = Cast<UDamageBase>(DamageType);
     bool isAbsolute = Cast<UAbsoluteDamage>(DamageType) != nullptr;
-    auto forceType = static_cast<const FForceDamageEvent*>(&DamageEvent);// "I sense a great disturbance in it" TODO because there is a potential bug if it's not FForceDamageEvent
-    float force = forceType ? forceType->Force : 0.f;
+    float force = 0.f;
+    if (DamageEvent.IsOfType(FForceDamageEvent::ClassID))
+    { 
+        auto forceType = static_cast<const FForceDamageEvent*>(&DamageEvent);// "I sense a great disturbance in it" TODO because there is a potential bug if it's not FForceDamageEvent
+        force = forceType->Force;
+    }
     bool blocked = false;
     float balance;
     int32 strMod = UAttributeSetHelper::GetModifier(GetAttributeComponent()->Attributes, EAttributes::Str);
     int32 balanceSkill = USkillHelper::GetValue(GetAttributeComponent()->Skills, ESkill::Balance);
     Logger.Log(this, *FString::Printf(TEXT("take damage before block %f"), DamageAmount));
-    auto attackerChar = Cast<ACharacterCreature>(DamageCauser);
     // check if had shield and what kind
     auto shield = Cast<UItemWeapon>(CombatComponent->GetCurrentCombatStance()->GetArmsFromSlot(EArmsSlot::Shield));
     bool hasProperShield = shield != nullptr;
     // check actors directions
     bool isFacingAttacker = UCombatComponent::GetAngleBetweenAttackerAndDefender(DamageCauser, this) < CombatComponent->MaxFacingAngle;
     // check parry
-    auto attackerCombatStateInfo = attackerChar->CombatComponent->GetCombatFSM().currentState()->Info;
+    auto attackerChar = Cast<ACharacterCreature>(DamageCauser);
+    auto attackerCombatState = attackerChar ? attackerChar->CombatComponent->GetCombatFSM().currentState() : nullptr;
     auto characterCombatStateInfo = CombatComponent->GetCombatFSM().currentState()->Info;
-    if (hasProperShield && isFacingAttacker && attackerChar && (CombatComponent->GetCombatFSM().isInState(ECombatState::Parry)) &&
+    if (hasProperShield && isFacingAttacker && attackerChar && attackerCombatState && (CombatComponent->GetCombatFSM().isInState(ECombatState::Parry)) &&
         characterCombatStateInfo.CheckAnimInfo(ECombatStateAnimInfo::BlockOrParryActive) &&
-        attackerCombatStateInfo.CheckAnimInfo(ECombatStateAnimInfo::CanBeParried) &&
-        !attackerCombatStateInfo.AttackInfo->IsNotParriable)
+        attackerCombatState->Info.CheckAnimInfo(ECombatStateAnimInfo::CanBeParried) &&
+        !attackerCombatState->Info.AttackInfo->IsNotParriable)
     {
         attackerChar->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::WasParried);
-        return GetAttributeComponent()->Health->CurrentValue; 
+        return GetAttributeComponent()->Health->CurrentValue;
     }
     if (CombatComponent->GetCombatFSM().isInState(ECombatState::Block))
     {
-        bool attackisInterruptable = attackerChar && !attackerCombatStateInfo.AttackInfo->IsNotInterruptable;
-        bool attackisBlockable = attackerChar && !attackerCombatStateInfo.AttackInfo->IsNotBlockable;
+        bool attackisInterruptable = attackerChar && attackerCombatState && !attackerCombatState->Info.AttackInfo->IsNotInterruptable;
+        bool attackisBlockable = attackerChar && attackerCombatState && !attackerCombatState->Info.AttackInfo->IsNotBlockable;
         if (hasProperShield && isFacingAttacker && attackisBlockable)
         {
             balance = UCombatComponent::CalculateBalance(balanceSkill, strMod, shield->Weight);
@@ -123,6 +129,8 @@ void ACharacterCreature::Update(const FCharacterLevelInfo &levelInfo)
         InventoryComponent->Update();
     if (GetMovementComponent()->IsUpdateNeeded())
         GetMovementComponent()->Update();
+    if (GetMeshComponent()->IsUpdateNeeded())
+        GetMeshComponent()->Update();
     bool strChanged = UAttributeSetHelper::GetAttribute(levelInfo.Attributes, EAttributes::Str) != 0;
     bool acrobaticsChanged = USkillHelper::GetValue(levelInfo.SkillList, ESkill::Tumble) != 0;
     if (strChanged)
@@ -224,6 +232,11 @@ UHumanoidMovementComponent *ACharacterCreature::GetMovementComponent() const
     return Cast<UHumanoidMovementComponent>(ACharacter::GetMovementComponent());
 }
 
+UCharacterMeshComponent *ACharacterCreature::GetMeshComponent() const
+{
+    return Cast<UCharacterMeshComponent>(ACharacter::GetMesh());
+}
+
 void ACharacterCreature::DoLevelUp(const FCharacterLevelInfo &levelInfo)
 {
     GetAttributeComponent()->LevelUp(levelInfo);
@@ -231,7 +244,7 @@ void ACharacterCreature::DoLevelUp(const FCharacterLevelInfo &levelInfo)
     bool strChanged = UAttributeSetHelper::GetAttribute(levelInfo.Attributes, EAttributes::Str) != 0;
     bool acrobaticsChanged = USkillHelper::GetValue(levelInfo.SkillList, ESkill::Tumble) != 0;
     if (dexChanged || strChanged || acrobaticsChanged)
-        GetMovementComponent()->SetDirty();
+        GetMovementComponent()->SetUpdate(true);
     Update(levelInfo);
     // todo other stuff (combat, ability manager)
 }
@@ -284,8 +297,8 @@ void ACharacterCreature::BeginPlay()
     CCStateManager.Init(this);
     Logger.Init(this);
     // init components
-    GetAttributeComponent()->SetDirty();
-    GetMovementComponent()->SetDirty();
+    GetAttributeComponent()->SetUpdate();
+    GetMovementComponent()->SetUpdate(true);
     Update(FCharacterLevelInfo());
 }
 

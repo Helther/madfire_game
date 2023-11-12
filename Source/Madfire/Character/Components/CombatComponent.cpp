@@ -459,7 +459,7 @@ bool UCombatComponent::IsWeaponSwapAllowed(EItemSlot lhs, EItemSlot rhs) const
 void UCombatComponent::Update()
 {
     // TODO what?
-    UnSetUpdate();
+    SetUpdate(false);
 }
 
 void UCombatComponent::OnAttack(bool Started)

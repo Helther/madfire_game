@@ -91,6 +91,7 @@ private:
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCCStateChanged, unsigned int, NewState, unsigned int, NewSubState);
 
 
+class UCharacterMeshComponent;
 UCLASS()
 class MADFIRE_API ACharacterCreature : public ACharacterBase
 {
@@ -117,6 +118,7 @@ public:
     void InterruptAnimation(ECCState Source, int SubMode = 0);
 
     UHumanoidMovementComponent* GetMovementComponent() const override;
+    UCharacterMeshComponent* GetMeshComponent() const;
 
     UFUNCTION(BlueprintCallable, Category = "Character")
     void DoLevelUp(const FCharacterLevelInfo &levelInfo);

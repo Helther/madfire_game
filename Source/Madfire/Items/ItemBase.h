@@ -168,7 +168,7 @@ protected:
 };
 
 
-// Use if item has skeletal mesh when equipped
+// Use if item has skeletal mesh when equipped and when that mesh attaches itself to the character base mesh
 UCLASS(BlueprintType, Blueprintable)
 class AItemActorEquipment : public AItemActor
 {
@@ -180,6 +180,20 @@ public:
 
 protected:
     void InitSkeletalMesh();
+};
+
+// Use if when equipped item's mesh will be merged with base character mesh, as opposed to simply attaching itself to character model,
+// make sure that item equip actor has skeletal mesh with same skeleton as character mesh
+UCLASS(BlueprintType, Blueprintable)
+class AItemActorEquipmentMerge : public AItemActor
+{
+    GENERATED_BODY()
+public:
+    AItemActorEquipmentMerge();
+    AItemActorEquipmentMerge(const FObjectInitializer& ObjectInitializer);
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    USkeletalMesh* MergableItemMesh;
 };
 
 

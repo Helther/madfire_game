@@ -248,3 +248,14 @@ void AItemActorProjectile::AttachToHitActor(USceneComponent* ActorMesh, FVector 
     FAttachmentTransformRules rules(EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, false);
     AttachToComponent(ActorMesh, rules, AttachSocket);
 }
+
+AItemActorEquipmentMerge::AItemActorEquipmentMerge()
+{
+    SetRootComponent(ItemCollision);
+}
+
+AItemActorEquipmentMerge::AItemActorEquipmentMerge(const FObjectInitializer& ObjectInitializer)
+    : Super(ObjectInitializer)
+{
+    SetRootComponent(ItemCollision);
+}

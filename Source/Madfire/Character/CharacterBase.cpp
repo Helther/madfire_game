@@ -49,7 +49,7 @@ void ACharacterBase::BeginPlay()
 
     Logger.Init(this);
     // init components
-    AttributeComponent->SetDirty();
+    AttributeComponent->SetUpdate(true);
     Update(FCharacterLevelInfo());
 }
 
@@ -68,10 +68,13 @@ int32 ACharacterBase::AddMaterial()
 
 void ACharacterBase::SetupItemActorCollision(AItemActor* InActor, bool Enable)
 {
-    InActor->ItemMesh->SetSimulatePhysics(Enable);
-    InActor->ItemMesh->SetCollisionEnabled(Enable ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::QueryOnly);
-    InActor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
-    InActor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
+    if (InActor->ItemMesh)
+    {
+        InActor->ItemMesh->SetSimulatePhysics(Enable);
+        InActor->ItemMesh->SetCollisionEnabled(Enable ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::QueryOnly);
+        InActor->ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
+        InActor->ItemCollision->SetCollisionResponseToChannel(EInteractChannel, Enable ? ECollisionResponse::ECR_Block : ECollisionResponse::ECR_Ignore);
+    }
     if (!Enable)
         InActor->ItemCollision->SetGenerateOverlapEvents(false);
 }

@@ -30,80 +30,6 @@ struct FEquipmentSlotNames
 };
 
 
-USTRUCT(BlueprintType)
-struct FSkelMeshMergeSectionMapping_BP
-{
-    GENERATED_BODY()
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh Merge Params")
-    TArray<int32> SectionIDs;
-};
-
-USTRUCT(BlueprintType)
-struct FSkelMeshMergeUVTransform
-{
-    GENERATED_BODY()
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh Merge Params")
-    TArray<FTransform> UVTransform;
-};
-
-USTRUCT(BlueprintType)
-struct FSkelMeshMergeUVTransformMap
-{
-    GENERATED_BODY()
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Mesh Merge Params")
-    TArray<FSkelMeshMergeUVTransform> UVTransformPerMesh;
-};
-
-
-USTRUCT(BlueprintType)
-struct FSkeletalMeshMergeParams
-{
-    GENERATED_BODY()
-
-    FSkeletalMeshMergeParams() :
-        StripTopLODS(0),
-        bNeedsCpuAccess(0),
-        bSkeletonBefore(0),
-        Skeleton(nullptr)
-    {}
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<FSkelMeshMergeSectionMapping_BP> MeshSectionMappings;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<FSkelMeshMergeUVTransformMap> UVTransformsPerMesh;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<USkeletalMesh*> MeshesToMerge;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 StripTopLODS;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    uint32 bNeedsCpuAccess:1;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    uint32 bSkeletonBefore:1;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    class USkeleton *Skeleton;
-};
-
-UCLASS()
-class UMeshMergeFunctionLibrary : public UBlueprintFunctionLibrary
-{
-    GENERATED_BODY()
-public:
-    UFUNCTION(BlueprintCallable, Category = "Mesh Merge", meta = (UnsafeDuringActorConstruction = "true"))
-    static class USkeletalMesh *MergeMeshes(const FSkeletalMeshMergeParams &Params);
-};
-
-
-
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FEquipmentSlotEvent, class UEquipmentComponent*, Equipment, EItemSlot, Slot);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEquipmentSwapEvent, class UEquipmentComponent*, Equipment, EItemSlot, SlotL, EItemSlot, SlotR);
 
@@ -186,14 +112,14 @@ public:
     FEquipmentSlot Slot[(int32)EItemSlot::Max];
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
     TArray<FUnarmedWeapon> DefaultArmaments;
+    //UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment Component")
+    //TArray<USkeletalMesh*> EquippedMeshes;
 
     //Equipment Update
-    UFUNCTION(BlueprintCallable, Category = "Component Component")
+    UFUNCTION(BlueprintCallable, Category = "Component Update")
     void Update();
     UFUNCTION(BlueprintCallable, Category = "Component Update")
-    void SetUpdate() { IsDirty = true; }
-    UFUNCTION(BlueprintCallable, Category = "Component Update")
-    void UnSetUpdate() { IsDirty = false; }
+    void SetUpdate(bool Update) { IsDirty = Update; }
     UFUNCTION(BlueprintCallable, Category = "Component Update")
     bool IsUpdateNeeded() { return IsDirty; }
 

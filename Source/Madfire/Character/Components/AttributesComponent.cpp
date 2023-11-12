@@ -34,7 +34,7 @@ void UAttributeComponent::LevelUp(const FCharacterLevelInfo &LevelInfo)
     FreeAttributePoints += 1;
     FreeSkillPoints += 10+IntMod; //TODO: Number  To Variable
     LevelList.Add(LevelInfo);        
-    SetDirty();
+    SetUpdate(true);
 }
 
 float UAttributeComponent::TakeDamage(float DamageAmount, UDamageType *DamageType, AActor *DamageCauser)

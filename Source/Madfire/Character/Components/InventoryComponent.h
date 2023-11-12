@@ -106,9 +106,7 @@ public:
     void Update();
 
 	UFUNCTION(BlueprintCallable, Category = "Component Update")
-    void SetUpdate() { IsDirty = true; }
-	UFUNCTION(BlueprintCallable, Category = "Component Update")
-    void UnSetUpdate() { IsDirty = false; }
+    void SetUpdate(bool Update) { IsDirty = Update; }
 	UFUNCTION(BlueprintCallable, Category = "Component Update")
     bool IsUpdateNeeded() { return IsDirty; }
 

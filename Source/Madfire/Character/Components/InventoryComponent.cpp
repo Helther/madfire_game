@@ -414,7 +414,7 @@ void UInventoryComponent::Update()
 {
     // todo finish
     CalculateWeight();
-    UnSetUpdate();
+    SetUpdate(false);
 }
 
 void UInventoryComponent::CalculateWeight()
