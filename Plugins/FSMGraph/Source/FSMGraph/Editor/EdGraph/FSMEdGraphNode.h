@@ -25,10 +25,8 @@ public:
 	void DestroyNode() override;
 	void AutowireNewNode(UEdGraphPin *FromPin) override;
 
-
 	void SetAssetNode(FName index);
 	FName GetAssetNode() const;
-
 
 	void PostCopyNode();
 	bool RenameUniqueNode(const FText &NewName);
@@ -39,7 +37,16 @@ public:
 	void UpdateVisualNode();
 	void SaveNodesAsChildren(TArray<UEdGraphNode*> &Children);
 
+	FName RealName;
+
+	UPROPERTY(EditDefaultsOnly)
 	FName AssetNode;
+
+	UPROPERTY(EditDefaultsOnly)
+	bool IsInit;
+
+	void PostEditChangeProperty(struct FPropertyChangedEvent &e);
+
 
 protected:
 	bool HasOutputPins();

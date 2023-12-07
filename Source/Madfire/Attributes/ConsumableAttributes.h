@@ -34,6 +34,10 @@ struct FAttributeData
     float CurrentValue; //< Edit through the Consume(float)
 
     float GetMaxValue() const {return BaseValue + BonusValue;}
+    float GetBonusValue() const { return BonusValue; }
+    float GetBaseValue() const { return BaseValue; }
+    float GetCurrentValue() const { return BaseValue; }
+
 
     bool Consume(float Amount)
     {
@@ -168,7 +172,6 @@ public:
             CurrentValue = result;
         return true;
     }
-
 
 
     void SetWorld(UWorld *InWorld) { World = InWorld;}

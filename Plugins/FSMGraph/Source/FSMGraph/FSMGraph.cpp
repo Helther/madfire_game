@@ -4,24 +4,34 @@
 FName UFSMGraph::SpawnNode()
 {
 	//MakeUniqueObjectName()
-	int UniqueNameIDCounter = 0;
+	int UniqueNameIDCounter = 0;	
 	FName NodeName;
 	do
     {
-		 NodeName = "State" + UniqueNameIDCounter++;
+		 FString StringName = "State" + FString::FromInt(UniqueNameIDCounter++);
+		 NodeName = FName(*StringName);
     }
 	while(!Validate(NodeName)); 
 	
 	FSMState state;
-	StatesMap[NodeName] = state;
+	StatesMap.Add(NodeName, state);
 
 	return NodeName;
 }
 
-void UFSMGraph::AddState(FName &NodeName)
+FSMState &UFSMGraph::GetState(FName &NodeName)
 {
-	FSMState state;
-	StatesMap[NodeName] = state;
+	return StatesMap[NodeName];
+}
+
+void UFSMGraph::AddState(FName &NodeName, FSMState &state)
+{
+	StatesMap.Add(NodeName, state);
+}
+
+void UFSMGraph::RemoveState(FName &StateName) 
+{
+	StatesMap.Remove(StateName);
 }
 
 bool UFSMGraph::Validate(FName &NodeName)

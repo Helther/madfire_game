@@ -29,10 +29,11 @@ void UFSMEdGraphNode::AllocateDefaultPins()
 
 FText UFSMEdGraphNode::GetNodeTitle(ENodeTitleType::Type TitleType) const
 {
+    return FText::FromString("State Node");
     switch(TitleType)
     {
         case ENodeTitleType::Type::MenuTitle:
-            return FText::FromName(AssetNode);
+            return FText::FromString("State Node");
         default:
             FText Title = GetEdNodeName();
             return Title;
@@ -74,12 +75,12 @@ void UFSMEdGraphNode::AutowireNewNode(UEdGraphPin *FromPin)
 
 void UFSMEdGraphNode::SetAssetNode(FName index)
 {
-    AssetNode = index;
+    AssetNode = RealName = index;
 }
 
 FName UFSMEdGraphNode::GetAssetNode() const
 {
-    return AssetNode;
+    return RealName;
 }
 
 void UFSMEdGraphNode::PostCopyNode()
@@ -117,21 +118,39 @@ TSharedPtr<SWidget> UFSMEdGraphNode::GetContentWidget()
     DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
 
     /** Camera Feed Info Details View */
-	FStructureDetailsViewArgs StructDetailsView;
+	//FStructureDetailsViewArgs StructDetailsView;
     
     FPropertyEditorModule &PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
     TSharedPtr<IDetailsView> DefaultView = PropertyEditorModule.CreateDetailView(DetailsViewArgs); 
+    DefaultView->SetObject(this);
 
-    UFSMGraph *graph = Cast<UFSMEdGraph>(GetGraph())->GetGraphAsset();
-    auto name = AssetNode;
-    if(!graph)
-        return DefaultView;
+    return DefaultView;
+}
 
-    auto &structinfo = graph->StatesMap[name];
-    TSharedRef<FStructOnScope> LensInfoStructOnScope = MakeShared<FStructOnScope>(FSMState::StaticStruct(), reinterpret_cast<uint8*>(&structinfo));
-    TSharedPtr<IStructureDetailsView> View = PropertyEditorModule.CreateStructureDetailView(DetailsViewArgs, StructDetailsView, LensInfoStructOnScope);
-    
-    return View->GetWidget();
+void UFSMEdGraphNode::PostEditChangeProperty(struct FPropertyChangedEvent &e)
+{
+    Super::PostEditChangeProperty(e);
+
+    auto graph = CastChecked<UFSMEdGraph>(GetGraph())->GetGraphAsset();
+
+    FName PropertyName = (e.Property != nullptr) ? e.Property->GetFName() : NAME_None;
+    if(PropertyName == GET_MEMBER_NAME_CHECKED(UFSMEdGraphNode, AssetNode))
+    {
+        if(!graph->Validate(AssetNode))
+            AssetNode = RealName;
+        else
+        {
+            auto state = graph->GetState(RealName);
+            graph->RemoveState(RealName);
+            RealName = AssetNode;
+            graph->AddState(RealName, state);
+        }   
+        //Check AssetNode is valid
+    }
+    else if(PropertyName == GET_MEMBER_NAME_CHECKED(UFSMEdGraphNode, IsInit))
+    {
+        //Check is One is Valid
+    }
 }
 
 void UFSMEdGraphNode::UpdateVisualNode()

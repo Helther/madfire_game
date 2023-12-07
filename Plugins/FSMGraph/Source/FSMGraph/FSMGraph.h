@@ -13,9 +13,9 @@ struct FSMLink
     GENERATED_BODY()
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-    int32 LinkedStateID;
+    FName LinkedStateID;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
     FSMCondition ConditionDelegate;
 };
 
@@ -24,7 +24,7 @@ struct FSMState
 {
     GENERATED_BODY()
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TArray<FSMLink> Links;
     
     
@@ -41,18 +41,20 @@ public:
     UPROPERTY()
     UEdGraph *EdGraph;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TArray<FSMState> TestData;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TMap<FName, FSMState> StatesMap;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FName InitStateName;
 
     FName SpawnNode();
 
-    void AddState(FName &);
+    FSMState &GetState(FName &);
+    void AddState(FName &, FSMState &);
+    void RemoveState(FName &);
 
     bool Validate(FName &);
 

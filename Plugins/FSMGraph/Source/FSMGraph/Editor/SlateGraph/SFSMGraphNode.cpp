@@ -49,12 +49,12 @@ void SFSMGraphNode::UpdateGraphNode()
 						[
 							SAssignNew(LeftNodeBox, SVerticalBox)
 						]
-						+ SVerticalBox::Slot()
+						/*+ SVerticalBox::Slot()
 						.HAlign(HAlign_Center)
 						.AutoHeight()
 						[
 							SAssignNew(NodeHeader, STextBlock)
-						]
+						]*/
 						+ SVerticalBox::Slot()
 						.HAlign(HAlign_Center)
 						.AutoHeight()
@@ -167,7 +167,7 @@ void SFSMGraphNode::CreateContent()
 
 void SFSMGraphNode::CreateHeader()
 {	
-	NodeHeader.Get()->SetText(GraphNode->GetNodeTitle(ENodeTitleType::MenuTitle));
+	/*NodeHeader.Get()->SetText(GraphNode->GetNodeTitle(ENodeTitleType::MenuTitle));
 	
 	auto EdNode = Cast<UFSMEdGraphNode>(GraphNode);
 
@@ -176,7 +176,8 @@ void SFSMGraphNode::CreateHeader()
     else
     {
 		//TODO: Error
-	}
+	}*/
+	FAnimNotifyEvent event;
 }
 
 
