@@ -55,8 +55,15 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const FDamageEvent &Dam
     int32 strMod = UAttributeSetHelper::GetModifier(GetAttributeComponent()->Attributes, EAttributes::Str);
     int32 balanceSkill = USkillHelper::GetValue(GetAttributeComponent()->Skills, ESkill::Balance);
     Logger.Log(this, *FString::Printf(TEXT("take damage before block %f"), DamageAmount));
+    auto currentStance = CombatComponent->GetCurrentCombatStance();
+    // add spread if has ragned weapon equipped
+    if (currentStance && !currentStance->IsMelee())
+    {
+        if (auto rangedWeapon = Cast<UItemWeaponRanged>(currentStance->GetArmsFromSlot(EArmsSlot::MainHand)))
+            rangedWeapon->AddSpread();
+    }
     // check if had shield and what kind
-    auto shield = Cast<UItemWeapon>(CombatComponent->GetCurrentCombatStance()->GetArmsFromSlot(EArmsSlot::Shield));
+    auto shield = currentStance ? Cast<UItemWeapon>(currentStance->GetArmsFromSlot(EArmsSlot::Shield)) : nullptr;
     bool hasProperShield = shield != nullptr;
     // check actors directions
     bool isFacingAttacker = UCombatComponent::GetAngleBetweenAttackerAndDefender(DamageCauser, this) < CombatComponent->MaxFacingAngle;

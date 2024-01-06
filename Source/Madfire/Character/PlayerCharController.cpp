@@ -339,6 +339,8 @@ void APlayerCharController::CameraPitch(float AxisValue)
         case (EPawnGameplayState::InWorld):
         case (EPawnGameplayState::InMountMode): {
             AddPitchInput(AxisValue * GetWorld()->GetDeltaSeconds());
+            if (!FMath::IsNearlyEqual(AxisValue, 0, KINDA_SMALL_NUMBER))
+                PlayerRef->GetCombatComponent()->AddRangedWeaponSpread();
         }
         default:
             return;
@@ -352,6 +354,8 @@ void APlayerCharController::CameraYaw(float AxisValue)
         case (EPawnGameplayState::InWorld):
         case (EPawnGameplayState::InMountMode): {
             AddYawInput(AxisValue * GetWorld()->GetDeltaSeconds());
+            if (!FMath::IsNearlyEqual(AxisValue, 0, KINDA_SMALL_NUMBER))
+                PlayerRef->GetCombatComponent()->AddRangedWeaponSpread();
         }
         default:
             return;

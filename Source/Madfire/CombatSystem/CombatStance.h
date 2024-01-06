@@ -164,6 +164,7 @@ public:
     // check that weapons setup correctly
     virtual bool IsStanceValid(const ACharacterCreature* NewOwner) const { return true; }
     // custom blueprint specific check
+    UFUNCTION(BlueprintCallable)
     virtual bool IsMelee() const { return true; }
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Stance Interface")
     bool CheckRequirement(ACharacterCreature* character) const;
@@ -350,6 +351,9 @@ class UBowCombatStance : public URangeCombatStance
 public:
     UBowCombatStance();
 
+    UFUNCTION(BlueprintCallable)
+    float GetDrawRatio() const;
+
     // set same as corresponding segment in attack montage for bow drawing
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     UAnimSequence* BowDrawingAnim;
@@ -360,6 +364,8 @@ public:
     float LastChargeTimeStaminaConsume;
     float LastChargeTime;
 private:
+    float GetMaxDrawTime() const;
+    float GetLastDrawRatio() const;
     float CalculateAmmoInitialSpeed(UItemWeaponRanged* Weapon) const override;
 };
 

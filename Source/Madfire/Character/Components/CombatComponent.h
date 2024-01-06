@@ -59,6 +59,9 @@ public:
 
     UFUNCTION(BlueprintCallable)
     bool WeaponDrawn() const { return IsWeaponDrawn; }
+    // returns nullptr if not
+    UFUNCTION(BlueprintCallable)
+    UBowCombatStance* IsDrawingBow() const;
 
     // Anim CallBacks
     UFUNCTION()
@@ -91,13 +94,25 @@ public:
     bool UpdateCombatFSM();
     // checks if can combo further and starts the animation
     void StartNextComboAttack(bool IsPauseAttack);
+//================================== Ranged =================================//
+    // returns nullptr if no such weapon equipped
+    UFUNCTION(BlueprintCallable, Category = "Ranged Combat")
+    UItemWeaponRanged* GetEquippedRangedWeapon() const;
+    // Add Aim Spread due to movement, can be added at when CameraMoveSpreadAddTimeOut seconds past
+    UFUNCTION(BlueprintCallable, Category = "Ranged Combat")
+    void AddRangedWeaponSpread();
+    // in seconds
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ranged Combat", Meta = (UIMin = "0.0", ClampMin = "0.0"))
+    double CameraMoveSpreadAddTimeOut;
 
 //================================= Stance Logic ================================//
     // Infers what stance should be from current equipment (if stance is specified in the argument, then then check it before/instead looking in StanceStack)
     // WeaponChanged is true then equipment was updated
     UFUNCTION(BlueprintCallable)
     FStanceResolveResult ResolveNewStance(UCombatStance* NewStance = nullptr, bool WeaponChanged = false);
+    UFUNCTION(BlueprintCallable)
     FORCEINLINE bool HasCombatStance() const { return CurrentCombatStance != nullptr; }
+    UFUNCTION(BlueprintCallable)
     FORCEINLINE UCombatStance *GetCurrentCombatStance() const { return CurrentCombatStance; }
     UFUNCTION(BlueprintCallable)
     void ToggleHandMode();

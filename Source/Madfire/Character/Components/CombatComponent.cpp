@@ -22,6 +22,7 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitial
     MaxFacingAngle = 45.f;
     ShieldWeightDamageMod = 0.5f;
     DrawTimeModFromTension = 1500.f;
+    CameraMoveSpreadAddTimeOut = 1.0;
     // end temp
 }
 
@@ -96,6 +97,9 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                                      FActorComponentTickFunction *ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+    // update spread if has ragned weapon equipped
+    if (auto rangedWeapon = GetEquippedRangedWeapon())
+        rangedWeapon->Tick(DeltaTime, Owner);
     auto currentState = CurrentCombatStance ? GetCombatFSM().currentState() : nullptr;
     if (currentState && currentState->Id == ECombatState::Attack && AttackPressed)  // check if charging
     {
@@ -667,6 +671,23 @@ void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
     }
 }
 
+UItemWeaponRanged* UCombatComponent::GetEquippedRangedWeapon() const
+{
+    if (HasCombatStance() && !GetCurrentCombatStance()->IsMelee())
+        if (auto RangedWeapon = Cast<UItemWeaponRanged>(GetCurrentCombatStance()->GetArmsFromSlot(EArmsSlot::MainHand)))
+            return RangedWeapon;
+    return nullptr;
+}
+
+void UCombatComponent::AddRangedWeaponSpread()
+{
+    if (auto Weapon = GetEquippedRangedWeapon())
+    {
+        if (GetWorld()->TimeSince(Weapon->GetLastAddSpreadTime()) > CameraMoveSpreadAddTimeOut)
+            Weapon->AddSpread();
+    }
+}
+
 void UCombatComponent::ToggleHandMode()
 {
     if (IsBusy() || (HasCombatStance() && !CurrentCombatStance->IsMelee()))
@@ -712,6 +733,13 @@ float UCombatComponent::GetAngleBetweenActors(const AActor *First, const AActor 
     const FVector secondV = FRotator(0, Second->GetActorRotation().Yaw, 0).Vector();
     float direction = FVector::DotProduct(firstV, secondV);
     return FMath::Abs(acos(direction) * 180.f / PI - 180.f);
+}
+
+UBowCombatStance* UCombatComponent::IsDrawingBow() const
+{
+    if (HasCombatStance() && GetCombatFSM().isInState(ECombatState::Attack))
+        return Cast<UBowCombatStance>(GetCurrentCombatStance());
+    return nullptr;
 }
 
 void UCombatComponent::OnWeaponSwitchEnded(UAnimMontage* animMontage, bool bInterrupted)
