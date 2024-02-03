@@ -7,8 +7,10 @@
 #include "FSMEdGraphEdge.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
-
-
+#include "Framework/Commands/GenericCommands.h"
+#include "GraphEditorActions.h"
+#include "ToolMenuSection.h"
+#include "ToolMenus.h"
 
 /*
 void UFSMEdGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder &ContextMenuBuilder) const
@@ -117,12 +119,11 @@ UEdGraphNode *FFSMGraphSchemaAction_NewComment::PerformAction(UEdGraph *ParentGr
 
     return FEdGraphSchemaAction_NewNode::SpawnNodeFromTemplate<UEdGraphNode_Comment>(ParentGraph, CommentTemplate, SpawnLocation);
 }
-
-
+/*
 void UFSMEdGraphSchema::CreateDefaultNodesForGraph(UEdGraph &Graph) const 
 {
 
-}
+}*/
 
 const FPinConnectionResponse UFSMEdGraphSchema::CanCreateConnection(const UEdGraphPin *A, const UEdGraphPin *B) const
 {
@@ -222,7 +223,21 @@ bool UFSMEdGraphSchema::CreateAutomaticConversionNodeAndConnections(UEdGraphPin 
 
 bool UFSMEdGraphSchema::TryRelinkConnectionTarget(UEdGraphPin *SourcePin, UEdGraphPin *OldTargetPin, UEdGraphPin *NewTargetPin, const TArray<UEdGraphNode *> &InSelectedGraphNodes) const
 {
-    return false;
+	const FPinConnectionResponse Response = CanCreateConnection(SourcePin, NewTargetPin);
+
+	if(Response.Response == ECanCreateConnectionResponse::CONNECT_RESPONSE_DISALLOW)
+		return false;
+
+	UFSMEdGraphNode *OldNode = Cast<UFSMEdGraphNode>(OldTargetPin->GetOwningNode());
+	UFSMEdGraphNode *NewNode = Cast<UFSMEdGraphNode>(NewTargetPin->GetOwningNode());
+
+	if(OldNode == nullptr || OldNode->GetInputPin() == nullptr || OldNode->GetOutputPin() == nullptr ||
+	   NewNode == nullptr || NewNode->GetInputPin() == nullptr || NewNode->GetOutputPin() == nullptr)
+		return false;
+
+	//const TArray<UFSMEdGraphNode*> TransitionNodes = UFSMEdGraphEdge::GetListTran
+
+    return true;
 }
 
 bool UFSMEdGraphSchema::IsConnectionRelinkingAllowed(UEdGraphPin *InPin) const
@@ -243,12 +258,12 @@ const FPinConnectionResponse  UFSMEdGraphSchema::CanRelinkConnectionToPin(const 
 
     return Response;
 }
-/*
+
 FConnectionDrawingPolicy *UFSMEdGraphSchema::CreateConnectionDrawingPolicy(int32 InBackLayerID, int32 InFrontLayerID, float InZoomFactor, const FSlateRect &InClippingRect, class FSlateWindowElementList &InDrawElements, class UEdGraph *InGraphObj) const
 {
 	return new FSMConnectionDrawingPolicy(InBackLayerID, InFrontLayerID, InZoomFactor, InClippingRect, InDrawElements, InGraphObj);
-}*/
-
+}
+/*
 void UFSMEdGraphSchema::BreakNodeLinks(UEdGraphNode &TargetNode) const 
 {
 
@@ -263,33 +278,58 @@ void UFSMEdGraphSchema::BreakSinglePinLink(UEdGraphPin *SourcePin, UEdGraphPin *
 {
 
 }
-
+*/
 void UFSMEdGraphSchema::GetContextMenuActions(UToolMenu *Menu, UGraphNodeContextMenuContext *Context) const
 {
+	check(Context && Context->Graph);
+	UBlueprint *OwnerBlueprint = FBlueprintEditorUtils::FindBlueprintForGraphChecked(Context->Graph);
 
+	if(Context->Node)
+    {
+        {
+			//FToolMenuSection &Section = Menu->AddSection("StateMachineNodeActions", FText::FromString("NodeActions"));
+			if(!Context->bIsDebugging)
+            {
+				//Section.AddMenuEntry(FGenericCommands::Get().Delete);
+				//Section.AddMenuEntry(FGenericCommands::Get().Cut);
+				//Section.AddMenuEntry(FGenericCommands::Get().Copy);
+				//Section.AddMenuEntry(FGenericCommands::Get().Duplicate);
+				//Section.AddMenuEntry(FGraphEditorCommands::Get().ReconstructNodes);
+				//Section.AddMenuEntry(FGraphEditorCommands::Get().BreakNodeLinks);
+				//if(Context->Node->bCanRenameNode)
+					//Section.AddMenuEntry(FGenericCommands::Get().Rename);
+			}
+		}
+    }
+	Super::GetContextMenuActions(Menu, Context);
 }
 
 EGraphType UFSMEdGraphSchema::GetGraphType(const UEdGraph *TestEdGraph) const
 {
-    return EGraphType();
+    return GT_StateMachine;
 }
 
 void UFSMEdGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder &ContextMenuBuilder) const
-{
-	FText ToolTip = FText::FromString("Add Node to the Graph");
-	FText MenuDesc = FText::FromString("NodeName");
-
-	FCategorizedGraphActionListBuilder BaseBuilder(TEXT("Base Nodes"));
-
+{	
 	TSharedPtr<FSMEdGraphSchemaAction_NewNode> NewNodeAction;
+	NewNodeAction = MakeShareable(new FSMEdGraphSchemaAction_NewNode(FText::GetEmpty(),FText::FromString("AddNewNode"),FText::FromString("TooltipText"), 0));
 
-	NewNodeAction = MakeShareable(new FSMEdGraphSchemaAction_NewNode(FText::FromString("AddNewNode"),FText::FromString("TEST2"),FText::FromString("TEST3"), 0));
+	ContextMenuBuilder.AddAction(NewNodeAction);
+	
 
-	BaseBuilder.AddAction(NewNodeAction);
+	if(!ContextMenuBuilder.FromPin)
+    {
+		//UBlueprint *OwnerBlueprint = FBlueprintEditorUtils::FindBlueprintForGraphChecked(ContextMenuBuilder.CurrentGraph);
+		//const bool bIsManyNodesSelected = (FKismetEditorUtilities::GetNumberOfSelectedNodes(OwnerBlueprint) > 0);
+		//const FText MenuDescription = bIsManyNodesSelected ? FText::FromString("") : FText::FromString("");
+		const FText MenuDescription = FText::FromString("AddComment");
+		const FText ToolTip = FText::FromString("");
 
-	ContextMenuBuilder.Append(BaseBuilder);
+		TSharedPtr<FFSMGraphSchemaAction_NewComment> NewComment(new FFSMGraphSchemaAction_NewComment(FText::GetEmpty(), MenuDescription, ToolTip, 0));
+		ContextMenuBuilder.AddAction(NewComment);
+    }
 }
-
+/*
 FLinearColor UFSMEdGraphSchema::GetPinTypeColor(const FEdGraphPinType &PinType) const
 {
     return FLinearColor();
@@ -317,12 +357,13 @@ void UFSMEdGraphSchema::DroppedAssetsOnPin(const TArray<FAssetData> &Assets, con
 
 void UFSMEdGraphSchema::GetAssetsNodeHoverMessage(const TArray<FAssetData> &Assets, const UEdGraphNode *HoverNode, FString &OutTooltipText, bool &OutOkIcon) const
 {
-
-}
+	
+}*/
 
 void UFSMEdGraphSchema::GetAssetsPinHoverMessage(const TArray<FAssetData> &Assets, const UEdGraphPin *HoverNode, FString &OutTooltipText, bool &OutOkIcon) const
 {
-
+	OutTooltipText = TEXT("");
+	OutOkIcon = false;
 }
 /*
 void UFSMEdGraphSchema::CreateDefaultNodesForGraph(UEdGraph &Graph) const
