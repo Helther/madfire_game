@@ -34,13 +34,13 @@ private:
 	TSharedPtr<IDetailsView> DetailsWidget;
 	TSharedPtr<FUICommandList> GraphEditorCommands;
 
-	static const FName DetailsTabId;
+	//static const FName DetailsTabId;
 	static const FName GraphTabId;
 
 	FGraphPanelSelectionSet GetSelectedNodes();
 	void BindToolkitCommands();
 
-	TSharedRef<SDockTab> HandleTabManagerSpawnTabDetails(const FSpawnTabArgs &Args);
+	//TSharedRef<SDockTab> HandleTabManagerSpawnTabDetails(const FSpawnTabArgs &Args);
 	TSharedRef<SDockTab> HandleTabManagerSpawnTabGraph(const FSpawnTabArgs &Args);
 	//TSharedRef<SDockTab> HandleTabManagerSpawnTabGraphDetails(const FSpawnTabArgs &Args);
 

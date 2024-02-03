@@ -19,12 +19,16 @@ public:
 	bool IsNameReadOnly() const override;
 	void OnNameTextCommited(const FText &InText, ETextCommit::Type CommitInfo);
 
-protected:
-	TSharedPtr<SVerticalBox> ContentWidget;
-	TSharedPtr<SBorder>		 ErrorBorder;
-	TSharedPtr<STextBlock>	 NodeHeader;
+	// SWidget interface
+	void OnMouseEnter(const FGeometry &MyGeometry, const FPointerEvent &MouseEvent) override;
+	void OnMouseLeave(const FPointerEvent &MouseEvent) override;
+	// End of SWidget interface
 
-	void CreateContent();
-	void CreateHeader();
+protected:
+	TSharedPtr<SVerticalBox>     PinsNodeBox;
+
+	FLinearColor GetBackgroundColor() {return FLinearColor::Gray;}
+	const FSlateBrush *GetPinBorder() const;
+	const FSlateBrush *GetNameIcon() const;
 
 };

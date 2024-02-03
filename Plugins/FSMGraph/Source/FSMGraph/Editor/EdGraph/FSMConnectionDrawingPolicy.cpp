@@ -7,6 +7,7 @@ FSMConnectionDrawingPolicy::FSMConnectionDrawingPolicy(int32 InBackLayerID, int3
 
 void FSMConnectionDrawingPolicy::DetermineWiringStyle(UEdGraphPin *OutputPin, UEdGraphPin *InputPin, FConnectionParams &Params)
 {
+    Params.bUserFlag2 = true;
     Params.AssociatedPin1 = OutputPin;
     Params.AssociatedPin2 = InputPin;
     Params.WireThickness = 1.5f;
@@ -28,6 +29,18 @@ void FSMConnectionDrawingPolicy::Draw(TMap<TSharedRef<SWidget>, FArrangedWidget>
     }
 
     FConnectionDrawingPolicy::Draw(InPinGeometries, ArrangedNodes);
+}
+
+void FSMConnectionDrawingPolicy::DetermineLinkGeometry(FArrangedChildren &,
+                                                       TSharedRef<SWidget> &,
+                                                       UEdGraphPin *,
+                                                       UEdGraphPin *,
+                                                       FArrangedWidget *&,
+                                                       FArrangedWidget *&)
+{
+
+
+
 }
 
 void FSMConnectionDrawingPolicy::DrawSplineWithArrow(const FGeometry &StartG, const FGeometry &EndG, const FConnectionParams &Params)
@@ -102,3 +115,6 @@ void FSMConnectionDrawingPolicy::Internal_DrawLineWithArrow(const FVector2D &Sta
         Params.WireColor
     );
 }
+
+void FSMConnectionDrawingPolicy::DrawCircle(const FVector2D &Center, float Radius, const FLinearColor &Color, const int NumLineSegments)
+{}

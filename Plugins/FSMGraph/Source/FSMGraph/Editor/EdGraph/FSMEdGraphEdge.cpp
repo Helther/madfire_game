@@ -2,7 +2,7 @@
 #include "FSMEdGraphNode.h"
 #include "FSMEdGraph.h"
 #include "FSMGraph.h"
-
+#include "../SlateGraph/SFSMGraphEdge.h"
 
 UFSMEdGraphEdge::UFSMEdGraphEdge() 
 {
@@ -11,6 +11,11 @@ UFSMEdGraphEdge::UFSMEdGraphEdge()
 UFSMEdGraphEdge::~UFSMEdGraphEdge() 
 {}
 
+TSharedPtr<SGraphNode> UFSMEdGraphEdge::CreateVisualWidget()
+{	
+	SlateNode = SNew(SFSMGraphEdge, this);
+    return SlateNode;
+}
 
 void UFSMEdGraphEdge::AllocateDefaultPins() 
 {
@@ -44,30 +49,32 @@ void UFSMEdGraphEdge::PrepareForCopying()
 	//GraphEdge->Rename(nullptr)
 }
 
-void UFSMEdGraphEdge::CreateConnections(UFSMEdGraphNode *Start, UFSMEdGraphNode *End)
+void UFSMEdGraphEdge::CreateConnections(UFSMEdGraphNode *PrevState, UFSMEdGraphNode *NextState)
 {
-	auto graph = CastChecked<UFSMEdGraph>(GetGraph())->GetGraphAsset();
+	Pins[0]->Modify();
+	Pins[0]->LinkedTo.Empty();
+	PrevState->GetOutputPin()->Modify();
+	Pins[0]->MakeLinkTo(PrevState->GetOutputPin());
 
-	if(!(Start && End))
-		return;	
-
-	if(graph->Validate(Start->RealName) && graph->Validate(End->RealName))
-		return;
-
-	startName = Start->RealName;
-	endName = End->RealName;
-
-	//Pins[0]->MakeLinkTo(Start->GetOutputPin());
-	//Pins[1]->MakeLinkTo(End->GetInputPin());
+	Pins[1]->Modify();
+	Pins[1]->LinkedTo.Empty();
+	NextState->GetInputPin()->Modify();
+	Pins[1]->MakeLinkTo(NextState->GetInputPin());
 }
 
-UFSMEdGraphNode *UFSMEdGraphEdge::GetStartNode()
+UFSMEdGraphNode *UFSMEdGraphEdge::GetPreviousState() const
 {
-	return nullptr;
+	if(Pins[0]->LinkedTo.Num() > 0)
+		return Cast<UFSMEdGraphNode>(Pins[0]->LinkedTo[0]->GetOwningNode());
+    else
+		return nullptr;
 }
 
 
-UFSMEdGraphNode *UFSMEdGraphEdge::GetEndNode()
+UFSMEdGraphNode *UFSMEdGraphEdge::GetNextState() const
 {
-	return nullptr;
+	if(Pins[1]->LinkedTo.Num() > 0)
+		return Cast<UFSMEdGraphNode>(Pins[1]->LinkedTo[0]->GetOwningNode());
+    else
+		return nullptr;
 }

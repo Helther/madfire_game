@@ -1,8 +1,10 @@
 #include "FSMEdGraphNode.h"
 #include "FSMGraph.h"
 #include "../SlateGraph/SFSMGraphNode.h"
+#include "FSMEdGraphEdge.h"
 #include "IStructureDetailsView.h"
 #include "FSMEdGraph.h"
+
 
 UFSMEdGraphNode::UFSMEdGraphNode() 
 {
@@ -20,11 +22,17 @@ TSharedPtr<SGraphNode> UFSMEdGraphNode::CreateVisualWidget()
 
 void UFSMEdGraphNode::AllocateDefaultPins()
 {
-    UEdGraphNode::AllocateDefaultPins();
-    if(HasInputPins())
-        CreatePin(EGPD_Input, FName("InCategory"), FName("InPinName"));
-    if(HasOutputPins())
-        CreatePin(EGPD_Output, FName("OutCategory"), FName("OutPinName"));
+    UEdGraphPin *Inputs = CreatePin(EGPD_Input, TEXT("Transition"), TEXT("In"));
+    UEdGraphPin *Outputs = CreatePin(EGPD_Output, TEXT("Transition"), TEXT("Out"));
+}
+
+void UFSMEdGraphNode::AutowireNewNode(UEdGraphPin *FromPin)
+{
+    Super::AutowireNewNode(FromPin);
+
+    if(FromPin)
+        if(GetSchema()->TryCreateConnection(FromPin,GetInputPin()))
+            FromPin->GetOwningNode()->NodeConnectionListChanged();
 }
 
 FText UFSMEdGraphNode::GetNodeTitle(ENodeTitleType::Type TitleType) const
@@ -49,28 +57,6 @@ void UFSMEdGraphNode::PrepareForCopying()
 void UFSMEdGraphNode::DestroyNode()
 {
     UEdGraphNode::DestroyNode();
-}
-
-void UFSMEdGraphNode::AutowireNewNode(UEdGraphPin *FromPin)
-{
-    if(FromPin)
-    {
-        UEdGraphNode::AutowireNewNode(FromPin);
-        if(FromPin->Direction == EEdGraphPinDirection::EGPD_Input)
-        {
-            if(GetSchema()->TryCreateConnection(FromPin, FindPin(FName("OutPinName"))))
-            {
-                FromPin->GetOwningNode()->NodeConnectionListChanged();
-            }        
-        }
-        if(FromPin->Direction == EEdGraphPinDirection::EGPD_Output)
-        {
-            if(GetSchema()->TryCreateConnection(FromPin, FindPin(FName("InPinName"))))
-            {
-                FromPin->GetOwningNode()->NodeConnectionListChanged();            
-            }        
-        }
-    }
 }
 
 void UFSMEdGraphNode::SetAssetNode(FName index)
@@ -153,6 +139,20 @@ void UFSMEdGraphNode::PostEditChangeProperty(struct FPropertyChangedEvent &e)
     }
 }
 
+void UFSMEdGraphNode::GetTransitionList(TArray<UFSMEdGraphEdge *> &OutTransitions, bool bWantSorted) const
+{
+    //Normal Transitions
+    for(int32 LinkIndex = 0; LinkIndex < Pins[1]->LinkedTo.Num(); ++LinkIndex)
+    {
+        UEdGraphNode *TargetNode = Pins[1]->LinkedTo[LinkIndex]->GetOwningNode();
+        if(UFSMEdGraphEdge *Transition = Cast<UFSMEdGraphEdge>(TargetNode))
+        {
+            OutTransitions.Add(Transition);
+        }
+    }
+
+}
+
 void UFSMEdGraphNode::UpdateVisualNode()
 {
     
@@ -162,6 +162,10 @@ void UFSMEdGraphNode::SaveNodesAsChildren(TArray<UEdGraphNode *> &Children)
 {
     
 }
+
+UEdGraphPin *UFSMEdGraphNode::GetOutputPin() const { return Pins[0]; }
+
+UEdGraphPin *UFSMEdGraphNode::GetInputPin() const { return Pins[1]; }
 
 bool UFSMEdGraphNode::HasOutputPins()
 {

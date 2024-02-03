@@ -7,6 +7,7 @@
 #include "FSMEdGraphNode.generated.h"
 
 class UFSMGraph;
+class UFSMEdGraphEdge;
 
 UCLASS(MinimalAPI)
 class UFSMEdGraphNode : public UEdGraphNode
@@ -37,6 +38,9 @@ public:
 	void UpdateVisualNode();
 	void SaveNodesAsChildren(TArray<UEdGraphNode*> &Children);
 
+	UEdGraphPin *GetOutputPin() const;
+	UEdGraphPin *GetInputPin() const;
+
 	FName RealName;
 
 	UPROPERTY(EditDefaultsOnly)
@@ -46,6 +50,8 @@ public:
 	bool IsInit;
 
 	void PostEditChangeProperty(struct FPropertyChangedEvent &e);
+
+	void GetTransitionList(TArray<UFSMEdGraphEdge*> &OutTransitions, bool bWantSorted) const;
 
 
 protected:

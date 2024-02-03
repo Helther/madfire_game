@@ -2,10 +2,12 @@
 #include "Slate.h"
 #include "SFSMGraphPin.h"
 #include "../EdGraph/FSMEdGraphNode.h"
+#include "SGraphPanel.h"
 
 void SFSMGraphNode::Construct(const FArguments &InArgs, UEdGraphNode *InNode)
 {
 	GraphNode = InNode;
+	SetCursor(EMouseCursor::CardinalCross);	
 	UpdateGraphNode();
 }
 
@@ -18,124 +20,126 @@ void SFSMGraphNode::UpdateGraphNode()
 	InputPins.Empty();
 	OutputPins.Empty();
 
-	RightNodeBox.Reset();
-	LeftNodeBox.Reset();
-
+	const FSlateBrush *NodeTypeIcon = GetNameIcon();
+	FLinearColor TitleShadowColor(0.6f,0.6f,0.6f);
+	TSharedPtr<SErrorText> ErrorText;
 	TSharedPtr<SNodeTitle> NodeTitle = SNew(SNodeTitle, GraphNode);
 
-	this->ContentScale.Bind(this, &SGraphNode::GetContentScale);
+	RightNodeBox.Reset();
+	LeftNodeBox.Reset();
+	
 
+	this->ContentScale.Bind(this, &SGraphNode::GetContentScale);
 	this->GetOrAddSlot(ENodeZone::Center)
-		.HAlign(HAlign_Fill)
+		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Center)
 		[
 			SNew(SBorder)
 			.BorderImage(FAppStyle::GetBrush("Graph.StateNode.Body"))
-			.Padding(FMargin(10.f))
+			.Padding(0)
 			.BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.1f))
 			[
-				SAssignNew(ErrorBorder, SBorder)
-				.BorderImage(FAppStyle::GetBrush("Graph.StateNode.Body"))
-				.BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.1f))
+				SNew(SOverlay)
+				//Pin AREA
+				+SOverlay::Slot()
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					SAssignNew(RightNodeBox, SVerticalBox)
+				]
+
+				// STATE NAME AREA
+				+SOverlay::Slot()
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				.Padding(10.f)
 				[
 					SNew(SBorder)
-					.BorderImage(FAppStyle::GetBrush("Graph.StateNode.Body"))
-					.Padding(FMargin(10.f))
-					.BorderBackgroundColor(FLinearColor(0.1f, 0.1f, 0.1f))
+					.BorderImage(FAppStyle::GetBrush("Graph.StateNode.ColorSpill"))
+					.BorderBackgroundColor(FLinearColor(0.3f, 0.3f, 0.3f))
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					.Visibility(EVisibility::SelfHitTestInvisible)
 					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot()
-						.AutoHeight()
+						SNew(SHorizontalBox)
+						+SHorizontalBox::Slot()
+						.AutoWidth()
 						[
-							SAssignNew(LeftNodeBox, SVerticalBox)
+							SAssignNew(ErrorText, SErrorText)
+							.BackgroundColor(FLinearColor(0.5f, 0.0f, 0.5f))
+							.ToolTipText(FText::FromString("Test"))
 						]
-						/*+ SVerticalBox::Slot()
-						.HAlign(HAlign_Center)
-						.AutoHeight()
+						+SHorizontalBox::Slot()
+						.AutoWidth()
+						.VAlign(VAlign_Center)
 						[
-							SAssignNew(NodeHeader, STextBlock)
-						]*/
-						+ SVerticalBox::Slot()
-						.HAlign(HAlign_Center)
-						.AutoHeight()
-						[
-							SAssignNew(InlineEditableText, SInlineEditableTextBlock)
-							.Style(FAppStyle::Get(), "Graph.StateNode.NodeTitleInlineEditableText")
-							.Text(NodeTitle.Get(), &SNodeTitle::GetHeadTitle)
-							.IsReadOnly(this, &SFSMGraphNode::IsNameReadOnly)
-							.OnTextCommitted(this, &SFSMGraphNode::OnNameTextCommited)
-							.OnVerifyTextChanged(this, &SFSMGraphNode::OnVerifyNameTextChanged)
+							SNew(SImage)
+							.Image(NodeTypeIcon)
 						]
-						+ SVerticalBox::Slot()
-						.AutoHeight()
+						+SHorizontalBox::Slot()
+						.Padding(FMargin(4.f,0.f,4.f,0.f))
 						[
-							NodeTitle.ToSharedRef()
-						]
-						+ SVerticalBox::Slot()
-						.AutoHeight()
-						[
-							SAssignNew(ContentWidget, SVerticalBox)
-						]
-						+ SVerticalBox::Slot()
-						.AutoHeight()
-						[
-							SAssignNew(RightNodeBox, SVerticalBox)
+							SNew(SVerticalBox)
+							+SVerticalBox::Slot()
+							.AutoHeight()
+							[
+								SAssignNew(InlineEditableText, SInlineEditableTextBlock)
+								.Style(FAppStyle::Get(), "Graph.StateNode.NodeTitleInlineEditableText")
+								.Text(NodeTitle.Get(), &SNodeTitle::GetHeadTitle)
+								.OnVerifyTextChanged(this, &SFSMGraphNode::OnVerifyNameTextChanged)
+								.OnTextCommitted(this, &SFSMGraphNode::OnNameTextCommited)
+								.IsReadOnly(this, &SFSMGraphNode::IsNameReadOnly)
+								.IsSelected(this, &SFSMGraphNode::IsSelectedExclusively)
+							]
+							+SVerticalBox::Slot()
+							.AutoHeight()
+							[
+								NodeTitle.ToSharedRef()
+							]
 						]
 					]
 				]
-			]		
+			]
 		];
 
+	ErrorReporting = ErrorText;
+	ErrorReporting->SetError(ErrorMsg);
 	CreatePinWidgets();
-	CreateContent();
-	CreateHeader();
 }
 
 void SFSMGraphNode::CreatePinWidgets()
 {	
 	UFSMEdGraphNode *EdNode = Cast<UFSMEdGraphNode>(GraphNode);
+	
+	UEdGraphPin *CurPin = EdNode->GetOutputPin();
+	if(!CurPin->bHidden)
+    {
+		TSharedPtr<SGraphPin> NewPin = SNew(SFSMOutputPin, CurPin);
+		AddPin(NewPin.ToSharedRef());
+	}
+	/*
 	for(int32 i = 0; i < EdNode->Pins.Num(); ++i)
     {
 		UEdGraphPin *Pin = EdNode->Pins[i];
 		if(!Pin->bHidden)
         {
-			TSharedPtr<SGraphPin> NewPin = SNew(SFSMGraphPin, Pin);
+			TSharedPtr<SGraphPin> NewPin = SNew(SFSMOutputPin, Pin);
 			AddPin(NewPin.ToSharedRef());
 		}
-	}
+	}*/
 }
 
 void SFSMGraphNode::AddPin(const TSharedRef<SGraphPin> &PinToAdd)
 {
 	PinToAdd->SetOwner(SharedThis(this));
-	if(PinToAdd->GetDirection() == EEdGraphPinDirection::EGPD_Input)
-    {
-		LeftNodeBox->AddSlot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			.FillHeight(1.f)
-			.Padding(20.f,0.f)
-			[
-				PinToAdd
-			];
-		InputPins.Add(PinToAdd);
-	}
-    else if(PinToAdd->GetDirection() == EEdGraphPinDirection::EGPD_Output)
-    {
-		RightNodeBox->AddSlot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			.FillHeight(1.f)
-			.Padding(20.f,0.f)
-			[
-				PinToAdd
-			];
-		OutputPins.Add(PinToAdd);
-	}
-    else
-    {
-		//TODO: Error
-	}
+	RightNodeBox->AddSlot()
+	.HAlign(HAlign_Fill)	
+	.VAlign(VAlign_Fill)
+	.FillHeight(1.f)
+	[
+		PinToAdd
+	];
+	OutputPins.Add(PinToAdd);
 }
 
 bool SFSMGraphNode::IsNameReadOnly() const
@@ -145,39 +149,59 @@ bool SFSMGraphNode::IsNameReadOnly() const
 
 void SFSMGraphNode::OnNameTextCommited(const FText &InText, ETextCommit::Type CommitInfo)
 {	
-	auto EdNode = Cast<UFSMEdGraphNode>(GraphNode);
+	/*auto EdNode = Cast<UFSMEdGraphNode>(GraphNode);
 
 	if(EdNode && EdNode->RenameUniqueNode(InText))
     {
 		UpdateGraphNode();
-		NodeHeader.Get()->SetVisibility(EVisibility::Visible);
+		//NodeHeader.Get()->SetVisibility(EVisibility::Visible);
 		SGraphNode::OnNameTextCommited(InText, CommitInfo);
-	}
-}
-
-void SFSMGraphNode::CreateContent()
-{	
-	auto EdNode = Cast<UFSMEdGraphNode>(GraphNode);
-
-	ContentWidget->AddSlot()
-		[
-			EdNode->GetContentWidget().ToSharedRef()
-		];
-}
-
-void SFSMGraphNode::CreateHeader()
-{	
-	/*NodeHeader.Get()->SetText(GraphNode->GetNodeTitle(ENodeTitleType::MenuTitle));
-	
-	auto EdNode = Cast<UFSMEdGraphNode>(GraphNode);
-
-	if(EdNode)
-		NodeHeader.Get()->SetVisibility((EdNode->GetEdNodeName().IsEmpty()) ? EVisibility::Collapsed : EVisibility::Visible);
-    else
-    {
-		//TODO: Error
 	}*/
-	FAnimNotifyEvent event;
+}
+
+void SFSMGraphNode::OnMouseEnter(const FGeometry &MyGeometry, const FPointerEvent &MouseEvent)
+{
+	if(const UFSMEdGraphNode *StateNode = Cast<UFSMEdGraphNode>(GraphNode))
+    {
+		if(const UEdGraphPin *OutputPin = StateNode->GetOutputPin())
+        {
+			TSharedPtr<SGraphPanel> OwnerPanel = GetOwnerPanel();
+			check(OwnerPanel.IsValid());
+
+			for(int32 LinkIndex = 0; LinkIndex < OutputPin->LinkedTo.Num(); ++LinkIndex)
+				OwnerPanel->AddPinToHoverSet(OutputPin->LinkedTo[LinkIndex]);
+		}
+    }
+	SGraphNode::OnMouseEnter(MyGeometry, MouseEvent);
+}
+
+void SFSMGraphNode::OnMouseLeave(const FPointerEvent &MouseEvent) 
+{
+	if(const UFSMEdGraphNode *StateNode = Cast<UFSMEdGraphNode>(GraphNode))
+    {
+		if(const UEdGraphPin *OutputPin = StateNode->GetOutputPin())
+        {
+			TSharedPtr<SGraphPanel> OwnerPanel = GetOwnerPanel();
+			check(OwnerPanel.IsValid());
+
+			for(int32 LinkIndex = 0; LinkIndex < OutputPin->LinkedTo.Num(); ++LinkIndex)
+				OwnerPanel->RemovePinFromHoverSet(OutputPin->LinkedTo[LinkIndex]);
+		}
+	}
+
+	SGraphNode::OnMouseLeave(MouseEvent);
+}
+
+const FSlateBrush *SFSMGraphNode::GetPinBorder() const 
+{
+	return (IsHovered()) ?
+		FAppStyle::GetBrush(TEXT("Graph.StateNode.Pin.BackgroundHovered")) :
+		FAppStyle::GetBrush(TEXT("Graph.StateNode.Pin.Background"));
+}
+
+const FSlateBrush *SFSMGraphNode::GetNameIcon() const
+{
+	return FAppStyle::GetBrush(TEXT("Graph.StateNode.Icon")); 
 }
 
 

@@ -18,6 +18,7 @@ public:
 	~UFSMEdGraphEdge() override;
 
 	//Node interface
+	TSharedPtr<SGraphNode> CreateVisualWidget() override;
 	void AllocateDefaultPins() override;
 	FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 	void PinConnectionListChanged(UEdGraphPin *Pin) override;
@@ -26,11 +27,13 @@ public:
 	UEdGraphPin *GetInputPin() const {return Pins[0];}
 	UEdGraphPin *GetOutputPin() const {return Pins[1];}
 
-	void CreateConnections(UFSMEdGraphNode *Start, UFSMEdGraphNode *End);
-
-	UFSMEdGraphNode *GetStartNode();
-	UFSMEdGraphNode *GetEndNode();
+	UFSMEdGraphNode *GetPreviousState() const;
+	UFSMEdGraphNode *GetNextState() const;
+	void CreateConnections(UFSMEdGraphNode *PrevState, UFSMEdGraphNode *NextState);
 
 	FName startName;
 	FName endName;
+
+private:
+	TSharedPtr<SGraphNode> SlateNode;
 };
