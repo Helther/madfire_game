@@ -5,12 +5,14 @@
 #include "../../FSMGraph.h"
 #include "FSMEdGraphNode.h"
 #include "FSMEdGraphEdge.h"
+#include "FSMEdGraphRoot.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Framework/Commands/GenericCommands.h"
 #include "GraphEditorActions.h"
 #include "ToolMenuSection.h"
 #include "ToolMenus.h"
+#include "FSMEdGraph.h"
 
 /*
 void UFSMEdGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder &ContextMenuBuilder) const
@@ -132,8 +134,8 @@ const FPinConnectionResponse UFSMEdGraphSchema::CanCreateConnection(const UEdGra
 		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Both are on the same node"));
     }
 
-	const bool bPinAIsEntry = A->GetOwningNode()->IsA(UFSMEdGraphNode::StaticClass());
-	const bool bPinBIsEntry = B->GetOwningNode()->IsA(UFSMEdGraphNode::StaticClass());
+	const bool bPinAIsEntry = A->GetOwningNode()->IsA(UFSMEdGraphRoot::StaticClass());
+	const bool bPinBIsEntry = B->GetOwningNode()->IsA(UFSMEdGraphRoot::StaticClass());
 	const bool bPinAIsStateNode = A->GetOwningNode()->IsA(UFSMEdGraphNode::StaticClass());
 	const bool bPinBIsStateNode = B->GetOwningNode()->IsA(UFSMEdGraphNode::StaticClass());
 
@@ -173,20 +175,32 @@ bool UFSMEdGraphSchema::TryCreateConnection(UEdGraphPin *A, UEdGraphPin *B) cons
 {
 	if(B->Direction == A->Direction)
     {
-		CreateAutomaticConversionNodeAndConnections(A,B);
-		/*if(UFSMEdGraphNode *Node = Cast<UFSMEdGraphNode>(B->GetOwningNode()))
+		if(UFSMEdGraphNode *Node = Cast<UFSMEdGraphNode>(B->GetOwningNode()))
         {
 			if(A->Direction == EGPD_Input)
 				B = Node->GetOutputPin();
             else
 				B = Node->GetInputPin();
-		}*/
+		}
     }
 
-	const bool bModified = UEdGraphSchema::TryCreateConnection(A,B);
+	bool bModified = UEdGraphSchema::TryCreateConnection(A,B);
+		
+	if(UFSMEdGraphRoot *Node = Cast<UFSMEdGraphRoot>(A->GetOwningNode()))
+    {
+		if(UFSMEdGraphNode *ToNode = Cast<UFSMEdGraphNode>(B->GetOwningNode()))
+        {
+			if(UFSMEdGraph *Graph = Cast<UFSMEdGraph>(ToNode->GetGraph()))
+            {
+				UFSMGraph *GraphAsset = Graph->GetGraphAsset();
+				GraphAsset->InitStateName = ToNode->AssetNode;
+            }	
+        }
+    }
 
 	if(bModified)
     {
+		//FBlueprintEditorUtils::FindBlueprintForGraphChecked
 		//UBlueprint *Blueprint = FBlueprintEditorUtils::FindBlueprintForNodeChecked(A->GetOwningNode());
 		//FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
     }
@@ -194,25 +208,22 @@ bool UFSMEdGraphSchema::TryCreateConnection(UEdGraphPin *A, UEdGraphPin *B) cons
     return bModified;
 }
 
+
+
 bool UFSMEdGraphSchema::CreateAutomaticConversionNodeAndConnections(UEdGraphPin *PinA, UEdGraphPin *PinB) const
 {
 	UFSMEdGraphNode *NodeA = Cast<UFSMEdGraphNode>(PinA->GetOwningNode());
 	UFSMEdGraphNode *NodeB = Cast<UFSMEdGraphNode>(PinB->GetOwningNode());
 
-	if((NodeA != nullptr) && (NodeB != nullptr) 
-		&& (NodeA->GetInputPin() != nullptr) && (NodeA->GetOutputPin() != nullptr)
-		&& (NodeB->GetInputPin() != nullptr) && (NodeB->GetOutputPin() != nullptr))
+	if((NodeA != nullptr) && (NodeB != nullptr)  && (NodeA->GetInputPin() != nullptr) && (NodeA->GetOutputPin() != nullptr) && (NodeB->GetInputPin() != nullptr) && (NodeB->GetOutputPin() != nullptr))
     {
-		UFSMEdGraphEdge *TransitionNode = FSMEdGraphSchemaAction_NewEdge::SpawnNodeFromTemplate<UFSMEdGraphEdge>(NodeA->GetGraph(), NewObject<UFSMEdGraphEdge>(), FVector2D(0.f,0.f), false);
+		UFSMEdGraphEdge *TransitionNode = FFSMGraphSchemaAction_NewStateNode::SpawnNodeFromTemplate<UFSMEdGraphEdge>(NodeA->GetGraph(), NewObject<UFSMEdGraphEdge>(), FVector2D(0.f,0.f), false);
 
 		if(PinA->Direction == EGPD_Output)
-        {
-			TransitionNode->CreateConnections(NodeA, NodeB);
-		}
+			TransitionNode->CreateConnections(NodeA, NodeB);		
         else
-        {
 			TransitionNode->CreateConnections(NodeB, NodeA);
-        }
+        
 		//UBlueprint *Blueprint = FBlueprintEditorUtils::FindBlueprintForGraphChecked(TransitionNode->GEtBou);
 		//FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
 		return true;
@@ -365,39 +376,19 @@ void UFSMEdGraphSchema::GetAssetsPinHoverMessage(const TArray<FAssetData> &Asset
 	OutTooltipText = TEXT("");
 	OutOkIcon = false;
 }
-/*
+
 void UFSMEdGraphSchema::CreateDefaultNodesForGraph(UEdGraph &Graph) const
-{
-	
-	if(Graph.Nodes.Num() == 0)
-    {
-		UFSMGraph *GraphAsset = Cast<UFSMGraph>(Graph.GetOuter());
+{	
+	UFSMGraph *GraphAsset = Cast<UFSMGraph>(Graph.GetOuter());
 
-		GraphAsset->Modify();
-		Graph.Modify();
+	const static FName RootName = "Root";
 
-		
-		FGraphNodeCreator<UFSMEdGraphNode> Creator(Graph);
-		UFSMEdGraphNode *EdNode = Creator.CreateNode();
-		//Set Node Info
-		EdNode->AllocateDefaultPins();
+	FGraphNodeCreator<UFSMEdGraphRoot> Creator(Graph);
+	RootNode = Creator.CreateNode();
+	//Set Node Info
+	RootNode->AllocateDefaultPins();
 
-		Creator.Finalize();
-		EdNode->NodePosX = 0;
-		EdNode->NodePosY = 0;
-	}
+	Creator.Finalize();
+	RootNode->NodePosX = 0;
+	RootNode->NodePosY = 0;
 }
-
-void UFSMEdGraphSchema::GetGraphDisplayInformation(const UEdGraph &Graph, FGraphDisplayInfo &DisplayInfo) const
-{
-	DisplayInfo.PlainName = FText::FromString(Graph.GetName());
-
-}
-
-bool UFSMEdGraphSchema::CanDuplicateGraph(UEdGraph *InSourceGraph) const 
-{
-	return false; 
-
-}
-*/
-

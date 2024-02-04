@@ -19,22 +19,27 @@ FName UFSMGraph::SpawnNode()
 	return NodeName;
 }
 
-FSMState &UFSMGraph::GetState(FName &NodeName)
+FSMState &UFSMGraph::GetState(const FName &NodeName)
 {
 	return StatesMap[NodeName];
 }
 
-void UFSMGraph::AddState(FName &NodeName, FSMState &state)
+void UFSMGraph::AddState(const FName &NodeName, FSMState &state)
 {
 	StatesMap.Add(NodeName, state);
 }
 
-void UFSMGraph::RemoveState(FName &StateName) 
+void UFSMGraph::RemoveState(const FName &StateName) 
 {
 	StatesMap.Remove(StateName);
+	
+	for(auto &State : StatesMap)
+    {
+		State.Value.Links.RemoveAll([StateName](const FSMLink &Link) {return Link.LinkedStateID == StateName;});		
+    }
 }
 
-bool UFSMGraph::Validate(FName &NodeName)
+bool UFSMGraph::Validate(const FName &NodeName)
 {
 	return !StatesMap.Contains(NodeName);
 }

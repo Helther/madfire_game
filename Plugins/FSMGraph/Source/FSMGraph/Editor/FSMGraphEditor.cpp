@@ -12,7 +12,7 @@
 #include "EdGraph/FSMEdGraphNode.h"
 #include "EdGraph/FSMEdGraphSchema.h"
 
-//const FName FSMGraphAssetEditor::DetailsTabId(TEXT("FSMGraphEditorDetailsTabID"));
+const FName FSMGraphAssetEditor::DetailsTabId(TEXT("FSMGraphEditorDetailsTabID"));
 const FName FSMGraphAssetEditor::GraphTabId(TEXT("FSMGraphEditorGraphTabID"));
 
 FSMGraphAssetEditor::FSMGraphAssetEditor()
@@ -51,9 +51,9 @@ void FSMGraphAssetEditor::RegisterTabSpawners(const TSharedRef<FTabManager> &Tab
 	WorkspaceMenuCategory = TabManager->AddLocalWorkspaceMenuCategory(FText::FromString("YetAnotherToolkitWorkspaceMenu"));
 	auto WorkspaceMenuCategoryRef = WorkspaceMenuCategory.ToSharedRef();
 
-	/*TabManager->RegisterTabSpawner(DetailsTabId, FOnSpawnTab::CreateSP(this, &FSMGraphAssetEditor::HandleTabManagerSpawnTabDetails))
+	TabManager->RegisterTabSpawner(DetailsTabId, FOnSpawnTab::CreateSP(this, &FSMGraphAssetEditor::HandleTabManagerSpawnTabDetails))
 		.SetDisplayName(FText::FromString("Details Tab"))
-		.SetGroup(WorkspaceMenuCategoryRef);*/
+		.SetGroup(WorkspaceMenuCategoryRef);
 
 	TabManager->RegisterTabSpawner(GraphTabId, FOnSpawnTab::CreateSP(this, &FSMGraphAssetEditor::HandleTabManagerSpawnTabGraph))
 		.SetDisplayName(FText::FromString("Graph Editor"))
@@ -87,8 +87,10 @@ void FSMGraphAssetEditor::InitGraphAssetEditor(const EToolkitMode::Type InMode, 
 		//FBlueprintEditorUtils::CreateNewGraph()
 		//Add Ed Graph
 
-		GraphAsset->EdGraph = CastChecked<UFSMEdGraph>(FBlueprintEditorUtils::CreateNewGraph(GraphAsset, NAME_None, UFSMEdGraph::StaticClass(), UFSMEdGraphSchema::StaticClass()));
+		UEdGraph *Graph = GraphAsset->EdGraph = CastChecked<UFSMEdGraph>(FBlueprintEditorUtils::CreateNewGraph(GraphAsset, NAME_None, UFSMEdGraph::StaticClass(), UFSMEdGraphSchema::StaticClass()));
 		GraphAsset->EdGraph->bAllowDeletion = false;
+		auto Schema = Graph->GetSchema();
+		Schema->CreateDefaultNodesForGraph(*Graph);
 	}
 
 	FGenericCommands::Register();
@@ -109,7 +111,7 @@ void FSMGraphAssetEditor::InitGraphAssetEditor(const EToolkitMode::Type InMode, 
 				->SetHideTabWell(true)
 				->SetSizeCoefficient(0.2f)
 			)
-			/*->Split
+			->Split
 			(
 				FTabManager::NewSplitter()
 				->SetOrientation(Orient_Horizontal)
@@ -117,18 +119,18 @@ void FSMGraphAssetEditor::InitGraphAssetEditor(const EToolkitMode::Type InMode, 
 				->Split
 				(
 					FTabManager::NewStack()
-					->AddTab(GraphTabId, ETabState::OpenedTab)
+					->AddTab(DetailsTabId, ETabState::OpenedTab)
 					->SetHideTabWell(true)
 					->SetSizeCoefficient(0.85f)
 				)
-				->Split
+				/*->Split
 				(
 					FTabManager::NewStack()
 					->AddTab(DetailsTabId, ETabState::OpenedTab)
 					->SetHideTabWell(true)
 					->SetSizeCoefficient(0.15f)
-				)
-			)*/
+				)*/
+			)
 		);
 
 	FAssetEditorToolkit::InitAssetEditor(InMode, InToolkitHost, FName("GraphEditorIdentifier"), Layout, true, true, GraphAsset);
@@ -202,7 +204,7 @@ void FSMGraphAssetEditor::BindToolkitCommands()
 	}
 }
 
-/*
+
 TSharedRef<SDockTab> FSMGraphAssetEditor::HandleTabManagerSpawnTabDetails(const FSpawnTabArgs &Args)
 {
 	FDetailsViewArgs DetailsViewArgs;
@@ -221,7 +223,7 @@ TSharedRef<SDockTab> FSMGraphAssetEditor::HandleTabManagerSpawnTabDetails(const 
 		[
 			DetailsWidget.ToSharedRef()
 		];
-}*/
+}
 
 TSharedRef<SDockTab> FSMGraphAssetEditor::HandleTabManagerSpawnTabGraph(const FSpawnTabArgs &Args)
 {
@@ -299,8 +301,8 @@ void FSMGraphAssetEditor::OnCommandCopy()
 	for(FGraphPanelSelectionSet::TIterator It(SelectedNodes); It; ++It)
     {
 		UFSMEdGraphNode *Node = Cast<UFSMEdGraphNode>(*It);
-		if(Node)
-			Node->PostCopyNode();
+		//if(Node)
+			//Node->PostCopyNode();
 	}
 }
 

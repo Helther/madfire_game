@@ -117,16 +117,6 @@ void SFSMGraphNode::CreatePinWidgets()
 		TSharedPtr<SGraphPin> NewPin = SNew(SFSMOutputPin, CurPin);
 		AddPin(NewPin.ToSharedRef());
 	}
-	/*
-	for(int32 i = 0; i < EdNode->Pins.Num(); ++i)
-    {
-		UEdGraphPin *Pin = EdNode->Pins[i];
-		if(!Pin->bHidden)
-        {
-			TSharedPtr<SGraphPin> NewPin = SNew(SFSMOutputPin, Pin);
-			AddPin(NewPin.ToSharedRef());
-		}
-	}*/
 }
 
 void SFSMGraphNode::AddPin(const TSharedRef<SGraphPin> &PinToAdd)
@@ -149,14 +139,15 @@ bool SFSMGraphNode::IsNameReadOnly() const
 
 void SFSMGraphNode::OnNameTextCommited(const FText &InText, ETextCommit::Type CommitInfo)
 {	
-	/*auto EdNode = Cast<UFSMEdGraphNode>(GraphNode);
-
-	if(EdNode && EdNode->RenameUniqueNode(InText))
+	auto EdNode = Cast<UFSMEdGraphNode>(GraphNode);
+	auto newNamestr = InText.ToString();
+	FName NewName = FName(*newNamestr);
+	if(EdNode && EdNode->RenameUniqueNode(NewName))
     {
 		UpdateGraphNode();
 		//NodeHeader.Get()->SetVisibility(EVisibility::Visible);
 		SGraphNode::OnNameTextCommited(InText, CommitInfo);
-	}*/
+	}
 }
 
 void SFSMGraphNode::OnMouseEnter(const FGeometry &MyGeometry, const FPointerEvent &MouseEvent)

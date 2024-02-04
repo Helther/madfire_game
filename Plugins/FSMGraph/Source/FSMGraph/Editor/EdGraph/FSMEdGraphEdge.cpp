@@ -3,6 +3,7 @@
 #include "FSMEdGraph.h"
 #include "FSMGraph.h"
 #include "../SlateGraph/SFSMGraphEdge.h"
+#include "../../FSMGraph.h"
 
 UFSMEdGraphEdge::UFSMEdGraphEdge() 
 {
@@ -60,6 +61,16 @@ void UFSMEdGraphEdge::CreateConnections(UFSMEdGraphNode *PrevState, UFSMEdGraphN
 	Pins[1]->LinkedTo.Empty();
 	NextState->GetInputPin()->Modify();
 	Pins[1]->MakeLinkTo(NextState->GetInputPin());
+
+	UFSMEdGraph *Graph = Cast<UFSMEdGraph>(GetGraph());
+	UFSMGraph *GraphAsset = Graph->GetGraphAsset();
+
+	FName Prev = PrevState->AssetNode;
+	FName Next = NextState->AssetNode;
+	if(!GraphAsset->Validate(Prev) && !GraphAsset->Validate(Next))
+    {
+		GraphAsset->StatesMap[Prev].Links.Add({Next,FSMCondition()});
+    }
 }
 
 UFSMEdGraphNode *UFSMEdGraphEdge::GetPreviousState() const

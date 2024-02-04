@@ -1,4 +1,7 @@
 #include "FSMConnectionDrawingPolicy.h"
+#include "FSMEdGraphEdge.h"
+#include "FSMEdGraphNode.h"
+#include "FSMEdGraphRoot.h"
 
 FSMConnectionDrawingPolicy::FSMConnectionDrawingPolicy(int32 InBackLayerID, int32 InFrontLayerID, float ZoomFactor, const FSlateRect &InClippingRect, FSlateWindowElementList &InDrawElements, UEdGraph *InGraphObj) :
     FConnectionDrawingPolicy(InBackLayerID, InFrontLayerID, ZoomFactor, InClippingRect, InDrawElements),
@@ -31,16 +34,53 @@ void FSMConnectionDrawingPolicy::Draw(TMap<TSharedRef<SWidget>, FArrangedWidget>
     FConnectionDrawingPolicy::Draw(InPinGeometries, ArrangedNodes);
 }
 
-void FSMConnectionDrawingPolicy::DetermineLinkGeometry(FArrangedChildren &,
-                                                       TSharedRef<SWidget> &,
-                                                       UEdGraphPin *,
-                                                       UEdGraphPin *,
-                                                       FArrangedWidget *&,
-                                                       FArrangedWidget *&)
+void FSMConnectionDrawingPolicy::DetermineLinkGeometry(	FArrangedChildren& ArrangedNodes, 
+	                                                    TSharedRef<SWidget>& OutputPinWidget,
+	                                                    UEdGraphPin* OutputPin,
+	                                                    UEdGraphPin* InputPin,
+	                                                    /*out*/ FArrangedWidget*& StartWidgetGeometry,
+	                                                    /*out*/ FArrangedWidget*& EndWidgetGeometry)
 {
+    //Default
+    /*StartWidgetGeometry = PinGeometries->Find(OutputPinWidget);
+	
+	if (TSharedPtr<SGraphPin>* pTargetWidget = PinToPinWidgetMap.Find(InputPin))
+	{
+		TSharedRef<SGraphPin> InputWidget = (*pTargetWidget).ToSharedRef();
+		EndWidgetGeometry = PinGeometries->Find(InputWidget);
+	}*/
+    if(UFSMEdGraphRoot *Root = Cast<UFSMEdGraphRoot>(OutputPin->GetOwningNode()))
+    {
+        StartWidgetGeometry = PinGeometries->Find(OutputPinWidget);
+        UFSMEdGraphNode *State = CastChecked<UFSMEdGraphNode>(InputPin->GetOwningNode());
+        int32 StateIndex = NodeWidgetMap.FindChecked(State);
+        EndWidgetGeometry = &(ArrangedNodes[StateIndex]);
+    }
+    else if(UFSMEdGraphEdge *Edge = Cast<UFSMEdGraphEdge>(InputPin->GetOwningNode()))
+    {
+        UFSMEdGraphNode *PrevState = Edge->GetPreviousState();
+        UFSMEdGraphNode *NextState = Edge->GetNextState();
+        if((PrevState != nullptr) && (NextState != nullptr))
+        {
+            int32 *PrevNodeIndex = NodeWidgetMap.Find(PrevState);
+            int32 *NextNodeIndex = NodeWidgetMap.Find(NextState);
 
-
-
+            if((PrevNodeIndex != nullptr) && (NextNodeIndex != nullptr))
+            {
+                StartWidgetGeometry = &(ArrangedNodes[*PrevNodeIndex]);
+                EndWidgetGeometry = &(ArrangedNodes[*NextNodeIndex]);
+            }
+        }
+    }
+    else
+    {
+        StartWidgetGeometry = PinGeometries->Find(OutputPinWidget);
+        if(TSharedPtr<SGraphPin> *pTargetWidget = PinToPinWidgetMap.Find(InputPin))
+        {
+            TSharedRef<SGraphPin> InputWidget = (*pTargetWidget).ToSharedRef();
+            EndWidgetGeometry = PinGeometries->Find(InputWidget);
+        }
+    }
 }
 
 void FSMConnectionDrawingPolicy::DrawSplineWithArrow(const FGeometry &StartG, const FGeometry &EndG, const FConnectionParams &Params)
@@ -118,3 +158,41 @@ void FSMConnectionDrawingPolicy::Internal_DrawLineWithArrow(const FVector2D &Sta
 
 void FSMConnectionDrawingPolicy::DrawCircle(const FVector2D &Center, float Radius, const FLinearColor &Color, const int NumLineSegments)
 {}
+
+void FSMConnectionDrawingPolicy::DrawPinGeometries(TMap<TSharedRef<SWidget>, FArrangedWidget> &InPinGeometries, FArrangedChildren &ArrangedNodes)
+{
+    for (TMap<TSharedRef<SWidget>, FArrangedWidget>::TIterator ConnectorIt(InPinGeometries); ConnectorIt; ++ConnectorIt)
+	{
+		TSharedRef<SWidget> SomePinWidget = ConnectorIt.Key();
+		SGraphPin& PinWidget = static_cast<SGraphPin&>(SomePinWidget.Get());
+		UEdGraphPin* ThePin = PinWidget.GetPinObj();
+
+		if (ThePin->Direction == EGPD_Output)
+		{
+			for (int32 LinkIndex=0; LinkIndex < ThePin->LinkedTo.Num(); ++LinkIndex)
+			{
+				FArrangedWidget* LinkStartWidgetGeometry = nullptr;
+				FArrangedWidget* LinkEndWidgetGeometry = nullptr;
+
+				UEdGraphPin* TargetPin = ThePin->LinkedTo[LinkIndex];
+
+				DetermineLinkGeometry(ArrangedNodes, SomePinWidget, ThePin, TargetPin, /*out*/ LinkStartWidgetGeometry, /*out*/ LinkEndWidgetGeometry);
+
+				if (( LinkEndWidgetGeometry && LinkStartWidgetGeometry ) && !IsConnectionCulled( *LinkStartWidgetGeometry, *LinkEndWidgetGeometry ))
+				{
+					FConnectionParams Params;
+					DetermineWiringStyle(ThePin, TargetPin, /*inout*/ Params);
+					const TSharedPtr<SGraphPin>* ConnectedPinWidget = PinToPinWidgetMap.Find(TargetPin);
+					if (ConnectedPinWidget && ConnectedPinWidget->IsValid())
+					{
+						if ( PinWidget.AreConnectionsFaded() && (*ConnectedPinWidget)->AreConnectionsFaded() )
+						{
+							Params.WireColor.A = 0.2f;
+						}
+					}
+					DrawSplineWithArrow(LinkStartWidgetGeometry->Geometry, LinkEndWidgetGeometry->Geometry, Params);
+				}
+			}
+		}
+	}
+}

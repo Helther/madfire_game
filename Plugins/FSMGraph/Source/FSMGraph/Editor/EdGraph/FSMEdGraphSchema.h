@@ -4,6 +4,7 @@
 #include "EdGraph/EdGraphSchema.h"
 #include "FSMEdGraphSchema.generated.h"
 
+class UFSMEdGraphRoot;
 
 USTRUCT()
 struct FFSMGraphSchemaAction_NewStateNode : public FEdGraphSchemaAction
@@ -26,7 +27,7 @@ struct FFSMGraphSchemaAction_NewStateNode : public FEdGraphSchemaAction
 	void AddReferencedObjects(FReferenceCollector &Collector) override;
 
 	template<typename NodeType>
-	static NodeType *SpawnNodeFromTemplate(class UEdGraph *ParentGraph, NodeType *InTemplateNode, const FVector2D Location = FVector2D(0.f,0.f), bool bSelectNewNode = true)
+	static NodeType *SpawnNodeFromTemplate(class UEdGraph *ParentGraph, NodeType *InTemplateNode, const FVector2D Location = FVector2D(0.f,0.f), bool bSelectedNewNode = true)
     {
 		FFSMGraphSchemaAction_NewStateNode Action;
 		Action.NodeTemplate = InTemplateNode;
@@ -76,14 +77,15 @@ public:
 	//void GetAssetsNodeHoverMessage(const TArray<FAssetData> &Assets, const UEdGraphNode *HoverNode, FString &OutTooltipText, bool &OutOkIcon) const override;
 	void GetAssetsPinHoverMessage(const TArray<FAssetData> &Assets, const UEdGraphPin *HoverNode, FString &OutTooltipText, bool &OutOkIcon) const override;
 	class FConnectionDrawingPolicy* CreateConnectionDrawingPolicy(int32 InBackLayerID, int32 InFrontLayerID, float InZoomFactor, const FSlateRect& InClippingRect, class FSlateWindowElementList& InDrawElements, class UEdGraph* InGraphObj) const override;
-	
+	void CreateDefaultNodesForGraph(UEdGraph &Graph) const override;
 	//void BreakNodeLinks(UEdGraphNode &TargetNode) const override;
 	//void BreakPinLinks(UEdGraphPin &TargetPin, bool bSendsNodeNotification) const override;
 	//void BreakSinglePinLink(UEdGraphPin *SourcePin, UEdGraphPin *TargetPin) const override;
 
 
-	/*
-	void CreateDefaultNodesForGraph(UEdGraph &Graph) const override;
+	mutable UFSMEdGraphRoot *RootNode = nullptr;
+
+	/*	
 	void GetGraphDisplayInformation(const UEdGraph &Graph, FGraphDisplayInfo &DisplayInfo) const override;
 	bool CanDuplicateGraph(UEdGraph *InSourceGraph) const override;*/
 };

@@ -15,9 +15,6 @@ class UFSMEdGraphNode : public UEdGraphNode
 	GENERATED_BODY()
 
 public:
-	UFSMEdGraphNode();
-	~UFSMEdGraphNode() override;
-
 	//Interface from UEdGraphNode
 	TSharedPtr<SGraphNode> CreateVisualWidget() override;
 	void AllocateDefaultPins() override;
@@ -25,23 +22,12 @@ public:
 	void PrepareForCopying() override;
 	void DestroyNode() override;
 	void AutowireNewNode(UEdGraphPin *FromPin) override;
-
 	void SetAssetNode(FName index);
 	FName GetAssetNode() const;
+	virtual bool RenameUniqueNode(const FName &NewName);
 
-	void PostCopyNode();
-	bool RenameUniqueNode(const FText &NewName);
-	FText GetEdNodeName() const;
-	void SetEdNodeName(const FText &Name);
-	void SetEdNodeName(const FName &Name);
-	TSharedPtr<SWidget> GetContentWidget();
-	void UpdateVisualNode();
-	void SaveNodesAsChildren(TArray<UEdGraphNode*> &Children);
-
-	UEdGraphPin *GetOutputPin() const;
-	UEdGraphPin *GetInputPin() const;
-
-	FName RealName;
+	virtual UEdGraphPin *GetOutputPin() const;
+	virtual UEdGraphPin *GetInputPin() const;
 
 	UPROPERTY(EditDefaultsOnly)
 	FName AssetNode;
@@ -49,16 +35,10 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	bool IsInit;
 
-	void PostEditChangeProperty(struct FPropertyChangedEvent &e);
-
 	void GetTransitionList(TArray<UFSMEdGraphEdge*> &OutTransitions, bool bWantSorted) const;
 
 
 protected:
-	bool HasOutputPins();
-	bool HasInputPins();
 	TSharedPtr<SGraphNode> SlateNode;
 	
-	UPROPERTY()
-	FText EdNodeName;
 };

@@ -22,5 +22,9 @@ bool UFSMGraphAssetFactory::CanCreateNew() const
 
 bool UFSMGraphAssetFactory::ShouldShowInNewMenu() const
 {
-    return true;
+    return true; }
+
+FConnectionDrawingPolicy *FSMGraphPinConnectionFactory::CreateConnectionPolicy(const UEdGraphSchema *Schema, int32 InBackLayerID, int32 InFrontLayerID,  float ZoomFactor, const FSlateRect &InClippingRect,  FSlateWindowElementList &InDrawElements, UEdGraph *InGraphObj) const
+{
+    return nullptr;
 }

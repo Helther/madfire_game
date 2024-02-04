@@ -28,5 +28,7 @@ protected:
 	void DrawCircle(const FVector2D &Center, float Radius, const FLinearColor &Color, const int NumLineSegments);
 	TArray<FVector2D> TempPoints;
 
+	 void DrawPinGeometries(TMap<TSharedRef<SWidget>, FArrangedWidget>& InPinGeometries, FArrangedChildren& ArrangedNodes) override;
+
 	static constexpr float RelinkHandleHoverRadius = 20.f;
 };

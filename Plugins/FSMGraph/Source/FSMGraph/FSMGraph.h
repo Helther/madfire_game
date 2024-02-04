@@ -27,8 +27,6 @@ struct FSMState
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TArray<FSMLink> Links;
     
-    
-
     friend class UFSMGraph;
 };
 
@@ -41,9 +39,6 @@ public:
     UPROPERTY()
     UEdGraph *EdGraph;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly)
-    TArray<FSMState> TestData;
-
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TMap<FName, FSMState> StatesMap;
 
@@ -52,11 +47,11 @@ public:
 
     FName SpawnNode();
 
-    FSMState &GetState(FName &);
-    void AddState(FName &, FSMState &);
-    void RemoveState(FName &);
+    FSMState &GetState(const FName &);
+    void AddState(const FName &, FSMState &);
+    void RemoveState(const FName &);
 
-    bool Validate(FName &);
+    bool Validate(const FName &);
 
     UFUNCTION()
     void Modify() {}
