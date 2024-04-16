@@ -26,6 +26,8 @@ public class FSMGraph : ModuleRules
 			new string[]
 			{
 				"Core",
+				"Kismet",
+                "EditorFramework"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -42,6 +44,11 @@ public class FSMGraph : ModuleRules
 				"UnrealEd", 
 				"AssetTools", 
 				"GraphEditor",
+                "KismetCompiler",
+                "PropertyEditor",
+                "EditorWidgets",
+                "BlueprintGraph",
+                "AssetTools",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

@@ -41,7 +41,10 @@ private:
 
 	TSharedRef<SDockTab> HandleTabManagerSpawnTabDetails(const FSpawnTabArgs &Args);
 	TSharedRef<SDockTab> HandleTabManagerSpawnTabGraph(const FSpawnTabArgs &Args);
+	TSharedRef<SDockTab> HandleTabManagerSpawnTabCond(const FSpawnTabArgs &Args);
 	//TSharedRef<SDockTab> HandleTabManagerSpawnTabGraphDetails(const FSpawnTabArgs &Args);
+
+	UEdGraph *CurrendCond;
 
 	//Delegates
 	bool CanSelectAllNodes();

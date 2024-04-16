@@ -17,6 +17,7 @@ struct FSMLink
 
     UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
     FSMCondition ConditionDelegate;
+    
 };
 
 USTRUCT(BlueprintType)
@@ -26,6 +27,15 @@ struct FSMState
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TArray<FSMLink> Links;
+
+    UPROPERTY(EditAnywhere,Category = Functions, meta=(FunctionReference, AllowFunctionLibraries, PrototypeFunction="/Script/Madfire.CharacterBase.SetupItemActorCollision", DefaultBindingName="OnUpdate"), DisplayName="On Update")
+    FMemberReference OnUpdate;
+
+    UPROPERTY(EditAnywhere,Category = Functions, meta=(FunctionReference, AllowFunctionLibraries, PrototypeFunction="/Script/Madfire.CharacterBase.SetupItemActorCollision", DefaultBindingName="OnUpdate"), DisplayName="On Update")
+    FMemberReference OnEnter;
+
+    UPROPERTY(EditAnywhere,Category = Functions, meta=(FunctionReference, AllowFunctionLibraries, PrototypeFunction="/Script/Madfire.CharacterBase.SetupItemActorCollision", DefaultBindingName="OnUpdate"), DisplayName="On Update")
+    FMemberReference OnLeave;
     
     friend class UFSMGraph;
 };

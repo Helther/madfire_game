@@ -11,9 +11,12 @@
 #include "EdGraph/FSMEdGraph.h"
 #include "EdGraph/FSMEdGraphNode.h"
 #include "EdGraph/FSMEdGraphSchema.h"
+#include "../CondEditor/CondGraphSchema.h"
+#include "../CondEditor/CondGraph.h"
 
 const FName FSMGraphAssetEditor::DetailsTabId(TEXT("FSMGraphEditorDetailsTabID"));
 const FName FSMGraphAssetEditor::GraphTabId(TEXT("FSMGraphEditorGraphTabID"));
+const FName CondGraphTabId(TEXT("FSMCondEditorGraphTabID"));
 
 FSMGraphAssetEditor::FSMGraphAssetEditor()
 {
@@ -59,6 +62,10 @@ void FSMGraphAssetEditor::RegisterTabSpawners(const TSharedRef<FTabManager> &Tab
 		.SetDisplayName(FText::FromString("Graph Editor"))
 		.SetGroup(WorkspaceMenuCategoryRef);
 
+	TabManager->RegisterTabSpawner(CondGraphTabId, FOnSpawnTab::CreateSP(this, &FSMGraphAssetEditor::HandleTabManagerSpawnTabCond))
+		.SetDisplayName(FText::FromString("Condition Editor"))
+		.SetGroup(WorkspaceMenuCategoryRef);
+
 	FAssetEditorToolkit::RegisterTabSpawners(TabManager);
 
 	/*const auto &LocalCategories = TabManager.Get().GetLocalWorkspaceMenuRoot()->GetChildItems();
@@ -73,8 +80,9 @@ void FSMGraphAssetEditor::RegisterTabSpawners(const TSharedRef<FTabManager> &Tab
 void FSMGraphAssetEditor::UnregisterTabSpawners(const TSharedRef<FTabManager> &TabManager) 
 {
 	FAssetEditorToolkit::UnregisterTabSpawners(TabManager);
-//	TabManager->UnregisterTabSpawner(DetailsTabId);
+	TabManager->UnregisterTabSpawner(DetailsTabId);
 	TabManager->UnregisterTabSpawner(GraphTabId);
+	TabManager->UnregisterTabSpawner(CondGraphTabId);
 }
 
 void FSMGraphAssetEditor::InitGraphAssetEditor(const EToolkitMode::Type InMode, const TSharedPtr<class IToolkitHost> &InToolkitHost, UFSMGraph *InGraph)
@@ -91,12 +99,16 @@ void FSMGraphAssetEditor::InitGraphAssetEditor(const EToolkitMode::Type InMode, 
 		GraphAsset->EdGraph->bAllowDeletion = false;
 		auto Schema = Graph->GetSchema();
 		Schema->CreateDefaultNodesForGraph(*Graph);
+
+		UEdGraph *CondGraph = CastChecked<UFSMCondGraph>(FBlueprintEditorUtils::CreateNewGraph(GraphAsset, NAME_None, UFSMCondGraph::StaticClass(), UFSMCondGraphSchema::StaticClass()));
+		CurrendCond = CondGraph;
+		auto CondSchema = CondGraph->GetSchema();
+		CondSchema->CreateDefaultNodesForGraph(*CondGraph);
 	}
 
 	FGenericCommands::Register();
 	FGraphEditorCommands::Register();
 	BindToolkitCommands();
-	
 
 	TSharedRef<FTabManager::FLayout> Layout = FTabManager::NewLayout("LayoutName")
         ->AddArea
@@ -123,13 +135,13 @@ void FSMGraphAssetEditor::InitGraphAssetEditor(const EToolkitMode::Type InMode, 
 					->SetHideTabWell(true)
 					->SetSizeCoefficient(0.85f)
 				)
-				/*->Split
+				->Split
 				(
 					FTabManager::NewStack()
-					->AddTab(DetailsTabId, ETabState::OpenedTab)
+					->AddTab(CondGraphTabId, ETabState::OpenedTab)
 					->SetHideTabWell(true)
 					->SetSizeCoefficient(0.15f)
-				)*/
+				)
 			)
 		);
 
@@ -232,6 +244,25 @@ TSharedRef<SDockTab> FSMGraphAssetEditor::HandleTabManagerSpawnTabGraph(const FS
 		EdGraphEditor = SNew(SGraphEditor)
 			.AdditionalCommands(GraphEditorCommands)
 			.GraphToEdit(GraphAsset->EdGraph);
+	}
+    else
+    {
+		// TODO: Error No Editor Graph 
+    }
+	return SNew(SDockTab)
+		.TabRole(ETabRole::PanelTab)
+		[
+			EdGraphEditor.ToSharedRef()
+		];
+}
+
+TSharedRef<SDockTab> FSMGraphAssetEditor::HandleTabManagerSpawnTabCond(const FSpawnTabArgs &Args)
+{
+	if(CurrendCond)
+    {
+		EdGraphEditor = SNew(SGraphEditor)
+			.AdditionalCommands(GraphEditorCommands)
+			.GraphToEdit(CurrendCond);
 	}
     else
     {
