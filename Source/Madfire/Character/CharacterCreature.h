@@ -109,6 +109,7 @@ public:
     virtual void SetAbilityCameraMode(TSubclassOf<UCameraMode> CameraMode) {}
     UFUNCTION(BlueprintCallable, Category = "Camera")
     virtual void ClearAbilityCameraMode() {}
+    virtual void FireLoadedProjectile();
 
     void StartAnimation(UAnimMontage *AnimMontage,
                         const FOnMontageBlendingOutStarted &EndCallBack, float InPlayRate,

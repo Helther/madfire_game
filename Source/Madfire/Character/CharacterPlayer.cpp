@@ -21,6 +21,8 @@ ACharacterPlayer::ACharacterPlayer(const FObjectInitializer &ObjectInitializer)
     StunShakeScale = 1.5f;
     KnockDownShakeScale = 2.f;
     BlockedHitShakeScale = 0.8f;
+    RangedWeaponFireShakeScaleMax = 1.f;
+    RangedWeaponTensionMax = 3000.f;
 }
 
 void ACharacterPlayer::BeginPlay()
@@ -61,6 +63,21 @@ void ACharacterPlayer::SetSprintCameraMode(bool activate)
 void ACharacterPlayer::AdjustCameraZoom(float Offset) 
 {
     CameraComponent->AdjustActiveCameraZoom(Offset);
+}
+
+void ACharacterPlayer::FireLoadedProjectile()
+{
+    ACharacterCreature::FireLoadedProjectile();
+
+    if (auto RangedWeapon = GetCombatComponent()->GetEquippedRangedWeapon())
+    {  // ranged attack
+        if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+        {
+            float scale = FMath::GetMappedRangeValueClamped(FVector2D(0.f, RangedWeaponTensionMax), FVector2D(0.f, RangedWeaponFireShakeScaleMax),
+                RangedWeapon->MaxTensionStrength);
+            PlayerController->PlayerCameraManager->StartCameraShake(FireCameraShake, scale);
+        }
+    }
 }
 
 void ACharacterPlayer::OnWalkingOffLedge_Implementation(
@@ -113,8 +130,8 @@ void ACharacterPlayer::UpdateDefaultCameraMode(int OldState, int NewState)
 
 void ACharacterPlayer::UseAimComponent(UAbilityAimComponent *AimComp)
 {
-    if(!AimComp) return;
+    if(!AimComp) 
+        return;
 
     AimComp->ActivateComponent();
 }
-

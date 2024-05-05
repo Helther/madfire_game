@@ -6,6 +6,7 @@
 #include "GameFramework/DamageType.h"
 #include "../Rules/GameRules.h"
 #include "Engine/EngineTypes.h"
+#include "CombatSystem/WeakSpotPhysicalMat.h"
 
 #include "Damage.generated.h"
 
@@ -101,7 +102,7 @@ struct FForceDamageEvent : public FDamageEvent
         : FDamageEvent(InDamageTypeClass), 
         Force(force) 
     {}
-
+    bool IsOfType(int32 InID) const override { return FForceDamageEvent::ClassID == InID; };
     /** ID for this class. NOTE this must be unique for all damage events. */
 	static const int32 ClassID = 10;
     
@@ -118,7 +119,7 @@ struct FForcePointDamageEvent : public FPointDamageEvent
         FPointDamageEvent(InDamage, InHitInfo, InShotDir, InDamageTypeClass), 
         Force(force) 
     {}
-
+    bool IsOfType(int32 InID) const override { return FForcePointDamageEvent::ClassID == InID; };
     /** ID for this class. NOTE this must be unique for all damage events. */
 	static const int32 ClassID = 11;
     
@@ -131,7 +132,7 @@ struct FForceRadialDamageEvent : public FRadialDamageEvent
         FRadialDamageEvent(), 
         Force(0.0f) 
     {}
-
+    bool IsOfType(int32 InID) const override { return FForceRadialDamageEvent::ClassID == InID; };
     /** ID for this class. NOTE this must be unique for all damage events. */
 	static const int32 ClassID = 12;
     
@@ -156,4 +157,17 @@ public:
 
     UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Game|Damage")
 	static float ApplyForceDamage(AActor* DamagedActor, float BaseForce, float BaseDamage, AController* EventInstigator, AActor* DamageCauser, TSubclassOf<class UDamageType> DamageTypeClass);
+};
+
+struct FRangedForceDamageEvent : public FForceDamageEvent
+{
+    explicit FRangedForceDamageEvent(TSubclassOf<class UDamageType> InDamageTypeClass, float force, EWeakSpotType type)
+        : FForceDamageEvent(InDamageTypeClass, force),
+        Type(type)
+    {}
+    bool IsOfType(int32 InID) const override { return FRangedForceDamageEvent::ClassID == InID; };
+    /** ID for this class. NOTE this must be unique for all damage events. */
+    static const int32 ClassID = 13;
+
+    EWeakSpotType Type;
 };

@@ -65,6 +65,7 @@ public:
     UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
     FORCEINLINE USpringArmComponent *GetSpringArmComponent() const {return SpringArmComponent;}
     
+    void FireLoadedProjectile() override;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
     float CameraZoomStep;
@@ -92,17 +93,26 @@ protected:
     void UpdateDefaultCameraMode(int OldState, int NewState);
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    TSubclassOf<UCameraShakeBase> FireCameraShake;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", Meta = (UIMin = "1.00", ClampMin = "1.00"))
+    float RangedWeaponFireShakeScaleMax;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", Meta = (UIMin = "0.00", ClampMin = "0.00"))
+    float RangedWeaponTensionMax;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
     TSubclassOf<UCameraShakeBase> CCCameraShake;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", Meta = (UIMin = "0.00", ClampMin = "0.00"))
     float LossOfBalanceShakeScale;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", Meta = (UIMin = "0.00", ClampMin = "0.00"))
     float StunShakeScale;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", Meta = (UIMin = "0.00", ClampMin = "0.00"))
     float KnockDownShakeScale;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera", Meta = (UIMin = "0.00", ClampMin = "0.00"))
     float BlockedHitShakeScale;
 };

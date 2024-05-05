@@ -153,20 +153,23 @@ AItemActorProjectile::AItemActorProjectile()
     MovementComp->ProjectileGravityScale = 0.0f;
     MovementComp->OnProjectileStop.AddUniqueDynamic(this, &AItemActorProjectile::OnStop);
 
-    ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+    ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
     ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Ignore);
-
+    ItemMesh->SetGenerateOverlapEvents(false);
     ItemCollision->SetCollisionResponseToChannel(EInteractChannel, ECollisionResponse::ECR_Ignore);
-    ItemCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+    ItemCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
     ItemCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Overlap);
     ItemCollision->SetGenerateOverlapEvents(false);
 
-    ItemCollision->OnComponentBeginOverlap.AddUniqueDynamic(this, &AItemActorProjectile::OnOverlap);
+    ItemMesh->OnComponentBeginOverlap.AddUniqueDynamic(this, &AItemActorProjectile::OnOverlap);
 }
 
 void AItemActorProjectile::LaunchProjectile(FVector Direction, float Speed, float DamageCoefficient)
 {
     DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+    ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+    ItemMesh->SetGenerateOverlapEvents(true);
+    ItemMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     MovementComp->SetUpdatedComponent(ItemMesh);
     MovementComp->bSimulationEnabled = true;
     auto ownerCharacter = Cast<ACharacter>(Owner);
@@ -176,7 +179,6 @@ void AItemActorProjectile::LaunchProjectile(FVector Direction, float Speed, floa
     InitialSpeed = Speed;
     WeaponDamageCoefficient = DamageCoefficient;
     MovementComp->Velocity = Direction * Speed;
-    ItemCollision->SetGenerateOverlapEvents(true);
 }
 
 void AItemActorProjectile::OnOverlap(UPrimitiveComponent* comp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -209,7 +211,10 @@ void AItemActorProjectile::OnOverlap(UPrimitiveComponent* comp, AActor* OtherAct
     auto ammoItem = Cast<UItemAmmo>(ItemBase);
     float damage = ammoItem->DamageValue + InitialSpeed * WeaponDamageCoefficient;
     float force = ammoItem->WeightCoefficient * ammoItem->ForceCoefficient;
-    hitActor->TakeDamage(damage, FForceDamageEvent(ammoItem->DamageType, force), ownerCharacter->GetController(), Owner);
+    if (auto mat = Cast<UWeakSpotPhysicalMat>(SweepResult.PhysMaterial))  // check if hit weak spot
+        hitActor->TakeDamage(damage, FRangedForceDamageEvent(ammoItem->DamageType, force, mat->Type), ownerCharacter->GetController(), Owner);
+    else
+        hitActor->TakeDamage(damage, FForceDamageEvent(ammoItem->DamageType, force), ownerCharacter->GetController(), Owner);
     //if (attachMesh)
     //    SetOwner(hitActor);  // if attached to actor switch ownership to it, so arrow will auto destroy with it TODO doesn't work
 }
@@ -218,7 +223,8 @@ void AItemActorProjectile::OnStop(const FHitResult& SweepResult)
 {
     ItemCollision->SetGenerateOverlapEvents(true);
     ItemCollision->SetCollisionResponseToChannel(EInteractChannel, ECollisionResponse::ECR_Block);
-    ItemCollision->OnComponentBeginOverlap.RemoveDynamic(this, &AItemActorProjectile::OnOverlap);
+    ItemMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+    ItemMesh->OnComponentBeginOverlap.RemoveDynamic(this, &AItemActorProjectile::OnOverlap);
     
     GetWorld()->GetTimerManager().SetTimer(DestroyTimer, this, &AItemActorProjectile::OnTimeout, LifeTime);
 }

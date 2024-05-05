@@ -45,9 +45,9 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const FDamageEvent &Dam
     const auto DamageBase = Cast<UDamageBase>(DamageType);
     bool isAbsolute = Cast<UAbsoluteDamage>(DamageType) != nullptr;
     float force = 0.f;
-    if (DamageEvent.IsOfType(FForceDamageEvent::ClassID))
-    { 
-        auto forceType = static_cast<const FForceDamageEvent*>(&DamageEvent);// "I sense a great disturbance in it" TODO because there is a potential bug if it's not FForceDamageEvent
+    if (DamageEvent.IsOfType(FForceDamageEvent::ClassID) || DamageEvent.IsOfType(FRangedForceDamageEvent::ClassID))
+    {
+        auto forceType = static_cast<const FForceDamageEvent*>(&DamageEvent);// "I sense a great disturbance in it"
         force = forceType->Force;
     }
     bool blocked = false;
@@ -119,6 +119,19 @@ float ACharacterCreature::TakeDamage(float DamageAmount, const FDamageEvent &Dam
         else
             InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::None);
     }
+    if (!blocked && DamageEvent.IsOfType(FRangedForceDamageEvent::ClassID))  // check if successfully hit with ranged attack in a weak spot
+    {
+        // TODO finish implement locational hit reactions
+        auto damageEv = static_cast<const FRangedForceDamageEvent*>(&DamageEvent);
+        switch (damageEv->Type)
+        {
+        case EWeakSpotType::Head:
+            DamageAmount *= 2;  // TODO for now just double the damage
+            break;
+        default:
+            break;
+        }
+    }
     Logger.Log(this,*FString::Printf(TEXT("take damage after block %f"), DamageAmount));
     if (DamageAmount <= 0)
         return GetAttributeComponent()->Health->CurrentValue; 
@@ -145,6 +158,13 @@ void ACharacterCreature::Update(const FCharacterLevelInfo &levelInfo)
     if (acrobaticsChanged)
         KnockDownTime = CalculateKnockDownTime();
     // todo other stuff
+}
+
+void ACharacterCreature::FireLoadedProjectile()
+{
+    if (GetCombatComponent()->HasCombatStance())
+        if (auto RangedStance = Cast<URangeCombatStance>(GetCombatComponent()->GetCurrentCombatStance()))
+            RangedStance->FireLoadedAmmo();
 }
 
 void ACharacterCreature::StartAnimation(UAnimMontage *AnimMontage,

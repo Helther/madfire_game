@@ -12,7 +12,8 @@
 				"CoreUObject",
 				"Engine",
 				"AIModule",
-				"UMG"
+				"UMG",
+				"PhysicsCore"
 			]
 		}
 	],

@@ -37,7 +37,7 @@ void UCharacterAnimInstance::OnAmmoAttach()
 
 void UCharacterAnimInstance::OnProjectileFired()
 {
-    Cast<URangeCombatStance>(CharacterInstance->GetCombatComponent()->GetCurrentCombatStance())->FireLoadedAmmo();
+    CharacterInstance->FireLoadedProjectile();
 }
 
 void UCharacterAnimInstance::OnBlockActivation(bool activate)
