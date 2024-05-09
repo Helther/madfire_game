@@ -14,7 +14,7 @@ class UInstantAbility : public UAbstractAbility
 public:
     void AbilityInit() override;
 
-    void AbilitySetup(UCombatComponent *Component) override;
+    void AbilitySetup(ACharacter *Component) override;
 
     UFUNCTION()
     void PrecastFinish(UAnimMontage *animMontage, bool bInterrupted);

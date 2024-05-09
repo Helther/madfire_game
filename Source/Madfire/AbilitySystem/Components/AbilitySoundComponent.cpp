@@ -16,13 +16,13 @@ void UAbilitySoundComponent::DeactivateComponent_Implementation()
 
 }
 
-bool UAbilitySoundComponent::ComponentSetup(UCombatComponent *Component)
+bool UAbilitySoundComponent::ComponentSetup(ACharacter *Component)
 {
     Super::ComponentSetup(Component);
 
     if(!IsValid())
         return false;
-    auto Owner = Cast<ACharacter>(CombatComponent->GetOwner());
+    auto Owner = Cast<ACharacter>(Component);
     const FAttachmentTransformRules TransformRules = FAttachmentTransformRules(LocationRule, RotationRule, ScaleRule, bWeldSimulatedBodies);
     if(Owner)
         AudioComponent->AttachToComponent(Owner->GetMesh(), TransformRules, SocketName);
@@ -63,10 +63,10 @@ void UAbilitySoundComponent::ComponentInit(UAbstractAbility *parent)
 
 bool UAbilitySoundComponent::IsValid()
 {
-    if(!(CombatComponent->IsValidLowLevelFast()))
+/*    if(!(CombatComponent->IsValidLowLevelFast()))
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("Ability Sound Component: Component or Owner Is Null"));
         return false;
-    }
+    }*/
     return true;
 }

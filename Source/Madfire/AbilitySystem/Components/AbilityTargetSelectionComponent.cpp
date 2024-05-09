@@ -7,7 +7,7 @@ void UAbilityTargetSelection::ComponentInit(UAbstractAbility *parent)
     OnExecuteEvent.BindUObject(parent, &UAbstractAbility::OnExecute);
 }
 
-bool UAbilityTargetSelection::ComponentSetup(UCombatComponent *Component)
+bool UAbilityTargetSelection::ComponentSetup(ACharacter *Component)
 {
     return Super::ComponentSetup(Component);
 }

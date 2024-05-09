@@ -10,13 +10,13 @@ UAbstractAbility::UAbstractAbility(const FObjectInitializer &f) :
 {
 }
 
-void UAbstractAbility::AbilitySetup(UCombatComponent *Component)
-{
-    CombatComponent = Component;
-    for(auto &component : AbilityComponents)
+void UAbstractAbility::AbilitySetup(ACharacter *Character)
+{    
+    CharacterOwner = Character;
+    /*for(auto &component : AbilityComponents)
     {
         component->ComponentSetup(Component);
-    }
+    }*/
 }
 
 void UAbstractAbility::ActivateAbility()
@@ -85,6 +85,11 @@ TStatId UAbstractAbility::GetStatId() const
     return TStatId();
 }
 
+UAbilityComponent *UAbstractAbility::GetComponentByName(FName Name) const
+{
+    return nullptr;
+}
+
 float UAbstractAbility::GetCooldownTimeRemaining() const
 {
     return CooldownTime - CurrentCooldownTime;
@@ -97,8 +102,8 @@ const FAbilityInfo &UAbstractAbility::GetInfo() const
 
 ACharacterBase *UAbstractAbility::GetOwner() const
 {
-    check(CombatComponent && "No Combat Component owner");
-    auto Character = Cast<ACharacterBase>(CombatComponent->GetOwner());
+    check(CharacterOwner && "No Combat Component owner");
+    auto Character = Cast<ACharacterBase>(CharacterOwner);
     check(Character && "No owner");
     return Character;
 }
@@ -125,30 +130,21 @@ void UAbstractAbility::Release()
 
 void UAbstractAbility::Cancel()
 {
-    bIsActive = false;
     OnAbilityCancel();
-    check(CombatComponent && "Cancel: Bad component!");
-    CombatComponent->UpdateCombatFSM();
 }
 
 void UAbstractAbility::Interrupt()
 {
-    bIsActive = false;
     OnAbilityInterrupt();
-    check(CombatComponent && "Interrupt: Bad component!");
-    CombatComponent->UpdateCombatFSM();
 }
 
 bool UAbstractAbility::StopAnimation()
 {
-    if(!CombatComponent)
+    // auto Owner = Cast<ACharacter>(CombatComponent->GetOwner());
+    if(!CharacterOwner)
         return false;
 
-    auto Owner = Cast<ACharacter>(CombatComponent->GetOwner());
-    if(!Owner)
-        return false;
-
-    Owner->StopAnimMontage(CastAnimMontage);
+    //Owner->StopAnimMontage(CastAnimMontage);
     return true;
 }
 
@@ -160,32 +156,17 @@ bool UAbstractAbility::StartAnimation(FName SectionName, FOnMontageBlendingOutSt
         return false;
     }
 
-    if(!CombatComponent)
-    {
-        UE_LOG(AbilitySystemLog, Error, TEXT("Ability: AbilitySystemComponent is not set"));
-        return false;
-    }
-
-    if(!CombatComponent->GetOwner())
+    if(!CharacterOwner)
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("Ability: AbilitySystemComponent Owner is not set"));
         return false;
     }
 
+    // Owner->PlayAnimMontage(CastAnimMontage,1.f,SectionName);//PrecastSectionName);
 
-    auto Owner = Cast<ACharacter>(CombatComponent->GetOwner());
-
-    if(!Owner)
-    {
-        UE_LOG(AbilitySystemLog, Error, TEXT("Ability: Owner is not CharacterBase"));
-        return false;
-    }
-
-    Owner->PlayAnimMontage(CastAnimMontage,1.f,SectionName);//PrecastSectionName);
-
-    auto animInstance    = Owner->GetMesh()->GetAnimInstance();
-    auto montageInstance = animInstance->GetActiveInstanceForMontage(CastAnimMontage);
-    montageInstance->OnMontageBlendingOutStarted = Delegate;//OnPrecastFinish;
+    //auto animInstance    = Owner->GetMesh()->GetAnimInstance();
+    //auto montageInstance = animInstance->GetActiveInstanceForMontage(CastAnimMontage);
+    //montageInstance->OnMontageBlendingOutStarted = Delegate;//OnPrecastFinish;
 
     return true;
 }

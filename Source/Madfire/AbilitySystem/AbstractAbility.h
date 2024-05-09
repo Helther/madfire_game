@@ -9,7 +9,7 @@
 #include "GameFramework/Actor.h"
 #include "AbstractAbility.generated.h"
 
-class UCombatComponent;
+class ACharacter;
 
 DECLARE_LOG_CATEGORY_EXTERN(AbilitySystemLog, Log, All);
 
@@ -81,14 +81,8 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (Bitmask, BitmaskEnum = "EMoveAbilities"), Category = "AbilitySystem")
     int32 MoveAbilities = EMoveAbilities::NoMove;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced, Category = "AbilitySystem")
-    TArray<UAbilityRequirement *> Requirements;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
-    TArray<UAbilityComponent *> AbilityComponents;
-
     UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
-    UCombatComponent *CombatComponent;
+    ACharacter *CharacterOwner;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
     float CooldownTime = 3;
@@ -123,12 +117,11 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
     UDataTable *InfoDataTable = nullptr;
 
-
     //Interface
     virtual void AbilityInit();
 
     //Called by AbilitySystemComponent when Ability Selected
-    virtual void AbilitySetup(UCombatComponent *Component);
+    virtual void AbilitySetup(ACharacter *Character);
 
     void Tick(float DeltaTime) override;
 
@@ -141,17 +134,6 @@ public:
     TStatId GetStatId() const override;
 
     UWorld* GetWorld() const override;
-
-    //Blueprint Inteface    
-    //Helper functions
-    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
-    float GetCooldownTimeRemaining() const;
-
-    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
-    class ACharacterBase *GetOwner() const;
-
-    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
-    const FAbilityInfo &GetInfo() const;
 
     //Controll interface
     UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
@@ -181,7 +163,20 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
     void OnExecute(const TArray<AActor*> &Target, FVector InstigatorLocation, FRotator InstigatorRotation);
 
-    //Functional
+    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
+    UAbilityComponent *GetComponentByName(FName Name) const;
+
+    //Helper Functional
+    //Blueprint Inteface    
+    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
+    float GetCooldownTimeRemaining() const;
+
+    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
+    class ACharacterBase *GetOwner() const;
+
+    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
+    const FAbilityInfo &GetInfo() const;
+
     UFUNCTION(BlueprintCallable, Meta=(DefaultToSelf="Parent", DeterminesOutputType="AbilityClass"), Category = "AbilitySystem")
     static UAbstractAbility *SpawnAbility(UObject *Parent, TSubclassOf<UAbstractAbility> AbilityClass, FName Name = NAME_None);
 
@@ -194,16 +189,10 @@ public:
     UFUNCTION(BlueprintPure, Category = "AbilitySystem")
     static const FAbilityInfo &GetAbilityInfo(UDataTable *AbilityInfoDT, FName AblName);
 
+
+
 protected:
     FTimerHandle CastTimer;
-
-    inline void ConsumeRequirements(void)
-    {
-        for (auto &Requirment : Requirements)
-        {
-            //Requirment->Consume(Caster);
-        }
-    }
 
     void StopCooldown()
     {
@@ -234,6 +223,28 @@ protected:
     bool bUserAnimInterrupt = false;
 
     static constexpr auto DataTablePath = "AbilitySystem/AbilityTable";
+
+
+    TArray<UAbilityComponent*> AbilityComponents;
+    // New Ability System
+    UAbilityComponent *CreateComponent(UClass *CompClass, FName Name)
+    {
+        auto ReturnType = UAbilityComponent::StaticClass();
+        auto Return = Cast<UAbilityComponent>(CreateDefaultSubobject(Name, ReturnType, CompClass->GetClass(), true, false));
+        AbilityComponents.Add(Return);
+        return Return;
+    }
+
+    template<typename ComponentType>
+    UAbilityComponent *CreateComponent(FName Name)
+    {
+        auto Comp = CreateDefaultSubobject<ComponentType>(Name);
+        AbilityCompoentns.Add(Comp);
+        return Comp;
+    }
+
+
+
 };
 
 

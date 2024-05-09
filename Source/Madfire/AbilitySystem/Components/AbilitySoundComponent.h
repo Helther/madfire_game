@@ -13,7 +13,7 @@ class UAbilitySoundComponent : public UAbilityComponent
     GENERATED_BODY()
 
 public:
-    bool ComponentSetup(UCombatComponent *Component) override;
+    bool ComponentSetup(ACharacter *Component) override;
 
     UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "AbilitySystem")
     UAudioComponent* AudioComponent;

@@ -30,12 +30,27 @@ class UAbilityManagerComponent : public UActorComponent
 public:
     UAbilityManagerComponent(const class FObjectInitializer &ObjectInitializer);
 
+    
 
     UFUNCTION(BlueprintCallable, Category = "")
     void Update();
 
     UFUNCTION(BlueprintCallable, Category = "")
     UAbstractAbility *GetAbility(FName AbilityName);
+
+    UFUNCTION(BlueprintCallable, Category = "Ability System")
+    void SetCurrentAbility(UAbstractAbility *Ability);
+
+    UFUNCTION(BlueprintCallable, Category = "Ability System")
+    void ActivateAbility();
+
+    UFUNCTION(BlueprintCallable, Category = "Ability System")
+    void ReleaseAbility();
+
+    UFUNCTION(BlueprintCallable, Category = "Ability System")
+    bool IsUsingAbility() const;
+
+    void OnUseAbility(bool Started);
 
     UPROPERTY(SaveGame, BlueprintReadOnly, Category = "")
     TMap<FName,UAbstractAbility*> AbilityList;
@@ -62,4 +77,37 @@ public:
     TArray<FSpell> SpellList;
     UPROPERTY(SaveGame, BlueprintReadWrite, Category = "")
     TMap<FName,UAbstractAbility*> SpellAbilityList;
+
+    bool AbilityPressed = false;
+    
+    FTimerHandle GlobalCooldownTimer;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability System")
+    TSoftObjectPtr<UAbstractAbility> CurrentAbility;
+
+    bool IsAbilityPressed() const;
+
+    bool IsOnGlobalCooldown() const;
+
+    void SetGlobalCooldown();
+
+
+    //TODO: Update Delegate For Ability panel
+    void CalculateMaxCastingSpeed(float SpeedModifier);
+
+    // значение относительно нормы
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability System")
+    float CastSpeed = 1.f;
+
+    //Max move speed during ability cast
+    UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Ability System")
+    float MaxSpeedWhileCasting;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability System")
+    float GlobalCooldownTime = 1;
+
+    ACharacterCreature *Owner = nullptr;
+
+protected:
+    void BeginPlay() override;
 };

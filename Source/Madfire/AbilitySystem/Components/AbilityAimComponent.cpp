@@ -5,7 +5,7 @@ void UAbilityAimComponent::ComponentInit(UAbstractAbility *parent)
     Super::ComponentInit(parent);
 }
 
-bool UAbilityAimComponent::ComponentSetup(UCombatComponent *Component)
+bool UAbilityAimComponent::ComponentSetup(ACharacter *Component)
 {
     return Super::ComponentSetup(Component);
 }

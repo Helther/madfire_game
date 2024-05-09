@@ -8,7 +8,7 @@ void UInstantAbility::AbilityInit()
     OnPrecastFinish.BindUObject(this,&UInstantAbility::PrecastFinish);
 }
 
-void UInstantAbility::AbilitySetup(UCombatComponent *Component)
+void UInstantAbility::AbilitySetup(ACharacter *Component)
 {
     Super::AbilitySetup(Component);
 }
@@ -20,8 +20,8 @@ void UInstantAbility::PrecastFinish(UAnimMontage *animMontage, bool bInterrupted
         CurrentCharges--;
         CastNotify();
         bIsActive = false;
-        check(CombatComponent && "Cancel: Bad component!");
-        CombatComponent->UpdateCombatFSM();
+        //check(CombatComponent && "Cancel: Bad component!");
+        //CombatComponent->UpdateCombatFSM();
     }
     else
     {

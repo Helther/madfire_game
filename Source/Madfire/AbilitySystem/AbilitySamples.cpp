@@ -55,9 +55,9 @@ void UCastedAbility_Sample::AbilityInit()
 
 void UCastedAbility_Sample::CastNotify()
 {
-    if(AimingComponent && CombatComponent)
-        CombatComponent->UseAimComponent(AimingComponent);
-    else
+    /*if(AimingComponent && CombatComponent)
+        CombatComponent->UseAimComponent(AimingComponent);*/
+    //else
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("CastedAbility_Sample: No Aim Component"));
     }

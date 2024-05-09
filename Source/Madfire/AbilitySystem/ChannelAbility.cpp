@@ -17,7 +17,7 @@ void UChannelAbility::AbilityInit()
     Super::AbilityInit();
 }
 
-void UChannelAbility::AbilitySetup(UCombatComponent *Component)
+void UChannelAbility::AbilitySetup(ACharacter *Component)
 {
     Super::AbilitySetup(Component);
 }

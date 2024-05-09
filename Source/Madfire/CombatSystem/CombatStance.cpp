@@ -52,11 +52,11 @@ void UCombatStance::OnAbilityEnter()
         Owner->GetMovementComponent()->bUseControllerDesiredRotation = true;
         Owner->GetMovementComponent()->bOrientRotationToMovement = false;
     }
-    GetCombatComp()->CalculateMaxCastingSpeed(Owner->GetMovementComponent()->GetSpeedModifier());
+    /*GetCombatComp()->CalculateMaxCastingSpeed(Owner->GetMovementComponent()->GetSpeedModifier());
     Owner->GetAttributeComponent()->Stamina->Consume(GetCombatComp()->CurrentAbility->StaminaCost);
     Owner->GetAttributeComponent()->Stamina->BlockRegen();
     Owner->GetMovementComponent()->MoveAbilitiesCurrent = GetCombatComp()->CurrentAbility->MoveAbilities;
-    GetCombatComp()->ActivateAbility();
+    GetCombatComp()->ActivateAbility();*/
 }
 
 void UCombatStance::OnAbilityLeave()
@@ -73,7 +73,7 @@ void UCombatStance::OnAbilityLeave()
     }
     Owner->GetAttributeComponent()->Stamina->UnblockRegen();
     Owner->GetMovementComponent()->MoveAbilitiesCurrent = Owner->GetMovementComponent()->MoveAbilitiesDefault;// TODO think how to restore it to last state
-    GetCombatComp()->SetGlobalCooldown();
+    //GetCombatComp()->SetGlobalCooldown();
     Owner->ClearAbilityCameraMode();
 }
 
@@ -82,14 +82,14 @@ bool UCombatStance::IdleToAbility() const
     bool hasStamina = Owner->GetAttributeComponent()->Stamina->CurrentValue > 0;
 
     bool bIsCooldown = true;
-    if (GetCombatComp()->CurrentAbility.IsValid())
-        bIsCooldown = (!GetCombatComp()->CurrentAbility->bIsCooldown || GetCombatComp()->CurrentAbility->CurrentCharges > 0);
-    return GetCombatComp()->IsAbilityPressed() && hasStamina && GetCombatComp()->CurrentAbility.IsValid() && bIsCooldown && !GetCombatComp()->IsOnGlobalCooldown();
+    //if (GetCombatComp()->CurrentAbility.IsValid())
+      //  bIsCooldown = (!GetCombatComp()->CurrentAbility->bIsCooldown || GetCombatComp()->CurrentAbility->CurrentCharges > 0);
+    return true;//GetCombatComp()->IsAbilityPressed() && hasStamina && GetCombatComp()->CurrentAbility.IsValid() && bIsCooldown && !GetCombatComp()->IsOnGlobalCooldown();
 }
 
 bool UCombatStance::AbilityToIdle() const
 {
-    return GetCombatComp()->CurrentAbility != nullptr && !GetCombatComp()->CurrentAbility->bIsActive;
+    return true;//GetCombatComp()->CurrentAbility != nullptr && !GetCombatComp()->CurrentAbility->bIsActive;
 }
 
 FAttackInfo* UMeleeCombatStance::GetAttackInfoForSpecial(ESpecialType type)

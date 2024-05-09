@@ -1,11 +1,20 @@
 ﻿#include "AbilityManagerComponent.h"
-#include "Character/CharacterBase.h"
+#include "Character/CharacterCreature.h"
 
 
 
-UAbilityManagerComponent::UAbilityManagerComponent(const FObjectInitializer &ObjectInitializer)
+
+UAbilityManagerComponent::UAbilityManagerComponent(const FObjectInitializer &ObjectInitializer) 
 {
 
+}
+
+
+void UAbilityManagerComponent::BeginPlay() 
+{
+    Super::BeginPlay();
+    Owner = Cast<ACharacterCreature>(GetOwner());
+    check(Owner != nullptr && "UCombatComponent: No pawn");
 }
 
 void UAbilityManagerComponent::Update()
@@ -70,4 +79,78 @@ void UAbilityManagerComponent::UpdateSpellBook()
     }
 
     Update();
+}
+
+
+void UAbilityManagerComponent::OnUseAbility(bool Started)
+{
+    AbilityPressed = Started;
+
+    if (Owner->CCStateManager.HasCC())
+        return;
+
+    if (CurrentAbility != nullptr)
+    {
+        if (AbilityPressed)
+        {
+            auto CombatComp = Owner->GetCombatComponent();
+            if (!CurrentAbility->bIsActive)
+                CombatComp->UpdateCombatFSM();
+        }
+        else
+            ReleaseAbility();
+    }
+}
+
+void UAbilityManagerComponent::CalculateMaxCastingSpeed(float SpeedModifier)
+{
+    Owner->GetMovementComponent()->MaxRunSpeed = MaxSpeedWhileCasting * SpeedModifier;
+}
+
+void UAbilityManagerComponent::ActivateAbility()
+{
+    if(CurrentAbility->IsValidLowLevelFast())
+    {
+        CurrentAbility->ActivateAbility();
+        Owner->SetAbilityCameraMode(CurrentAbility->AbilityCameraMode);
+    }
+}
+
+void UAbilityManagerComponent::ReleaseAbility()
+{
+    if(CurrentAbility->IsValidLowLevelFast())
+        CurrentAbility->ReleaseAbility();
+}
+
+void UAbilityManagerComponent::SetCurrentAbility(UAbstractAbility *Ability)
+{
+    if(CurrentAbility)
+    {
+        CurrentAbility->CancelAbility();
+    }
+
+    CurrentAbility = Ability;
+    //if(CurrentAbility)
+        //CurrentAbility->AbilitySetup(this);
+}
+
+bool UAbilityManagerComponent::IsAbilityPressed() const 
+{
+    return AbilityPressed; 
+}
+
+bool UAbilityManagerComponent::IsOnGlobalCooldown() const 
+{
+    return GetWorld()->GetTimerManager().IsTimerActive(GlobalCooldownTimer); 
+}
+
+void UAbilityManagerComponent::SetGlobalCooldown() 
+{
+    GetWorld()->GetTimerManager().SetTimer(GlobalCooldownTimer, GlobalCooldownTime, false); 
+}
+
+bool UAbilityManagerComponent::IsUsingAbility() const
+{
+    auto CombatComp = Owner->GetCombatComponent();
+    return CombatComp->HasCombatStance() && CombatComp->GetCombatFSM().isInState(ECombatState::Ability);
 }

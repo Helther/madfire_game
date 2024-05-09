@@ -47,7 +47,6 @@ bool USpawnAction::Execute_Implementation(AActor *Target, int32 Empowerment)
     SklCmpt->ComponentSetup(character, Empowerment);
     return true;
 }*/
-
 /*
 AAbilityComponent *FAbilityComponentSpawnParameters::Spawn(AActor *Caster, int param)
 {
@@ -99,12 +98,16 @@ void UAbilityComponent::ComponentInit(UAbstractAbility *parent)
 }
 
 
-bool UAbilityComponent::ComponentSetup(UCombatComponent *Component)
+bool UAbilityComponent::ComponentSetup(ACharacter *Component)
 {
     UE_LOG(AbilitySystemLog, Warning, TEXT("AbilityComponent: Setup"));
-
-    CombatComponent = Component;
+    
     OnComponentSetup();
     return true;
+}
+
+UAbstractAbility *UAbilityComponent::GetOwner() 
+{
+    return StaticCast<UAbstractAbility *>(GetOuter());    
 }
 

@@ -23,7 +23,7 @@ public:
     UAbilityComponent(const FObjectInitializer &f);
 
     virtual void ComponentInit(UAbstractAbility *parent);
-    virtual bool ComponentSetup(UCombatComponent *Component);
+    virtual bool ComponentSetup(ACharacter *Component);
 
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "AbilitySystem")
     void OnComponentInit();
@@ -43,10 +43,7 @@ public:
     void DeactivateComponent();
     virtual void DeactivateComponent_Implementation() { }
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AbilitySystem")
-    UCombatComponent *CombatComponent; //Set through ComponentSetup    
-
-
+    UAbstractAbility *GetOwner();
 };
 
 /*

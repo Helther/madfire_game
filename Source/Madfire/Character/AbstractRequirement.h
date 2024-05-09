@@ -105,16 +105,6 @@ protected:
 };
 
 
-UCLASS(EditInlineNew, abstract, Blueprintable)
-class UAbilityRequirement : public UAbstractRequirement
-{
-    GENERATED_BODY()    //Непонятный макрос Анриала, который генерирует over 9000 ненужных строчек кода
-public:
-    // В этой функции будет происходить поглощение (вычитание) необходимых статов
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Requirements Interface")
-    bool Consume(ACharacter *character);
-};
-
 
 //Тестовый класс требований.
 UCLASS()

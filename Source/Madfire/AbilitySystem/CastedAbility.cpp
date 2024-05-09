@@ -20,7 +20,7 @@ void UCastedAbility::AbilityInit()
     Super::AbilityInit();
 }
 
-void UCastedAbility::AbilitySetup(UCombatComponent *Component)
+void UCastedAbility::AbilitySetup(ACharacter *Component)
 {
     Super::AbilitySetup(Component);
 }

@@ -202,7 +202,7 @@ void APlayerCharController::MoveForward(float AxisValue)
                       ECombatState::
                         Ability)) // check if can move during cast, interrupt then
                 {
-                    if (PlayerRef->GetCombatComponent()->CurrentAbility->MoveAbilities == 0)
+                    if (PlayerRef->GetAbilityManager()->CurrentAbility->MoveAbilities == 0)
                         PlayerRef->InterruptAnimation(ECCState::NoCC);
                 }
                 if (PlayerRef->GetMovementComponent()->MovementMode
@@ -273,7 +273,7 @@ void APlayerCharController::MoveRight(float AxisValue)
             {
                 if (PlayerRef->GetCombatComponent()->HasCombatStance() && PlayerRef->GetCombatComponent()->GetCombatFSM().isInState(ECombatState::Ability))// check if can move during cast, interrupt then
                 {
-                    if (PlayerRef->GetCombatComponent()->CurrentAbility->MoveAbilities == 0)
+                    if (PlayerRef->GetAbilityManager()->CurrentAbility->MoveAbilities == 0)
                         PlayerRef->InterruptAnimation(ECCState::NoCC);
                 }
                 if (PlayerRef->GetMovementComponent()->MovementMode
@@ -656,7 +656,7 @@ void APlayerCharController::AbilityOn()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            PlayerRef->GetCombatComponent()->OnUseAbility(true);
+            PlayerRef->GetAbilityManager()->OnUseAbility(true);
         }
     }
 }
@@ -666,7 +666,7 @@ void APlayerCharController::AbilityOff()
     switch (CurrentGameplayState)    //todo учесть другие состояния
     {
         case (EPawnGameplayState::InWorld): {
-            PlayerRef->GetCombatComponent()->OnUseAbility(false);
+            PlayerRef->GetAbilityManager()->OnUseAbility(false);
         }
     }
 }

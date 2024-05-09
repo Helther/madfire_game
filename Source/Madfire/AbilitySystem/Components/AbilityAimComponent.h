@@ -14,6 +14,6 @@ public:
     // UAbilityComponent interface
 public:
     void ComponentInit(UAbstractAbility *parent) override;
-    bool ComponentSetup(UCombatComponent *Component) override;
+    bool ComponentSetup(ACharacter *Component) override;
 
 };

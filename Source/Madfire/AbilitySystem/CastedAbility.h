@@ -16,7 +16,7 @@ public:
 
     void AbilityInit() override;
 
-    void AbilitySetup(UCombatComponent *Component) override;
+    void AbilitySetup(ACharacter *Component) override;
 
     UPROPERTY(BlueprintReadOnly, Category = "AbilitySystem")
     float CurrentCastTime;

@@ -77,7 +77,7 @@ public:
     void OnAttack(bool Started);
     void OnBlock(bool Started);
     void OnDrawWeapon();
-    void OnUseAbility(bool Started);
+
     // setups collision and attaches weapon to owner if has not been attached already by equipment
     UFUNCTION(BlueprintCallable)
     void WeaponSetup(UItemArms* Weapon, AItemActor* Actor, bool Draw, FName Slot, bool MainHand);
@@ -210,22 +210,6 @@ public:
     FORCEINLINE static float CalculateBalance(int32 skillVal, int32 strMod, float shieldWeight) 
         { return FMath::Max(skillVal + strMod + shieldWeight, 1.f); } // TODO улучшить при балансировке
 
-    //================================= Ability System ================================//
-    UFUNCTION(BlueprintCallable, Category = "Ability System")
-    void SetCurrentAbility(UAbstractAbility *Ability);
-    UFUNCTION(BlueprintCallable, Category = "Ability System")
-    void ActivateAbility();
-    UFUNCTION(BlueprintCallable, Category = "Ability System")
-    void ReleaseAbility();
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ability System")
-    TSoftObjectPtr<UAbstractAbility> CurrentAbility;
-    FORCEINLINE bool IsAbilityPressed() const { return AbilityPressed; }
-    FORCEINLINE bool IsOnGlobalCooldown() const { return GetWorld()->GetTimerManager().IsTimerActive(GlobalCooldownTimer); }
-    FORCEINLINE void SetGlobalCooldown() { GetWorld()->GetTimerManager().SetTimer(GlobalCooldownTimer, GlobalCooldownTime, false); }
-    UFUNCTION(BlueprintCallable, Category = "Ability System")
-    bool IsUsingAbility() const;
-
-
 protected:
     enum class EChamberRes
     {
@@ -274,20 +258,6 @@ protected:
     ACharacterCreature *Owner = nullptr;
     bool IsWeaponDrawn;
 
-    //================================= Ability System ================================//
-    //TODO: Update Delegate For Ability panel
-    void CalculateMaxCastingSpeed(float SpeedModifier);
-    // значение относительно нормы
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability System")
-    float CastSpeed;
-    //Max move speed during ability cast
-    UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Ability System")
-    float MaxSpeedWhileCasting;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability System")
-    float GlobalCooldownTime = 1;
-
-    bool AbilityPressed = false;
-    FTimerHandle GlobalCooldownTimer;
 
 private:
     bool IsDirty = false;

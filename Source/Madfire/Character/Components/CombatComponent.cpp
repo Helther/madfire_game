@@ -11,7 +11,6 @@ UCombatComponent::UCombatComponent(const class FObjectInitializer &ObjectInitial
     // TODO temp test
     AttackSpeed = 1.f;// TODO set in update from dex mod?
     UnarmedBaseDamage = 1.f;
-    CastSpeed = 1.f;
     BlockStaminaRegenRateMod = 0.5f;
     CombatModeRotationRate = 500.f;
     ActionRotationRate = 100.f;
@@ -211,7 +210,7 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
             {
                 if (hitCharacter->Cheats.InvulnerableToHit)
                 {
-                    Owner->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap: invul character!")));
+                    //Owner->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap: invul character!")));
                     return;
                 }
                 // check for chamber scenario
@@ -223,7 +222,7 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
                     if (res == EChamberRes::ChamberState)
                         return;
                 }
-                Owner->Logger.Log(this, "OnBeginOverlap: Hit character!");
+                //Owner->Logger.Log(this, "OnBeginOverlap: Hit character!");
                 int32 strMod = UAttributeSetHelper::GetModifier(hitCharacter->GetAttributeComponent()->Attributes, EAttributes::Str);
                 const float damage = CalculateWeaponDamage(activeWeapon, GetCombatFSM().state(ECombatState::Attack)->Info.AttackInfo->DamageMod, strMod);
                 float force = CalculateHitForce(activeWeapon->Weight, strMod, info.AttackInfo->PowerMod); // Use Force, Luke
@@ -250,11 +249,11 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
                     FHitResult* hit = hits.FindByPredicate(Pred);
                     if (hit)
                     {
-                        Owner->Logger.Log(this, hit->BoneName.ToString());
-                        if (hit->PhysMaterial.Get())
+                        //Owner->Logger.Log(this, hit->BoneName.ToString());
+                        /*if (hit->PhysMaterial.Get())
                             Owner->Logger.Log(this, *FString::Printf(TEXT("has material: %s"), *hit->PhysMaterial->GetName()));
                         else
-                            Owner->Logger.Log(this, "no material");
+                            Owner->Logger.Log(this, "no material");*/
                     }
                 }
                 hitCharacter->TakeDamage(damage, FForceDamageEvent(activeWeapon->DamageType, force), Owner->GetController(), Owner);
@@ -263,12 +262,12 @@ void UCombatComponent::OnWeaponOverlap(UPrimitiveComponent* comp, AActor* OtherA
             {
                 if (SweepResult.GetComponent()->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic) // check if hit a wall and interrupt with loss of balance
                 {
-                    Owner->Logger.Log(this, "OnBeginOverlap Hit wall!");
+                    //Owner->Logger.Log(this, "OnBeginOverlap Hit wall!");
                     Owner->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::HitWall);
                 }
                 else // try to damage the actor
                 {
-                    Owner->Logger.Log(this, "OnBeginOverlap Hit actor!");
+                    //Owner->Logger.Log(this, "OnBeginOverlap Hit actor!");
                     float damage = CalculateWeaponDamage(activeWeapon, GetCombatFSM().state(ECombatState::Attack)->Info.AttackInfo->DamageMod, 0);
                     hitActor->TakeDamage(damage, FDamageEvent(activeWeapon->DamageType), Owner->GetController(), Owner);
                 }
@@ -297,10 +296,10 @@ void UCombatComponent::OnRangedWeaponOverlap(UPrimitiveComponent* comp, AActor* 
             {
                 if (hitCharacter->Cheats.InvulnerableToHit)
                 {
-                    Owner->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap: invul character!")));
+                    //Owner->Logger.Log(this, *FString::Printf(TEXT("OnBeginOverlap: invul character!")));
                     return;
                 }
-                Owner->Logger.Log(this, "OnBeginOverlap: Hit character!");
+                //Owner->Logger.Log(this, "OnBeginOverlap: Hit character!");
                 int32 strMod = UAttributeSetHelper::GetModifier(hitCharacter->GetAttributeComponent()->Attributes, EAttributes::Str);
                 const float damage = CalculateWeaponDamage(activeWeapon, 1.f, strMod);
                 float force = CalculateHitForce(activeWeapon->Weight, strMod, 1.f); // Use Force, Luke, again
@@ -310,12 +309,12 @@ void UCombatComponent::OnRangedWeaponOverlap(UPrimitiveComponent* comp, AActor* 
             {
                 if (SweepResult.GetComponent()->GetCollisionObjectType() == ECollisionChannel::ECC_WorldStatic) // check if hit a wall and interrupt with loss of balance
                 {
-                    Owner->Logger.Log(this, "OnBeginOverlap Hit wall!");
+                    //Owner->Logger.Log(this, "OnBeginOverlap Hit wall!");
                     Owner->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::HitWall);
                 }
                 else // try to damage the actor
                 {
-                    Owner->Logger.Log(this, "OnBeginOverlap Hit actor!");
+                    //Owner->Logger.Log(this, "OnBeginOverlap Hit actor!");
                     float damage = CalculateWeaponDamage(activeWeapon, 1.f, 0);
                     hitActor->TakeDamage(damage, FDamageEvent(activeWeapon->DamageType), Owner->GetController(), Owner);
                 }
@@ -353,7 +352,6 @@ bool UCombatComponent::IsChamberValid(const ACharacterCreature* HitCharacter, co
 
 UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(ACharacterCreature* HitCharacter, const UItemArms* HitActorActiveWeapon, const UItemArms* OwnerActiveWeapon)
 {
-    Owner->Logger.Log(this, "Chamber: enter!");
     // calculate characters attack powers
     int32 strMod = UAttributeSetHelper::GetModifier(Owner->GetAttributeComponent()->Attributes, EAttributes::Str);
     auto& characterAttackInfo = Owner->GetCombatComponent()->GetCombatFSM().state(ECombatState::Attack)->Info;
@@ -377,7 +375,7 @@ UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(ACharacterCreatur
         if (staggeredCharacter)
         {
             staggeredCharacter->InterruptAnimation(ECCState::LossOfBalance, ELossOfBalanceCCSubState::None);
-            staggeredCharacter->Logger.Log(this, "Chamber: got staggered!");
+            //staggeredCharacter->Logger.Log(this, "Chamber: got staggered!");
         }
         // apply reaction to stronger one
         auto strongerCharacter = enemyStronger ? (enemyIsInterruptable ? HitCharacter : nullptr) : (characterIsInterruptable ? Owner : nullptr);
@@ -386,11 +384,11 @@ UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(ACharacterCreatur
             if (strongerCharacter)
             {
                 EnterChamberState(strongerCharacter);
-                strongerCharacter->Logger.Log(this, "Chamber: chamber anim!");
+                //strongerCharacter->Logger.Log(this, "Chamber: chamber anim!");
             }
         } // else continue with attack
-        else
-            enemyStronger ? HitCharacter->Logger.Log(HitCharacter->GetCombatComponent(), "Chamber: continue with attack!") : Owner->Logger.Log(this, "Chamber: continue with attack!");
+        /* else
+            enemyStronger ? HitCharacter->Logger.Log(HitCharacter->GetCombatComponent(), "Chamber: continue with attack!") : Owner->Logger.Log(this, "Chamber: continue with attack!");*/
         // define chamber state for this character
         if (strongerCharacter == Owner || staggeredCharacter == Owner)
             state = EChamberRes::ChamberState;
@@ -408,7 +406,7 @@ UCombatComponent::EChamberRes UCombatComponent::ResolveChamber(ACharacterCreatur
             state = EChamberRes::ContinueAttack;
         if (enemyIsInterruptable)
             EnterChamberState(HitCharacter);
-        Owner->Logger.Log(this, "Chamber: should be chamber for both!");
+        //Owner->Logger.Log(this, "Chamber: should be chamber for both!");
     }
     return state;
 }
@@ -468,8 +466,6 @@ void UCombatComponent::Update()
 
 void UCombatComponent::OnAttack(bool Started)
 {
-    Owner->Logger.Log(this, *FString::Printf(TEXT("OnAttack %s"),
-        Started ? TEXT("pressed") : TEXT("released")));
     AttackPressed = Started;
     if (!HasCombatStance())
         return;
@@ -565,8 +561,6 @@ void UCombatComponent::OnAttack(bool Started)
 
 void UCombatComponent::OnBlock(bool Started) 
 {
-    Owner->Logger.Log(this, *FString::Printf(TEXT("OnBlock %s"),
-            Started ? TEXT("pressed") : TEXT("released")));
     BlockPressed = Started;
     if (Owner->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && 
         Owner->CCStateManager.IsInCCSubMode(BlockedAttack))
@@ -590,29 +584,8 @@ void UCombatComponent::OnDrawWeapon()
         UpdateCombatFSM();
         WeaponSwitchPressed = false;
     }
-    else
-        Owner->Logger.Log(this, "Can't draw weapon: Invalid combat stance");
-}
-
-void UCombatComponent::OnUseAbility(bool Started)
-{
-    AbilityPressed = Started;
-    Owner->Logger.Log(this,
-                      *FString::Printf(TEXT("OnAbility %s"),
-                                       Started ? TEXT("pressed") : TEXT("released")));
-    if (Owner->CCStateManager.HasCC())
-        return;
-
-    if (CurrentAbility != nullptr)
-    {
-        if (AbilityPressed)
-        {
-            if (!CurrentAbility->bIsActive)
-                UpdateCombatFSM();
-        }
-        else
-            ReleaseAbility();
-    }
+    //else
+      //  Owner->Logger.Log(this, "Can't draw weapon: Invalid combat stance");
 }
 
 void UCombatComponent::StartNextComboAttack(bool IsPauseAttack)
@@ -698,10 +671,10 @@ void UCombatComponent::ToggleHandMode()
     UCombatStance* defaultStance = CheckStances(Owner->AnimInstance->DefaultStances, true);
     if (newStance == nullptr)
     {
-        if (defaultStance == nullptr)
-            Owner->Logger.Log(this, "ToggleHandMode: no valid stance to switch to, retaining the current one");
-        else
-            newStance = defaultStance; // apply default stance
+        if (defaultStance != nullptr)
+            newStance = defaultStance; // apply default stance            
+        //else Owner->Logger.Log(this, "ToggleHandMode: no valid stance to switch to, retaining the current one");
+            
     }
     else
         StanceStack.Insert(newStance, 0);
@@ -898,7 +871,7 @@ FStanceResolveResult UCombatComponent::ResolveNewStance(UCombatStance* NewStance
         {
             if (!WeaponChanged)
             { // if during equipment update no new stance was resolved then reinit the current one
-                Owner->Logger.Log(this, "no valid default stance on character's anim instance");
+                //Owner->Logger.Log(this, "no valid default stance on character's anim instance");
                 result.NoValidStanceFound = true;
             }
             return result;
@@ -1036,48 +1009,8 @@ void UCombatComponent::SetWeaponCollision(AItemActor* WeaponActor, bool Enable)
     WeaponActor->ItemCollision->SetGenerateOverlapEvents(Enable);
 }
 
-void UCombatComponent::ActivateAbility()
-{
-    if(CurrentAbility->IsValidLowLevelFast())
-    {
-        CurrentAbility->ActivateAbility();
-        Owner->SetAbilityCameraMode(CurrentAbility->AbilityCameraMode);
-    }
-}
-
-void UCombatComponent::ReleaseAbility()
-{
-    if(CurrentAbility->IsValidLowLevelFast())
-        CurrentAbility->ReleaseAbility();
-}
-
-void UCombatComponent::SetCurrentAbility(UAbstractAbility *Ability)
-{
-    if(CurrentAbility)
-    {
-        CurrentAbility->CancelAbility();
-    }
-
-    CurrentAbility = Ability;
-    if(CurrentAbility)
-        CurrentAbility->AbilitySetup(this);
-    else
-    {
-        Owner->Logger.Log(this, *FString::Printf(TEXT("AbilitySystem Component: Ability Is Null")));
-    }
-}
-
-void UCombatComponent::CalculateMaxCastingSpeed(float SpeedModifier)
-{
-    Owner->GetMovementComponent()->MaxRunSpeed = MaxSpeedWhileCasting * SpeedModifier;
-}
-
 void UCombatComponent::UseAimComponent(class UAbilityAimComponent *Component)
 {
     Owner->UseAimComponent(Component);
 }
 
-bool UCombatComponent::IsUsingAbility() const
-{
-    return HasCombatStance() && GetCombatFSM().isInState(ECombatState::Ability);
-}

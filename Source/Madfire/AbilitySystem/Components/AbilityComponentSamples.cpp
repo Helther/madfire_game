@@ -7,6 +7,7 @@
 
 void UAbilitySelfSelection::ActivateComponent_Implementation()
 {
+    /*
     ACharacterCreature *Owner = Cast<ACharacterCreature>(CombatComponent->GetOwner());
     TArray<AActor *> actors;
     actors.Push(Owner);
@@ -16,7 +17,7 @@ void UAbilitySelfSelection::ActivateComponent_Implementation()
     else
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("Ability Self Component: Component or Owner Is Null"));
-    }
+    }*/
 }
 
 void UAbilityProjectileSpawn::ActivateComponent_Implementation()
@@ -26,7 +27,7 @@ void UAbilityProjectileSpawn::ActivateComponent_Implementation()
         UE_LOG(AbilitySystemLog, Error, TEXT("UAbilityProjectileSpawn: No Projectile Class is Set"));
         return;
     }
-
+    /*
     if(!CombatComponent)
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("UAbilityProjectileSpawn: No Ability System Component is Set"));
@@ -50,7 +51,7 @@ void UAbilityProjectileSpawn::ActivateComponent_Implementation()
     auto Actor = Owner->GetWorld()->SpawnActor(ProjectileClass, &Location, &CameraRotation, SpawnParams);
     AAbstractProjectile *projectile = Cast<AAbstractProjectile>(Actor);
     //projectile->OnTargetCoosed = OnTargetChoosed;
-    projectile->OnExecuteEvent = OnExecuteEvent;
+    projectile->OnExecuteEvent = OnExecuteEvent;*/
 }
 
 void UAbilityProjectileSpawn::UpdateComponent_Implementation()
@@ -61,7 +62,7 @@ void UAbilityProjectileSpawn::UpdateComponent_Implementation()
         return;
     }
 
-    if(!CombatComponent)
+    /*if(!CombatComponent)
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("UAbilityProjectileSpawn: No Ability System Component is Set"));
         return;
@@ -87,5 +88,5 @@ void UAbilityProjectileSpawn::UpdateComponent_Implementation()
     auto Actor = Owner->GetWorld()->SpawnActor(ProjectileClass, &Location, &CameraRotation);
     AAbstractProjectile *projectile = Cast<AAbstractProjectile>(Actor);
     //projectile->OnTargetCoosed = OnTargetChoosed;
-    projectile->OnExecuteEvent = OnExecuteEvent;
+    projectile->OnExecuteEvent = OnExecuteEvent;*/
 }

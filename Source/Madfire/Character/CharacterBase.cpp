@@ -13,12 +13,14 @@ ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) :
     Cheats.Invulnerable = false;
     Cheats.InvulnerableToHit = false;
 
+
     // Collision
     GetCapsuleComponent()->SetGenerateOverlapEvents(true);
     GetMesh()->SetGenerateOverlapEvents(false);
 
     Logger.RegisterSubLogger(AttributeComponent, true);
     Logger.RegisterSubLogger(StatusEffectComponent, true);
+    
 }
 
 float ACharacterBase::TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent,
