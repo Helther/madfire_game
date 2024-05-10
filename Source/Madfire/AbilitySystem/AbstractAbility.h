@@ -92,7 +92,7 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
     float StaminaCost = 0;
-
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
     float CastTime = 1;
 
@@ -116,6 +116,9 @@ public:
 
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
     UDataTable *InfoDataTable = nullptr;
+
+    UPROPERTY(EditDefaultsOnly, Instanced, BlueprintReadWrite, Category = "Ability Components")
+    TArray<UAbilityComponent*> AbilityComponents;
 
     //Interface
     virtual void AbilityInit();
@@ -163,33 +166,70 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "AbilitySystem")
     void OnExecute(const TArray<AActor*> &Target, FVector InstigatorLocation, FRotator InstigatorRotation);
 
-    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
-    UAbilityComponent *GetComponentByName(FName Name) const;
-
     //Helper Functional
     //Blueprint Inteface    
     UFUNCTION(BlueprintPure, Category = "AbilitySystem")
     float GetCooldownTimeRemaining() const;
 
     UFUNCTION(BlueprintPure, Category = "AbilitySystem")
-    class ACharacterBase *GetOwner() const;
-
-    UFUNCTION(BlueprintPure, Category = "AbilitySystem")
     const FAbilityInfo &GetInfo() const;
 
-    UFUNCTION(BlueprintCallable, Meta=(DefaultToSelf="Parent", DeterminesOutputType="AbilityClass"), Category = "AbilitySystem")
+    UFUNCTION(BlueprintCallable, Meta=(DefaultToSelf="Parent", DeterminesOutputType="AbilityClass", DeprecatedFunction), Category = "AbilitySystem")
     static UAbstractAbility *SpawnAbility(UObject *Parent, TSubclassOf<UAbstractAbility> AbilityClass, FName Name = NAME_None);
 
-    UFUNCTION(BlueprintCallable, Meta=(DefaultToSelf="Parent", DeterminesOutputType= "TargetSelectionClass"), Category = "AbilitySystem")
+    UFUNCTION(BlueprintCallable, Meta=(DefaultToSelf="Parent", DeterminesOutputType= "TargetSelectionClass", DeprecatedFunction), Category = "AbilitySystem")
     static UAbilityComponent *CreateComponent(UAbstractAbility *Parent, TSubclassOf<UAbilityComponent> ComponentClass, FName Name = NAME_None);
 
-    UFUNCTION(BlueprintCallable, meta = (DeterminesOutputType = "ActorClass"), Category = "AbilitySystem")
+    UFUNCTION(BlueprintCallable, meta = (DeterminesOutputType = "ActorClass", DeprecatedFunction), Category = "AbilitySystem")
     static AActor *SpawnAbilityActor(AActor *Owner, TSubclassOf<AActor> ActorClass, FAbilityActorSpawnParameters param, FName Name = NAME_None);
 
     UFUNCTION(BlueprintPure, Category = "AbilitySystem")
     static const FAbilityInfo &GetAbilityInfo(UDataTable *AbilityInfoDT, FName AblName);
 
+    UFUNCTION(BlueprintCallable, Category="Ability Components", meta=(Keywords = "Actor Owning Parent", DeprecatedFunction))
+	AActor* GetOwner() const;
 
+    UFUNCTION(BlueprintPure, Category = "Ability Components")
+    UAbilityComponent *GetComponentByName(FName Name) const;
+
+    UFUNCTION(BlueprintPure, Category = "Ability Components")
+    TArray<UAbilityComponent*> GetComponentsByClass(UClass *Class) const;
+       
+	template< class T >
+	T* GetOwner() const
+	{
+		return Cast<T>(GetOwner());
+	}
+
+    template<typename T>
+    TArray<UAbilityComponent*> GetComponentsByClass() const
+    {
+        return GetComponentsByClass(T::StaticClass());
+    }
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Ability Interface")
+    void Created(); //Call when ability manager create this ability 
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Ability Interface")
+    void Selected(); //Call when ability manager select this ability
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Ability Interface")
+    void Unselected(); //Call when ability manager unselect this ability
+    
+    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Ability Interface")
+    void Activate(); //Call when ability manager activate this ability
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Ability Interface")
+    void Interrupt(); //Call when someone interrupt this ability (Can be called by components)
+
+    UFUNCTION(BlueprintCallable,BlueprintImplementableEvent, Category = "Ability Interface") 
+    void Release(); //Call when ability manager release this ability
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Ability Interface")
+    void Cancel(); //Call when ability manager interrupts or cancel this ability
+
+    UFUNCTION()
+    void OnEventPrototype() {}
 
 protected:
     FTimerHandle CastTimer;
@@ -206,10 +246,10 @@ protected:
         CurrentCooldownTime = 0;
     }
 
-    virtual void Activate();
-    virtual void Release();
-    virtual void Cancel();
-    virtual void Interrupt();
+    virtual void Activate_deprecated();
+    virtual void Release_deprecated();
+    virtual void Cancel_deprecated();
+    virtual void Interrupt_deprecated();
 
     void AddComponent(UAbilityComponent *Component)
     {
@@ -223,9 +263,7 @@ protected:
     bool bUserAnimInterrupt = false;
 
     static constexpr auto DataTablePath = "AbilitySystem/AbilityTable";
-
-
-    TArray<UAbilityComponent*> AbilityComponents;
+            
     // New Ability System
     UAbilityComponent *CreateComponent(UClass *CompClass, FName Name)
     {
@@ -242,9 +280,6 @@ protected:
         AbilityCompoentns.Add(Comp);
         return Comp;
     }
-
-
-
 };
 
 

@@ -10,7 +10,7 @@ void UInstantAbility_Sample::AbilityInit()
     SoundComponent = Cast<UAbilitySoundComponent>(UAbstractAbility::CreateComponent(this,UAbilitySoundComponent::StaticClass()));
 
     check(SoundComponent != nullptr)
-    AddComponent(SoundComponent);
+    AddComponent(SoundComponent);    
 
     if(TargetComponent)
     {
@@ -64,7 +64,7 @@ void UCastedAbility_Sample::CastNotify()
     Super::CastNotify();
 }
 
-void UCastedAbility_Sample::Release()
+void UCastedAbility_Sample::Release_deprecated()
 {
     if(AimingComponent)
         AimingComponent->DeactivateComponent();
@@ -75,7 +75,7 @@ void UCastedAbility_Sample::Release()
     Super::Release();
 }
 
-void UCastedAbility_Sample::Interrupt()
+void UCastedAbility_Sample::Interrupt_deprecated()
 {
     if(AimingComponent)
         AimingComponent->DeactivateComponent();
@@ -134,7 +134,7 @@ void UChannelAbility_Sample::CastNotify()
     Super::CastNotify();
 }
 
-void UChannelAbility_Sample::Release()
+void UChannelAbility_Sample::Release_deprecated()
 {
     if(TargetComponent)
         TargetComponent->DeactivateComponent();
@@ -145,7 +145,7 @@ void UChannelAbility_Sample::Release()
     Super::Release();
 }
 
-void UChannelAbility_Sample::Interrupt()
+void UChannelAbility_Sample::Interrupt_deprecated()
 {
     if(TargetComponent)
         TargetComponent->DeactivateComponent();
@@ -156,7 +156,7 @@ void UChannelAbility_Sample::Interrupt()
     Super::Interrupt();
 }
 
-void UChannelAbility_Sample::Cancel()
+void UChannelAbility_Sample::Cancel_deprecated()
 {
     if(TargetComponent)
         TargetComponent->DeactivateComponent();

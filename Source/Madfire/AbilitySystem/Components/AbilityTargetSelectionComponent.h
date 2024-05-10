@@ -19,6 +19,7 @@ public:
     void OnExecute(TArray<AActor*> Targets, FVector InstigatorLocation, FRotator InstigatorRotation);
 
     FAbilityExecuteEvent OnExecuteEvent;
+    
 public:
     void ComponentInit(UAbstractAbility *parent) override;
     bool ComponentSetup(ACharacter *Component) override;

@@ -112,6 +112,7 @@ void UAbilityManagerComponent::ActivateAbility()
     if(CurrentAbility->IsValidLowLevelFast())
     {
         CurrentAbility->ActivateAbility();
+        CurrentAbility->Activate();
         Owner->SetAbilityCameraMode(CurrentAbility->AbilityCameraMode);
     }
 }
@@ -119,7 +120,11 @@ void UAbilityManagerComponent::ActivateAbility()
 void UAbilityManagerComponent::ReleaseAbility()
 {
     if(CurrentAbility->IsValidLowLevelFast())
+    {
         CurrentAbility->ReleaseAbility();
+        CurrentAbility->Release();
+    }
+    
 }
 
 void UAbilityManagerComponent::SetCurrentAbility(UAbstractAbility *Ability)
@@ -151,6 +156,8 @@ void UAbilityManagerComponent::SetGlobalCooldown()
 
 bool UAbilityManagerComponent::IsUsingAbility() const
 {
+    if(!Owner) return false;
+    check(Owner != nullptr && "Shit ");
     auto CombatComp = Owner->GetCombatComponent();
     return CombatComp->HasCombatStance() && CombatComp->GetCombatFSM().isInState(ECombatState::Ability);
 }

@@ -32,7 +32,7 @@ void UInstantAbility::PrecastFinish(UAnimMontage *animMontage, bool bInterrupted
     StartCooldown();
 }
 
-void UInstantAbility::Activate()
+void UInstantAbility::Activate_deprecated()
 {
     StopCooldown();
 
@@ -43,23 +43,23 @@ void UInstantAbility::Activate()
     else
     {}
     bIsActive = true;
-    Super::Activate();
+    Super::Activate_deprecated();
 }
 
-void UInstantAbility::Release()
+void UInstantAbility::Release_deprecated()
 {
-    Super::Release();
+    Super::Release_deprecated();
 }
 
-void UInstantAbility::Cancel()
+void UInstantAbility::Cancel_deprecated()
 {
-    Super::Cancel();
+    Super::Cancel_deprecated();
     StopAnimation();
 }
 
-void UInstantAbility::Interrupt()
+void UInstantAbility::Interrupt_deprecated()
 {
-    Super::Interrupt();
+    Super::Interrupt_deprecated();
 }
 
 void UInstantAbility::CastNotify()

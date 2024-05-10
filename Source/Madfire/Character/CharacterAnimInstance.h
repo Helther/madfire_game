@@ -33,7 +33,6 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
     void OnAmmoGrab();
 
-
     UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
     void OnAmmoAttach();
 
@@ -66,6 +65,9 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
     void OnCounterChamber(bool activate);
+
+    UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
+    void OnSectionEnd(const FName &SectionName);
 
     UFUNCTION(BlueprintCallable)
     bool IsMovementAllowed() const;

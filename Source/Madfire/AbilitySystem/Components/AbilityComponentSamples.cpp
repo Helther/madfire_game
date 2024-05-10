@@ -7,8 +7,7 @@
 
 void UAbilitySelfSelection::ActivateComponent_Implementation()
 {
-    /*
-    ACharacterCreature *Owner = Cast<ACharacterCreature>(CombatComponent->GetOwner());
+    /*ACharacterCreature *Owner = Cast<ACharacterCreature>(CombatComponent->GetOwner());
     TArray<AActor *> actors;
     actors.Push(Owner);
     if(CombatComponent && (Owner != nullptr))
@@ -22,12 +21,13 @@ void UAbilitySelfSelection::ActivateComponent_Implementation()
 
 void UAbilityProjectileSpawn::ActivateComponent_Implementation()
 {
+    /*
     if(!ProjectileClass)
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("UAbilityProjectileSpawn: No Projectile Class is Set"));
         return;
     }
-    /*
+
     if(!CombatComponent)
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("UAbilityProjectileSpawn: No Ability System Component is Set"));
@@ -56,13 +56,14 @@ void UAbilityProjectileSpawn::ActivateComponent_Implementation()
 
 void UAbilityProjectileSpawn::UpdateComponent_Implementation()
 {
+    /*
     if(!ProjectileClass)
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("UAbilityProjectileSpawn: No Projectile Class is Set"));
         return;
     }
 
-    /*if(!CombatComponent)
+    if(!CombatComponent)
     {
         UE_LOG(AbilitySystemLog, Error, TEXT("UAbilityProjectileSpawn: No Ability System Component is Set"));
         return;

@@ -148,3 +148,8 @@ void UCharacterAnimInstance::OnCounterChamber(bool activate)
     auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().currentState()->Info;
     stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanCounterChamber, activate);
 }
+
+void UCharacterAnimInstance::OnSectionEnd(const FName &SectionName) 
+{
+
+}

@@ -14,7 +14,7 @@ class UAbstractAbility;
 * Тут тоже немного изменилось. Компонент теперь хранит кастера как чарактера,
 * а не Актора. В Скиле он тоже теперь чарактер. (Думаю понятно почему)
 */
-UCLASS(EditInlineNew, Abstract, Blueprintable, BlueprintType)
+UCLASS(EditInlineNew, Abstract, BlueprintType)
 class UAbilityComponent : public UObject
 {
     GENERATED_BODY()
@@ -43,7 +43,9 @@ public:
     void DeactivateComponent();
     virtual void DeactivateComponent_Implementation() { }
 
-    UAbstractAbility *GetOwner();
+    UFUNCTION(BlueprintPure, Category="Ability Components", meta=(Keywords = "Actor Owning Parent"))
+    UAbstractAbility *GetOwner() const;
+    
 };
 
 /*

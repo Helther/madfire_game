@@ -64,7 +64,7 @@ void UChannelAbility::ChannelUpdate()
         --CurrentCharges;    
 }
 
-void UChannelAbility::Activate()
+void UChannelAbility::Activate_deprecated()
 {    
     if(StartAnimation(PrecastSectionName,OnPrecastFinish))
     {
@@ -77,26 +77,26 @@ void UChannelAbility::Activate()
         return;
     }
     bIsActive = true;
-    Super::Activate();
+    Super::Activate_deprecated();
 }
 
-void UChannelAbility::Release()
+void UChannelAbility::Release_deprecated()
 {
     StartAnimation(AftercastSectionName,OnReleaseFinish);
-    Super::Release();
+    Super::Release_deprecated();
     Cancel();// character ended
 }
 
-void UChannelAbility::Cancel()
+void UChannelAbility::Cancel_deprecated()
 {
     AbilityEnd();
-    Super::Cancel();
+    Super::Cancel_deprecated();
 }
 
-void UChannelAbility::Interrupt()
+void UChannelAbility::Interrupt_deprecated()
 {
     AbilityEnd();
-    Super::Interrupt();
+    Super::Interrupt_deprecated();
 }
 
 void UChannelAbility::AbilityEnd()

@@ -26,7 +26,7 @@ void UAbstractAbility::ActivateAbility()
         UE_LOG(AbilitySystemLog, Error, TEXT("Ability: Cooldown"));
         return;
     }
-    Activate();
+    Activate_deprecated();
 }
 
 void UAbstractAbility::ReleaseAbility()
@@ -36,12 +36,12 @@ void UAbstractAbility::ReleaseAbility()
         UE_LOG(AbilitySystemLog, Error, TEXT("Ability: Cooldown"));
         return;
     }
-    Release();
+    Release_deprecated();
 }
 
 void UAbstractAbility::CancelAbility()
 {
-    Cancel();
+    Cancel_deprecated();
 }
 
 void UAbstractAbility::Tick(float DeltaTime)
@@ -87,7 +87,30 @@ TStatId UAbstractAbility::GetStatId() const
 
 UAbilityComponent *UAbstractAbility::GetComponentByName(FName Name) const
 {
+    for(auto &Comp : AbilityComponents)
+    {
+        auto compName = Comp->GetName();        
+        if(compName == Name.ToString())
+            return Comp;
+    }
+    
     return nullptr;
+}
+
+TArray<UAbilityComponent *> UAbstractAbility::GetComponentsByClass(UClass *Class) const
+{    
+	ensureMsgf(Class != UPackage::StaticClass(), TEXT("Calling GetTypedOuter to retrieve a package is now invalid, you should use GetPackage() instead."));
+    TArray<UAbilityComponent *> Result;
+
+    for(auto &Comp : AbilityComponents)
+	{
+		if(Comp->IsA(Class))
+		{
+			Result.Add(Comp);
+		}
+	}
+
+    return Result;
 }
 
 float UAbstractAbility::GetCooldownTimeRemaining() const
@@ -100,12 +123,11 @@ const FAbilityInfo &UAbstractAbility::GetInfo() const
     return GetAbilityInfo(InfoDataTable, AbilityName);
 }
 
-ACharacterBase *UAbstractAbility::GetOwner() const
+AActor *UAbstractAbility::GetOwner() const
 {
-    check(CharacterOwner && "No Combat Component owner");
-    auto Character = Cast<ACharacterBase>(CharacterOwner);
-    check(Character && "No owner");
-    return Character;
+    auto Owner = Cast<AActor>(GetTypedOuter<AActor>());
+    check(Owner && "No owner");
+    return Owner;
 }
 
 UWorld* UAbstractAbility::GetWorld() const
@@ -118,22 +140,22 @@ void UAbstractAbility::AbilityInit()
     OnAbilityInit();
 }
 
-void UAbstractAbility::Activate()
+void UAbstractAbility::Activate_deprecated()
 {
     OnAbilityStart();
 }
 
-void UAbstractAbility::Release()
+void UAbstractAbility::Release_deprecated()
 {
     OnAbilityEnd();
 }
 
-void UAbstractAbility::Cancel()
+void UAbstractAbility::Cancel_deprecated()
 {
     OnAbilityCancel();
 }
 
-void UAbstractAbility::Interrupt()
+void UAbstractAbility::Interrupt_deprecated()
 {
     OnAbilityInterrupt();
 }

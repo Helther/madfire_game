@@ -49,9 +49,9 @@ public:
 
 protected:
     void CastNotify() override;
-    void Release() override;
+    void Release_deprecated() override;
     void ReleaseNotify() override;
-    void Interrupt() override; // NOTE don't forget to deactivate component when interrupted
+    void Interrupt_deprecated() override; // NOTE don't forget to deactivate component when interrupted
 };
 
 
@@ -69,10 +69,10 @@ public:
     void ChannelUpdate();
 
 protected:
-    void Release() override;
+    void Release_deprecated() override;
     void CastNotify() override;
-    void Interrupt() override;
-    void Cancel() override;
+    void Interrupt_deprecated() override;
+    void Cancel_deprecated() override;
 };
 
 

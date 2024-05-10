@@ -54,10 +54,10 @@ public:
     FOnMontageBlendingOutStarted OnReleaseFinish;
 
 protected:
-    void Activate() override;
-    void Release() override;
-    void Cancel() override;
-    void Interrupt() override;
+    void Activate_deprecated() override;
+    void Release_deprecated() override;
+    void Cancel_deprecated() override;
+    void Interrupt_deprecated() override;
 
     virtual void CastNotify();
     virtual void AbilityReady();

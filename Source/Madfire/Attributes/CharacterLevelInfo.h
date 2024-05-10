@@ -2,6 +2,7 @@
 
 #include "Attributes/Attributes.h"
 #include "Attributes/Skills.h"
+#include "Attributes/DamageMap.h"
 #include "Object.h"
 #include "CharacterLevelInfo.generated.h"
 

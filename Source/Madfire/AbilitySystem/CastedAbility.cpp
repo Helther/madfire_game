@@ -51,7 +51,7 @@ void UCastedAbility::PrecastFinish(UAnimMontage *animMontage, bool bInterrupted)
     }
     else
     {
-        Interrupt();
+        Interrupt_deprecated();
         UE_LOG(AbilitySystemLog, Warning, TEXT("Casted Ability: Interrupted"));
     }
 }
@@ -61,7 +61,7 @@ void UCastedAbility::CastFinish(UAnimMontage *animMontage, bool bInterrupted)
     if(bUserAnimInterrupt)// to cast ready then
         bUserAnimInterrupt = false;
     else if(bInterrupted)
-        Interrupt();
+        Interrupt_deprecated();
 }
 
 void UCastedAbility::CastReadyFinish(UAnimMontage* animMontage, bool bInterrupted)
@@ -73,7 +73,7 @@ void UCastedAbility::CastReadyFinish(UAnimMontage* animMontage, bool bInterrupte
     }
     else if(bInterrupted)
     {
-        Interrupt();
+        Interrupt_deprecated();
     }
     bCastReady = false;
 }
@@ -83,16 +83,16 @@ void UCastedAbility::ReleaseFinish(UAnimMontage *animMontage, bool bInterrupted)
     if(!bInterrupted)
     {
         ReleaseNotify();
-        Cancel();
+        Cancel_deprecated();
     }
     else
     {
         UE_LOG(AbilitySystemLog, Warning, TEXT("Casted Ability: interrupted"));
-        Interrupt();
+        Interrupt_deprecated();
     }
 }
 
-void UCastedAbility::Activate()
+void UCastedAbility::Activate_deprecated()
 {
     if(StartAnimation(PrecastSectionName,OnPrecastFinish))
     {
@@ -105,14 +105,14 @@ void UCastedAbility::Activate()
         return;
     }
     bIsActive = true;
-    Super::Activate();
+    Super::Activate_deprecated();
 }
 
-void UCastedAbility::Release()
+void UCastedAbility::Release_deprecated()
 {
     if((!bIsCasted) || (CurrentCastTime < CastTime))
     {
-        Cancel();// character ended
+        Cancel_deprecated();// character ended
         return;
     }
 
@@ -121,24 +121,24 @@ void UCastedAbility::Release()
     StartAnimation(AftercastSectionName,OnReleaseFinish);
 
     --CurrentCharges;
-    Super::Release();
+    Super::Release_deprecated();
 }
 
-void UCastedAbility::Cancel()
+void UCastedAbility::Cancel_deprecated()
 {
     bIsCasted = false;
     StopAnimation();
     if(!bIsCooldown)
         StartCooldown();
-    Super::Cancel();
+    Super::Cancel_deprecated();
 }
 
-void UCastedAbility::Interrupt()
+void UCastedAbility::Interrupt_deprecated()
 {
     bIsCasted = false;
     StopAnimation();
     StartCooldown();
-    Super::Interrupt();
+    Super::Interrupt_deprecated();
 }
 
 void UCastedAbility::CastNotify()
