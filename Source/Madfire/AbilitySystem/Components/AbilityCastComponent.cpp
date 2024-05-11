@@ -76,7 +76,7 @@ bool UAbilityCastComponent::StartAnimation(const FAbilityCastStage &Stage)
     montageInstance->OnMontageBlendingOutStarted.BindUObject(this,&UAbilityCastComponent::OnAnimBlendoutStart);
     //montageInstance->OnMontageEnded.BindUObject(this,&UAbilityCastComponent::AnimEnd);
 
-    UFunction *Fun = Stage.OnStartTest.ResolveMember<UFunction>(GetOwner()->GetClass(),false);
+    UFunction *Fun = Stage.OnStart.ResolveMember<UFunction>(GetOwner()->GetClass(),false);
     if(Fun) GetOwner()->ProcessEvent(Fun,nullptr);
 
     return true;
@@ -111,3 +111,21 @@ void UAbilityCastComponent::AnimEnd(UAnimMontage *animMontage, bool bInterrupted
         Interrupt();   
     
 }*/
+
+UTestAbilityObjectFactory::UTestAbilityObjectFactory(const FObjectInitializer& ObjectInitializer) : 
+    Super(ObjectInitializer)
+{
+    SupportedClass = UTestAbilityObject::StaticClass();
+    bCreateNew = true;
+}
+
+UObject *UTestAbilityObjectFactory::FactoryCreateNew(UClass *InClass, UObject *InParent, FName InName, EObjectFlags Flags, UObject *Context,FFeedbackContext *Warn)
+{
+    UTestAbilityObject *NewObj = NewObject<UTestAbilityObject>(InParent, InClass, InName, Flags | RF_Transactional);
+    return NewObj;
+}
+
+bool UTestAbilityObjectFactory::ShouldShowInNewMenu() const 
+{
+    return true; 
+}

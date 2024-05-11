@@ -26,7 +26,6 @@ struct FAbilityCastStage
     FMemberReference OnEnd;
 };
 
-
 UCLASS(Blueprintable, BlueprintType, EditInlineNew)
 class UAbilityCastComponent : public UAbilityComponent
 {
@@ -57,6 +56,9 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
     int32 LastStage = 0;
 
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+    TObjectPtr<UTestAbilityObject> TestObject;
+
 protected:
     /*void AnimEnd(UAnimMontage *animMontage, bool bInterrupted);*/
     void OnAnimBlendoutStart(UAnimMontage *animMontage, bool bInterrupted);
@@ -66,3 +68,4 @@ protected:
 
     void PlayNext();
 };
+
