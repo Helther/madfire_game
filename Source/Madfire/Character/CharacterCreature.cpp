@@ -13,6 +13,7 @@ ACharacterCreature::ACharacterCreature(const FObjectInitializer &ObjectInitializ
     EquipmentComponent = CreateDefaultSubobject<UEquipmentComponent>("EquipmentComponent");
     InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("InventoryComponent");
     AbilityManager = CreateDefaultSubobject<UAbilityManagerComponent>("AbilityComponent");
+    CCComponent = CreateDefaultSubobject<UCCComponent>("CCComponent");
     CCInterruptDelegates.Emplace(ECCState::LossOfBalance, &ACharacterCreature::CCLOBEnded);
     CCInterruptDelegates.Emplace(ECCState::Stun, &ACharacterCreature::CCStunEnded);
     CCInterruptDelegates.Emplace(ECCState::KnockDown, &ACharacterCreature::CCKnockDownEnded);
@@ -182,10 +183,10 @@ void ACharacterCreature::StartAnimation(UAnimMontage *AnimMontage,
 void ACharacterCreature::InterruptAnimation(ECCState Source, int SubMode)
 {
     // already controlled
-    if (CCStateManager.HasCC())
+    if (CCComponent->HasCC())
     {
         //check if highest order bit of source is lower than old
-        if (FCCStateManager::GetHighestPriorityCC(1 << Source) < CCStateManager.CurrentCCPriority())
+        if (UCCComponent::GetHighestPriorityCC(1 << Source) < CCComponent->CurrentCCPriority())
         {
 
             Logger.Log(this, *FString::Printf(TEXT("InterruptAnimation: cant interrupt CC, low priority")));
@@ -227,31 +228,31 @@ void ACharacterCreature::InterruptAnimation(ECCState Source, int SubMode)
             GetMovementComponent()->TransitionInterrupt();
         // something else
     }
-    if (CCStateManager.IsInCCMode(Source))
+    if (CCComponent->IsInCCMode(Source))
     {// if already in this mode then remove end callback before restart
         FAnimMontageInstance* montageInstance = nullptr;
         if (Source == ECCState::LossOfBalance && SubMode != ELossOfBalanceCCSubState::None)
         {
-            if (CCStateManager.IsInCCSubMode(SubMode))
-                montageInstance = AnimInstance->GetActiveInstanceForMontage((CCLOBAnims[static_cast<ELossOfBalanceCCSubState>(SubMode)]));
+            if (CCComponent->IsInCCSubMode(SubMode))
+                montageInstance = AnimInstance->GetActiveInstanceForMontage((CCComponent->CCLOBAnims[static_cast<ELossOfBalanceCCSubState>(SubMode)]));
         }
         else
-            montageInstance = AnimInstance->GetActiveInstanceForMontage((CCAnims[Source]));
+            montageInstance = AnimInstance->GetActiveInstanceForMontage((CCComponent->CCAnims[Source]));
         if (montageInstance)
             montageInstance->OnMontageBlendingOutStarted.Unbind();
     }
     // TODO devise other times
     if (Source == ECCState::KnockDown)
-        CCStateManager.SetCCMode(Source, SubMode, &KnockDownTime);
+        CCComponent->SetCCMode(Source, SubMode, &KnockDownTime);
     else
-        CCStateManager.SetCCMode(Source, SubMode);
+        CCComponent->SetCCMode(Source, SubMode);
     FOnMontageBlendingOutStarted callBack;
     callBack.BindUObject(this,
-        CCInterruptDelegates[static_cast<ECCState>(CCStateManager.CurrentCCPriority())]);  
+        CCInterruptDelegates[static_cast<ECCState>(CCComponent->CurrentCCPriority())]);  
     if (Source == ECCState::LossOfBalance && SubMode != ELossOfBalanceCCSubState::None)
-        StartAnimation(CCLOBAnims[static_cast<ELossOfBalanceCCSubState>(SubMode)], callBack, 1.f);
+        StartAnimation(CCComponent->CCLOBAnims[static_cast<ELossOfBalanceCCSubState>(SubMode)], callBack, 1.f);
     else
-        StartAnimation(CCAnims[Source], callBack, 1.f); 
+        StartAnimation(CCComponent->CCAnims[Source], callBack, 1.f); 
 }
 
 UHumanoidMovementComponent *ACharacterCreature::GetMovementComponent() const
@@ -300,10 +301,10 @@ float ACharacterCreature::CalculateKnockDownTime() const
 
 void ACharacterCreature::UpdateCCLOBAnims()
 {
-    CCLOBAnims.Emplace(ELossOfBalanceCCSubState::HitWall, AnimInstance->CurrentHitWallAnim);
-    CCLOBAnims.Emplace(ELossOfBalanceCCSubState::WasParried, AnimInstance->CurrentWasParriedAnim);
-    CCLOBAnims.Emplace(ELossOfBalanceCCSubState::BlockedAttack, AnimInstance->CurrentBlockedAttackAnim);
-    CCLOBAnims.Emplace(ELossOfBalanceCCSubState::Chamber, AnimInstance->CurrentChamberAnim);
+    CCComponent->CCLOBAnims.Emplace(ELossOfBalanceCCSubState::HitWall, AnimInstance->CurrentHitWallAnim);
+    CCComponent->CCLOBAnims.Emplace(ELossOfBalanceCCSubState::WasParried, AnimInstance->CurrentWasParriedAnim);
+    CCComponent->CCLOBAnims.Emplace(ELossOfBalanceCCSubState::BlockedAttack, AnimInstance->CurrentBlockedAttackAnim);
+    CCComponent->CCLOBAnims.Emplace(ELossOfBalanceCCSubState::Chamber, AnimInstance->CurrentChamberAnim);
 }
 
 void ACharacterCreature::PostInitializeComponents()
@@ -311,9 +312,9 @@ void ACharacterCreature::PostInitializeComponents()
     Super::PostInitializeComponents();
     AnimInstance = Cast<UCharacterAnimInstance>(GetMesh()->GetAnimInstance());
     check(AnimInstance && "Invalid anim blueprint");
-    CCAnims.Emplace(ECCState::KnockDown, AnimInstance->KnockDownAnim);
-    CCAnims.Emplace(ECCState::LossOfBalance, AnimInstance->LossOfBalanceAnim);
-    CCAnims.Emplace(ECCState::Stun, AnimInstance->StunAnim);// TODO add sleep and stasis
+    CCComponent->CCAnims.Emplace(ECCState::KnockDown, AnimInstance->KnockDownAnim);
+    CCComponent->CCAnims.Emplace(ECCState::LossOfBalance, AnimInstance->LossOfBalanceAnim);
+    CCComponent->CCAnims.Emplace(ECCState::Stun, AnimInstance->StunAnim);// TODO add sleep and stasis
     UpdateCCLOBAnims();
 }
 
@@ -321,7 +322,6 @@ void ACharacterCreature::BeginPlay()
 {
     ACharacter::BeginPlay();
 
-    CCStateManager.Init(this);
     Logger.Init(this);
     // init components
     GetAttributeComponent()->SetUpdate();
@@ -334,13 +334,13 @@ void ACharacterCreature::CCStunEnded(UAnimMontage *animMontage, bool bInterrupte
 {
     // todo reset some armor debuffs
     Logger.Log(this,*FString::Printf(TEXT("CCEnd: Stun")));
-    CCStateManager.ResetCCMode(ECCState::Stun);
+    CCComponent->ResetCCMode(ECCState::Stun);
 }
 
 void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
     Logger.Log(this,*FString::Printf(TEXT("CCEnd: Loss of balance")));
-    if (CCStateManager.IsInCCSubMode(BlockedAttack))
+    if (CCComponent->IsInCCSubMode(BlockedAttack))
     {
         if (CombatComponent->IsBlockButtonPressed())
         {
@@ -354,7 +354,7 @@ void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted
             CombatComponent->UpdateCombatFSM();
         }
     }
-    else if (CCStateManager.IsInCCSubMode(Chamber))
+    else if (CCComponent->IsInCCSubMode(Chamber))
     {
         auto& stateInfo = CombatComponent->GetCombatFSM().currentState()->Info;
         bool startedAttack = !stateInfo.CheckAnimInfo(ECombatStateAnimInfo::CheckedForChamber) && stateInfo.CheckAnimInfo(ECombatStateAnimInfo::CanCounterChamber);
@@ -366,74 +366,12 @@ void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted
         else
             stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanCounterChamber, false);
     }
-    CCStateManager.ResetCCMode(ECCState::LossOfBalance);
+    CCComponent->ResetCCMode(ECCState::LossOfBalance);
 }
 
 void ACharacterCreature::CCKnockDownEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
     // todo reset some armor debuffs
     Logger.Log(this,*FString::Printf(TEXT("CCEnd: KnockDown")));
-    CCStateManager.ResetCCMode(ECCState::KnockDown);
-}
-
-int FCCStateManager::GetHighestPriorityCC(int bitmask)
-{
-#if PLATFORM_WINDOWS
-    unsigned long index;
-    _BitScanReverse(&index, bitmask);
-    return index;
-#else
-    return ffs(bitmask)-1;
-#endif
-}
-
-FCCStateManager::FCCStateManager()
-{
-    CCLockTimeDivider = 2.f;
-    CCLockTime = 10.f;
-    CurrentCCState = ECCState::NoCC;
-}
-
-void FCCStateManager::SetCCMode(ECCState Mode, unsigned int SubMode, float *Time)
-{
-    Character->GetWorld()->GetTimerManager().ClearTimer(CCLocks[Mode].Key.StunLockTimer);
-    FTimerDelegate lockDelegate = FTimerDelegate::CreateLambda([this, Mode]() { ResetCCLock(Mode); });
-    Character->GetWorld()->GetTimerManager().SetTimer(CCLocks[Mode].Key.StunLockTimer, lockDelegate, CCLockTime, false );
-    if (Time != nullptr)
-    {
-        float duration = *Time * GetCCLockTimeModifier(Mode);
-        Character->Logger.Log(Character,*FString::Printf(TEXT("Setting CC with duration of %f"), duration));
-        FTimerDelegate CCDelegate = FTimerDelegate::CreateLambda([this, Mode]() 
-        {
-            if (Character->AnimInstance->Montage_IsActive(Character->CCAnims[Mode]))
-                Character->AnimInstance->Montage_Stop(0.f, Character->CCAnims[Mode]);
-        });
-        Character->GetWorld()->GetTimerManager().SetTimer(CCLocks[Mode].Key.CCTimer, CCDelegate, duration, false);
-    }
-    CCLocks[Mode].Value++;
-    CurrentCCState |= 1u << Mode;
-    CurrentCCSubState |= 1u << SubMode;
-    Character->OnCCStateChanged.Broadcast(Mode, SubMode);
-}
-
-void FCCStateManager::ResetCCMode(ECCState Mode)
-{
-    if (IsInCCMode(Mode))
-    {
-        CurrentCCState &= ~(1u << Mode);
-        CurrentCCSubState = 0u;
-        FTimerDelegate lockDelegate = FTimerDelegate::CreateLambda([this, Mode]() { ResetCCLock(Mode); });
-        Character->GetWorld()->GetTimerManager().SetTimer(CCLocks[Mode].Key.StunLockTimer, lockDelegate, CCLockTime, false );
-        Character->OnCCStateChanged.Broadcast(0u, 0u);
-    }
-}
-
-float FCCStateManager::GetCCLockTimeModifier(ECCState Mode) const
-{
-    return CCLocks[Mode].Value ? 1.f / (CCLocks[Mode].Value * CCLockTimeDivider) : 1.f;
-}
-
-void FCCStateManager::ResetCCLock(int index)
-{
-    CCLocks[index].Value = 0;
+    CCComponent->ResetCCMode(ECCState::KnockDown);
 }

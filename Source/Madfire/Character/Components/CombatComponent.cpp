@@ -479,7 +479,7 @@ void UCombatComponent::OnAttack(bool Started)
         {
             auto& info = GetCombatFSM().state(ECombatState::Attack)->Info;
             const FAttackInfo* currentAttack = info.AttackInfo;
-            if (Owner->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && Owner->CCStateManager.IsInCCSubMode(Chamber))
+            if (Owner->GetССComponent()->CheckCCMode(ECCState::LossOfBalance, Chamber))
             {
                 if (!info.CheckAnimInfo(CanCounterChamber)) // check if not ready to strike while in chamber
                     return;
@@ -568,8 +568,7 @@ void UCombatComponent::OnBlock(bool Started)
     Owner->Logger.Log(this, *FString::Printf(TEXT("OnBlock %s"),
             Started ? TEXT("pressed") : TEXT("released")));
     BlockPressed = Started;
-    if (Owner->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && 
-        Owner->CCStateManager.IsInCCSubMode(BlockedAttack))
+    if (Owner->GetССComponent()->CheckCCMode(ECCState::LossOfBalance, BlockedAttack))
         return;
     if (!BlockPressed && GetCombatFSM().isInState(ECombatState::Block)) // end block
     {
@@ -600,7 +599,7 @@ void UCombatComponent::OnUseAbility(bool Started)
     Owner->Logger.Log(this,
                       *FString::Printf(TEXT("OnAbility %s"),
                                        Started ? TEXT("pressed") : TEXT("released")));
-    if (Owner->CCStateManager.HasCC())
+    if (Owner->GetССComponent()->HasCC())
         return;
 
     if (CurrentAbility != nullptr)
