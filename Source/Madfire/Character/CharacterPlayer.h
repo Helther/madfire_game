@@ -65,7 +65,7 @@ public:
     UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
     FORCEINLINE USpringArmComponent *GetSpringArmComponent() const {return SpringArmComponent;}
     
-    void FireLoadedProjectile() override;
+    //void FireLoadedProjectile() override;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
     float CameraZoomStep;

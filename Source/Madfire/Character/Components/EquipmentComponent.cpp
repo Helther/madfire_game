@@ -288,3 +288,4 @@ void UEquipmentComponent::EquipAttach(EItemSlot SlotName)
         AttachItemActor(owner, slot.Item, socketName, FItemActorEquipmentSlotNames::EquipSocket);
     }
 }
+

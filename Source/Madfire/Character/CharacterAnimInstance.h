@@ -1,9 +1,10 @@
 ﻿#pragma once
 
 #include "CharacterAnimInstanceBase.h"
-#include "../CombatSystem/CombatStance.h"
 #include "CoreMinimal.h"
-
+#include "Animation/AimOffsetBlendSpace.h"
+#include "Animation/BlendSpace.h"
+#include "CombatSystem/CombatStance.h"
 #include "CharacterAnimInstance.generated.h"
 
 
@@ -15,7 +16,6 @@ struct FAnimSectionNames
     static const FName Loop;
     static const FName Cancel;
 };
-
 
 UCLASS()
 class MADFIRE_API UCharacterAnimInstance : public UCharacterAnimInstanceBase
@@ -66,12 +66,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
     void OnCounterChamber(bool activate);
 
-    UFUNCTION(BlueprintCallable, Category = "Anim Notify Interface")
-    void OnSectionEnd(const FName &SectionName);
-
     UFUNCTION(BlueprintCallable)
     bool IsMovementAllowed() const;
 
+    /*
     UPROPERTY(BlueprintReadOnly, Category = "CC Anims")
         UAnimMontage* CurrentHitWallAnim;
     UPROPERTY(BlueprintReadOnly, Category = "CC Anims")
@@ -86,18 +84,36 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Animations")
         UBlendSpace* CurrentStandLocomotion;
     UPROPERTY(BlueprintReadOnly, Category = "Animations")
-        UAimOffsetBlendSpace* CurrentAimOffset;
-    UPROPERTY(BlueprintReadOnly, Category = "Animations")
         UAnimMontage* CurrentBlockAnim;
     UPROPERTY(BlueprintReadOnly, Category = "Animations")
         UAnimMontage* CurrentParryAnim;
     UPROPERTY(BlueprintReadOnly, Category = "Animations")
         UAnimMontage* CurrentDrawAnim;
     UPROPERTY(BlueprintReadOnly, Category = "Animations")
-        UAnimMontage* CurrentSheathAnim;
+        UAnimMontage* CurrentSheathAnim;*/
+
+    UPROPERTY(BlueprintReadOnly, Category = "Animations")
+    UAimOffsetBlendSpace* CurrentAimOffset;
     
+    UPROPERTY(EditDefaultsOnly, meta=(ArraySizeEnum=ECombatMovementType))
+    UAnimMontage *CombatMoves[ECombatMovementType::MAX];
+
+    UPROPERTY(EditDefaultsOnly, meta=(ArraySizeEnum=ELossOfBalanceCCSubState))
+    UAnimMontage *CCLOBAnims[ELossOfBalanceCCSubState::MAX];
+    
+    UPROPERTY(EditDefaultsOnly, meta=(ArraySizeEnum=ECombatMovementType))
+    UBlendSpace *CombatMotions[ECombatMotion::MAX];
+
+    
+    UFUNCTION(BlueprintPure)
+    UAnimMontage *GetMove(ECombatMovementType Type) {return CombatMoves[static_cast<int>(Type)];}
+    UFUNCTION(BlueprintPure)
+    //UAnimMontage *GetCC(ELossOfBalanceCCSubState Type) {return CCLOBAnims[static_cast<int>(Type)];}
+    //UFUNCTION(BlueprintPure)
+    UBlendSpace *GetMotion(ECombatMotion Type) {return CombatMotions[static_cast<int>(Type)];}
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-        TArray<UCombatStance*> DefaultStances;
+    TArray<UCombatStance*> DefaultStances;
 
 private:
     void NativeUpdateAnimation(float DeltaSeconds) override;

@@ -28,17 +28,6 @@ enum ECCState
     NumOfModes
 };
 
-UENUM(BlueprintType)
-// Combat oriented Character Control sub CC modes (value represents priority order(the more the better))
-enum ELossOfBalanceCCSubState
-{
-    None = 0,
-    HitWall,
-    BlockedAttack,
-    WasParried,
-    Chamber // ударил об оружие противника
-};
-
 
 // Класс, отвечающий за управление состоянием контроля над персом и для слежения степени станлока определенных режимов контроля
 USTRUCT(BlueprintType)
@@ -109,7 +98,7 @@ public:
     virtual void SetAbilityCameraMode(TSubclassOf<UCameraMode> CameraMode) {}
     UFUNCTION(BlueprintCallable, Category = "Camera")
     virtual void ClearAbilityCameraMode() {}
-    virtual void FireLoadedProjectile();
+    //virtual void FireLoadedProjectile(); //TODO: Move to combat comp
 
     void StartAnimation(UAnimMontage *AnimMontage,
                         const FOnMontageBlendingOutStarted &EndCallBack, float InPlayRate,
@@ -118,8 +107,13 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character Animation")
     void InterruptAnimation(ECCState Source, int SubMode = 0);
 
-    UHumanoidMovementComponent* GetMovementComponent() const override;
-    UCharacterMeshComponent* GetMeshComponent() const;
+    UHumanoidMovementComponent*         GetMovementComponent() const override;
+    UCharacterMeshComponent*            GetMeshComponent() const;    
+    virtual UInventoryComponent*        GetInventoryComponent() const { return InventoryComponent; }    
+    virtual UEquipmentComponent*        GetEquipmentComponent() const { return EquipmentComponent; }    
+    virtual UCombatComponent*           GetCombatComponent() const { return CombatComponent; }    
+    virtual UAbilityManagerComponent*   GetAbilityManager() const { return AbilityManager; }
+    //NOTE: Короче, тут сецификаторы функций не нужны, а виртуальные они, если у наследников изменятся
 
     UFUNCTION(BlueprintCallable, Category = "Character")
     void DoLevelUp(const FCharacterLevelInfo &levelInfo);
@@ -157,14 +151,6 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
     float MaxWeightModBase;
 
-    UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
-    FORCEINLINE UInventoryComponent *GetInventoryComponent() const{return InventoryComponent;}
-    UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
-    FORCEINLINE UEquipmentComponent *GetEquipmentComponent() const{return EquipmentComponent;}
-    UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
-    FORCEINLINE UCombatComponent *GetCombatComponent() const { return CombatComponent; }
-    UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
-    FORCEINLINE UAbilityManagerComponent *GetAbilityManager() const{ return AbilityManager; }
 
     UCharacterAnimInstance* AnimInstance;
 
@@ -193,6 +179,6 @@ protected:
     TMap<ECCState, void (ACharacterCreature::*)(UAnimMontage *, bool)> CCInterruptDelegates;
     TMap<ECCState, UAnimMontage *> CCAnims;
     // loss of balance sub mode anims
-    TMap<ELossOfBalanceCCSubState, UAnimMontage *> CCLOBAnims;
+    //TMap<ELossOfBalanceCCSubState, UAnimMontage *> CCLOBAnims;
     FCCStateChanged OnCCStateChanged;
 };

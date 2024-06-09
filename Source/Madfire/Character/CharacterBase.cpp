@@ -16,11 +16,7 @@ ACharacterBase::ACharacterBase(const FObjectInitializer &ObjectInitializer) :
 
     // Collision
     GetCapsuleComponent()->SetGenerateOverlapEvents(true);
-    GetMesh()->SetGenerateOverlapEvents(false);
-
-    Logger.RegisterSubLogger(AttributeComponent, true);
-    Logger.RegisterSubLogger(StatusEffectComponent, true);
-    
+    GetMesh()->SetGenerateOverlapEvents(false);    
 }
 
 float ACharacterBase::TakeDamage(float DamageAmount, const struct FDamageEvent &DamageEvent,
@@ -49,7 +45,6 @@ void ACharacterBase::BeginPlay()
 {
     Super::BeginPlay();
 
-    Logger.Init(this);
     // init components
     AttributeComponent->SetUpdate(true);
     Update(FCharacterLevelInfo());

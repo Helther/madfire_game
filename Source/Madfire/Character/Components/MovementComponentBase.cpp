@@ -170,8 +170,8 @@ bool UHumanoidMovementComponent::CanVaultOrClimb(bool IsLow)
 {
     if (!CanMove() || !(MoveAbilitiesCurrent & EMoveAbilities::CanClimb))
         return false;
-    Character->Logger.Log(this, *FString::Printf(TEXT("CanVault or climb %s"),
-           IsLow ? TEXT("low") : TEXT("high")));
+    //Character->Logger.Log(this, *FString::Printf(TEXT("CanVault or climb %s"),
+//           IsLow ? TEXT("low") : TEXT("high")));
     const FRotator CharRotation = Character->GetActorRotation();
     //setting spawn parameters
     FTraceSpawnParams sParamsH = GetTraceSpawnParams(IsLow);
@@ -190,13 +190,13 @@ bool UHumanoidMovementComponent::CanVaultOrClimb(bool IsLow)
     // проверка на возможность волта
     if (VaultSpaceCheck(*ledgeLocRot.Get()))
     {
-        Character->Logger.Log(this, *FString::Printf(TEXT("CanVaultOrClimb: trying vault %s"),
-               IsLow ? TEXT("low") : TEXT("high")));
+        //Character->Logger.Log(this, *FString::Printf(TEXT("CanVaultOrClimb: trying vault %s"),
+//               IsLow ? TEXT("low") : TEXT("high")));
         if (DoVault(*ledgeLocRot.Get(), IsLow))
             return true;
     }
-    Character->Logger.Log(this, *FString::Printf(TEXT("CanVaultOrClimb: doing climb %s"),
-           IsLow ? TEXT("low") : TEXT("high")));
+    //Character->Logger.Log(this, *FString::Printf(TEXT("CanVaultOrClimb: doing climb %s"),
+        //   IsLow ? TEXT("low") : TEXT("high")));
     if (DoClimbLedge(*ledgeLocRot.Get(), IsLow))
         return true;
     return false;
@@ -346,7 +346,7 @@ bool UHumanoidMovementComponent::VaultSpaceCheck(const StartClimbData &LedgeData
         if (vaultHit.GetActor() == nullptr)
             return true;
     }
-    Character->Logger.Log(this, *FString::Printf(TEXT("VaultSpaceCheck error: fail")));
+    //Character->Logger.Log(this, *FString::Printf(TEXT("VaultSpaceCheck error: fail")));
     return false;
 }
 
@@ -383,7 +383,7 @@ TSharedPtr<StartClimbData>
         // ограничение по числу итераций
         if ((MinHeight > currentTraceHeight) && (currentTraceHeight > MaxHeight))
         {
-            Character->Logger.Log(this, *FString::Printf(TEXT("GetClimbStartLoc error: exceeded height limits")));
+            //Character->Logger.Log(this, *FString::Printf(TEXT("GetClimbStartLoc error: exceeded height limits")));
             return nullptr;
         }
         // проверим есть ли место для капсулы перса для начала анимации
@@ -394,15 +394,14 @@ TSharedPtr<StartClimbData>
         sParamsSPace.Start.Z = charBottomHeight + MaxHeight;
         sParamsSPace.End.Z   = charBottomHeight + MinHeight + LocationVertOffset;
         FHitResult HitSpace;
-        UTraceManager::LineTraceSingleByChannel(
-          Character->GetWorld(), params, sParamsSPace, HitSpace, EWallChannel, false);
+        UTraceManager::LineTraceSingleByChannel(Character->GetWorld(), params, sParamsSPace, HitSpace, EWallChannel, false);
         if (HitSpace.GetActor() == nullptr)
             break;
-        else
-            Character->Logger.Log(this, *FString::Printf(TEXT("GetClimbStartLoc error: not enough space")));
+        //else
+            //Character->Logger.Log(this, *FString::Printf(TEXT("GetClimbStartLoc error: not enough space")));
         if (NumOfIterations == MaxNumOfIter)
         {
-            Character->Logger.Log(this, *FString::Printf(TEXT("GetClimbStartLoc error: reached max num of iterations")));
+            //Character->Logger.Log(this, *FString::Printf(TEXT("GetClimbStartLoc error: reached max num of iterations")));
             break;
         }
         // обновление параметров трейса для новой точки
@@ -417,8 +416,8 @@ TSharedPtr<StartClimbData>
         sParamsH.Start += wallNormalDir.Vector() * currentDistanceToWall;
         HitWallH.Reset();
     }
-    Character->Logger.Log(this, *FString::Printf(TEXT("GetClimbStartLoc: Number of steps %d"),
-           NumOfIterations));
+    //Character->Logger.Log(this, *FString::Printf(TEXT("GetClimbStartLoc: Number of steps %d"),
+//           NumOfIterations));
     // vert trace линией вниз для нахождения вертикальной точки на выступе
     const auto res = FQuat(FRotator(0, HitWallH.ImpactNormal.Rotation().Yaw, 0))
       * FQuat(FRotator(0, 180, 0));
@@ -454,7 +453,7 @@ bool UHumanoidMovementComponent::checkRelativeRotation(const float WallNormalYaw
     const bool res = resAngle < MaxClimbRotationAngle;
     if (!res)
     {
-        Character->Logger.Log(this, *FString::Printf(TEXT("checkRelativeRotation error: Bad relative angle (%f)"), resAngle));
+        //Character->Logger.Log(this, *FString::Printf(TEXT("checkRelativeRotation error: Bad relative angle (%f)"), resAngle));
     }
     return res;
 }
@@ -468,7 +467,7 @@ EClimbTraceResult UHumanoidMovementComponent::IsEnoughSpace(const FVector &Start
     if (!IsCharacterCapsuleOk(StartLocation, IsCrouching(), true, StartCC)
         || !IsCharacterCapsuleOk(StartLocation, IsCrouching(), false, StartCC))
     {
-        Character->Logger.Log(this, *FString::Printf(TEXT("IsEnoughSpace error: not enough space for anim start")));
+        //Character->Logger.Log(this, *FString::Printf(TEXT("IsEnoughSpace error: not enough space for anim start")));
         return EClimbTraceResult::FailAtStart;
     }
 
@@ -478,13 +477,13 @@ EClimbTraceResult UHumanoidMovementComponent::IsEnoughSpace(const FVector &Start
         if (!IsCharacterCapsuleOk(EndLocation, IsCrouching(), true, EndCC)
             || !IsCharacterCapsuleOk(EndLocation, IsCrouching(), false, EndCC))
         {
-            Character->Logger.Log(this, *FString::Printf(TEXT("IsEnoughSpace error: not enough space for stand anim end")));
+            //Character->Logger.Log(this, *FString::Printf(TEXT("IsEnoughSpace error: not enough space for stand anim end")));
             auto tempEnd = EndLocation
               + FVector(0, 0, -Character->GetDefaultHalfHeight() + GetCrouchedHalfHeight());
             if (!IsCharacterCapsuleOk(tempEnd, true, true, EndCC)
                 || !IsCharacterCapsuleOk(tempEnd, true, false, EndCC))
             {
-                Character->Logger.Log(this, *FString::Printf(TEXT("IsEnoughSpace error: not enough space for crouch anim end")));
+                //Character->Logger.Log(this, *FString::Printf(TEXT("IsEnoughSpace error: not enough space for crouch anim end")));
                 return EClimbTraceResult::FailAtEnd;
             }
             else
@@ -536,7 +535,7 @@ bool UHumanoidMovementComponent::IsCharacterCapsuleOk(const FVector &CenterLoc,
     bool res = HitWall.GetActor() == nullptr;
     if (!res)
     {
-        Character->Logger.Log(this, *FString::Printf(TEXT("IsCharacterCapsuleOk error: Not OK!")));
+        //Character->Logger.Log(this, *FString::Printf(TEXT("IsCharacterCapsuleOk error: Not OK!")));
     }
     return res;
 }
@@ -626,7 +625,6 @@ void UHumanoidMovementComponent::HangOnWall(TSharedPtr<StartClimbData> HangData,
           ECollisionChannel::ECC_WorldStatic, false);
         if (HitWallAdd.GetActor() != nullptr)
         {
-            Character->Logger.Log(this, *FString::Printf(TEXT("HangOnWall error: Hit under character")));
             return;
         }
         // проверка на повисание на углу
@@ -670,7 +668,6 @@ bool UHumanoidMovementComponent::CheckWallGeometry(const StartClimbData &Data)
                                             HitWallLeft, EWallChannel, false);
     if (HitWallLeft.GetActor() == nullptr && HitWallRight.GetActor() == nullptr)
     {
-        Character->Logger.Log(this, *FString::Printf(TEXT("CheckWallGeometry error: invalid wall geometry")));
         return false;
     }
     return true;
@@ -776,7 +773,6 @@ void UHumanoidMovementComponent::JumpOffWall(const EControlDirections &Direction
     // todo сделать чтобы направления были с учетом поворота камеры
     if (CanMove() && bWallJumpAbility)
     {
-        Character->Logger.Log(this, *FString::Printf(TEXT("JumpOffWall: doing jmp off")));
         bCanHangAgain  = false;
         bWasJumpingOff = true;
         ++Character->JumpMaxCount;    //для возможности усиления прыжка
@@ -1063,7 +1059,6 @@ bool UHumanoidMovementComponent::FallDamageCheck()
             damage *= (FallDistance - MinFallHeightThreshold) / MinFallHeightThreshold;
         damage *= FallDamageMod;
         Character->ACharacterBase::TakeDamage(damage, FDamageEvent(FallDamageType), Character->GetController(), Character);
-        Character->Logger.Log(this, *FString::Printf(TEXT("received fall damage: %f"), damage));
         return true;
     }
     else
@@ -1079,13 +1074,10 @@ void UHumanoidMovementComponent::TransitionStart(const FVector &EndLoc,
 {
     if (bIsTransitioning)
     {
-        Character->Logger.Log(this, *FString::Printf(TEXT("TransitionStart error: already transitioning")));
         return;
     }
-    if (AnimToPlay == nullptr
-        || !AnimToPlay->IsValidSectionName(FTransitionSectionNames::End))
+    if (AnimToPlay == nullptr || !AnimToPlay->IsValidSectionName(FTransitionSectionNames::End))
     {
-        Character->Logger.Log(this, *FString::Printf(TEXT("TransitionStart error: bad animation to play")));
         return;
     }
     bIsTransitioning = true;
@@ -1103,8 +1095,6 @@ void UHumanoidMovementComponent::TransitionStart(const FVector &EndLoc,
         Character->StartAnimation(CurrentTransitionAnim, callBack, AnimPlayRate,
             FTransitionSectionNames::Start);
     }
-    else
-        Character->Logger.Log(this, *FString::Printf(TEXT("TransitionStart info: no anim start section")));
 }
 
 void UHumanoidMovementComponent::TransitionStart(UCurveVector *Curve, const EControlDirections &Direction,
@@ -1113,7 +1103,6 @@ void UHumanoidMovementComponent::TransitionStart(UCurveVector *Curve, const ECon
 {
     if (bIsTransitioning)
     {
-        Character->Logger.Log(this, *FString::Printf(TEXT("TransitionStart error: already transitioning")));
         return;
     }
     if (AnimToPlay == nullptr || 
@@ -1122,7 +1111,6 @@ void UHumanoidMovementComponent::TransitionStart(UCurveVector *Curve, const ECon
     {
         if(Type == AnimTypes::Dodge)
             Character->GetAttributeComponent()->Stamina->UnblockRegen();
-        Character->Logger.Log(this, *FString::Printf(TEXT("TransitionStart error: bad animation to play")));
         return;
     }
     bIsTransitioning = true;
@@ -1150,7 +1138,6 @@ void UHumanoidMovementComponent::On_TransitionFinished()
     callBack.BindUObject(this, AnimDelegates[static_cast<AnimTypes>(animType)]);
     Character->StartAnimation(CurrentTransitionAnim, callBack, AnimPlayRate, FTransitionSectionNames::End);
     TransitionCleanUp();
-    Character->Logger.Log(this, *FString::Printf(TEXT("TransitionFinished!")));
 }
 
 void UHumanoidMovementComponent::TransitionProcess(float deltaTime)
@@ -1172,7 +1159,6 @@ void UHumanoidMovementComponent::TransitionProcess(float deltaTime)
             if (!locSweep || !rotSweep)
             {
                 TransitionInterrupt();
-                Character->Logger.Log(this, *FString::Printf(TEXT("TransitionProcess error: collision hit!!")));
             }
         }
     }
@@ -1191,7 +1177,6 @@ void UHumanoidMovementComponent::TransitionProcess(float deltaTime)
             if (!locSweep)
             {
                 TransitionInterrupt();
-                Character->Logger.Log(this, *FString::Printf(TEXT("TransitionProcess error: collision hit!!")));
             }
         }
     }
@@ -1202,7 +1187,6 @@ void UHumanoidMovementComponent::TransitionInterrupt()
     check(bIsTransitioning && "Transition: can't interrupt");
     Character->StopAnimMontage(CurrentTransitionAnim);
     TransitionCleanUp();
-    Character->Logger.Log(this, *FString::Printf(TEXT("TransitionInterrupt error: interrupted!!")));
 }
 
 void UHumanoidMovementComponent::TransitionCleanUp()
@@ -1223,7 +1207,7 @@ void UHumanoidMovementComponent::BeginPlay()
     Character = Cast<ACharacterCreature>(PawnOwner);
     check(Character != nullptr && "UHumanoidMovementComponent error: No pawn");
     params.ActorsToIgnore.Add(CharacterOwner);
-    params.isDebug       = Character->Logger.IsEnabled(this);
+    //params.isDebug       = Character->Logger.IsEnabled(this);
     MoveAbilitiesCurrent = MoveAbilitiesDefault;
 }
 
@@ -1245,8 +1229,8 @@ void UHumanoidMovementComponent::TickComponent(float DeltaTime, enum ELevelTick 
                                            FActorComponentTickFunction *ThisTickFunction)
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-    if (Character->Logger.IsEnabled(this))
-        VisualizeMovement();
+
+//        VisualizeMovement();
     if (bIsTransitioning)
         TransitionProcess(DeltaTime);
     //Character->Logger.Log(this, *FString::Printf(TEXT("iswalkablefloor %s"), CurrentFloor.IsWalkableFloor() ? TEXT("true") : TEXT("false")));
@@ -1267,9 +1251,7 @@ void UHumanoidMovementComponent::Update()
     const auto dexMod = UAttributeSetHelper::GetModifier(Character->GetAttributeComponent()->Attributes, EAttributes::Dex);
     // более verbose способ получения модификатора
     const auto tumbleMod = UAttributeSetHelper::GetModifier(Character->GetAttributeComponent()->Attributes, FSkillList::ModifierMap[(int)ESkill::Tumble]);
-    Character->Logger.Log(this, *FString::Printf(TEXT("skill val %d"), USkillHelper::GetValue(Character->GetAttributeComponent()->Skills, ESkill::Tumble)));
-    Character->Logger.Log(this, *FString::Printf(TEXT("skill mod %d"), UAttributeSetHelper::GetModifier(Character->GetAttributeComponent()->Attributes, FSkillList::ModifierMap[(int)ESkill::Tumble])));
-        // ловкость
+       // ловкость
 
         MinFallHeightThreshold = GetSigmoidValue(
             dexMod, AbilityMod, MinFallHeightThresholdBase * (1.f - FallDamageMod),
@@ -1347,23 +1329,6 @@ void UHumanoidMovementComponent::Update()
     //TODO: рассчитать реальный мод скорости с учетом текущих бафов
     //Max Speed update
     CalculateMaxSpeeds(GetSpeedModifier());
-
-    Character->Logger.Log(this, *FString::Printf(TEXT("MinFallHeightThreshold %f"), MinFallHeightThreshold));
-    Character->Logger.Log(this, *FString::Printf(TEXT("MaxfallHeightThreshold %f"), MaxfallHeightThreshold));
-    Character->Logger.Log(this, *FString::Printf(TEXT("JumpWallZVelocity %f"), JumpWallZVelocity));
-    Character->Logger.Log(this, *FString::Printf(TEXT("JumpWallXYVelocity %f"), JumpWallXYVelocity));
-    Character->Logger.Log(this, *FString::Printf(TEXT("JumpZVelocity %f"), JumpZVelocity));
-    Character->Logger.Log(this, *FString::Printf(TEXT("AnimPlayRate %f"), AnimPlayRate));
-    Character->Logger.Log(this, *FString::Printf(TEXT("AirControl %f"), AirControl));
-    Character->Logger.Log(this, *FString::Printf(TEXT("BrakingDecelerationFalling %f"),
-        BrakingDecelerationFalling));
-    Character->Logger.Log(this, *FString::Printf(TEXT("FallingLateralFriction %f"), FallingLateralFriction));
-    Character->Logger.Log(this, *FString::Printf(TEXT("JumpMaxHoldTime %f"), Character->JumpMaxHoldTime));
-    Character->Logger.Log(this, *FString::Printf(TEXT("MaxAcceleration %f"), MaxAcceleration));
-    Character->Logger.Log(this, *FString::Printf(TEXT("BrakingDecelerationWalking %f"),
-        BrakingDecelerationWalking));
-    Character->Logger.Log(this, *FString::Printf(TEXT("BrakingFriction %f"), BrakingFriction));
-
     SetUpdate(false);
 }
 
@@ -1374,7 +1339,7 @@ void UHumanoidMovementComponent::Crouch(bool bClientSimulation)
         Super::Crouch(bClientSimulation);
         return;
     }
-    Character->Logger.Log(this, *FString::Printf(TEXT("blocked crouch")));
+
     bWantsToCrouch = false;
 }
 
@@ -1384,7 +1349,6 @@ bool UHumanoidMovementComponent::DoJump(bool bReplayingMoves)
         || bConstrainToPlane || FMath::Abs(PlaneConstraintNormal.Z) == 1.f
         || WeightFactor > 1)
     {
-        Character->Logger.Log(this, *FString::Printf(TEXT("blocked jump")));
         return false;
     }
     if (Character->GetAttributeComponent()->Stamina->CurrentValue <= 0)
@@ -1426,14 +1390,10 @@ float UHumanoidMovementComponent::GetWeightFactor() const
 void UHumanoidMovementComponent::OnParkourEnded(UAnimMontage *animMontage,
                                               bool bInterrupted)
 {
-    Character->Logger.Log(this, *FString::Printf(TEXT("%s"), bInterrupted ? TEXT("ParkourInterrupt") :
-        TEXT("ParkourFinishedNormally")));
     // todo reset character capsule size if modified
 }
 
 void UHumanoidMovementComponent::OnDodgeEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
-    Character->Logger.Log(this, *FString::Printf(TEXT("%s"), bInterrupted ? TEXT("DodgeInterrupt") :
-        TEXT("DodgeFinishedNormally")));
     Character->Cheats.InvulnerableToHit = false;
 }

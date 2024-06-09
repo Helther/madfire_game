@@ -8,6 +8,7 @@
 #include "AbilitySystem/StatusEffect.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
+#include "Templates/SharedPointer.h"
 #include "EquipmentComponent.generated.h"
 
 
@@ -79,10 +80,13 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     UItem *Equip(UItem *Item);
+
     UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     UItem *EquipToSlot(UItem *Item, EItemSlot SlotName);
+
     UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     UItem *Unequip(EItemSlot SlotName);
+
     UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     bool DropItem(EItemSlot SlotName, FTransform transform);
     //UFUNCTION(BlueprintCallable, Category = "Equipment Component")
@@ -93,23 +97,31 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Equipment Component")
     bool SwapItems(EItemSlot lhs, EItemSlot rhs);
+
     UFUNCTION(BlueprintCallable)
     AItemActor* SpawnItemActor(UItem* Item, bool EnableCollision, FName SocketName);
 
     UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FSkillList EquipmentSkills;
+
     UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FAttributeSet EquipmentAttributes;
+
     UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FDamageAbsorb  EqipmentDamageAbsorb;
+
     UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FDamageResistance  EqipmentDamageResistance;
+
     UPROPERTY(BlueprintReadOnly, Category = "Equipment Component")
     FDamageAbsorb EqipmentDamageBonus;
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment Component")
     float CurrentWeight;
+
     UPROPERTY(EditAnywhere, Category = "Equipment Component")
     FEquipmentSlot Slot[(int32)EItemSlot::Max];
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment Component")
     TArray<FUnarmedWeapon> DefaultArmaments;
     //UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment Component")
@@ -118,8 +130,10 @@ public:
     //Equipment Update
     UFUNCTION(BlueprintCallable, Category = "Component Update")
     void Update();
+
     UFUNCTION(BlueprintCallable, Category = "Component Update")
     void SetUpdate(bool Update) { IsDirty = Update; }
+
     UFUNCTION(BlueprintCallable, Category = "Component Update")
     bool IsUpdateNeeded() { return IsDirty; }
 

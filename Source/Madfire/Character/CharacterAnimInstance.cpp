@@ -1,5 +1,4 @@
 ﻿#include "CharacterAnimInstance.h"
-
 #include "Character/CharacterCreature.h"
 
 const FName FAnimSectionNames::Start = "Start";
@@ -16,59 +15,53 @@ void UCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 void UCharacterAnimInstance::OnWeaponSwitch()
 {    
-    auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().state(ECombatState::WeaponSwitch)->Info;
-    stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::WeaponGrabbed, true);
-    CharacterInstance->GetCombatComponent()->GetCurrentCombatStance()->ArmsSetup(!CharacterInstance->GetCombatComponent()->WeaponDrawn());
+    CharacterInstance->GetCombatComponent()->CombatFSM[ECombatState::WeaponSwitch].ChangeAnimInfo(ECombatStateAnimInfo::WeaponGrabbed, true);
+    //CharacterInstance->GetCombatComponent()->GetCurrentCombatStance()->ArmsSetup(!CharacterInstance->GetCombatComponent()->WeaponDrawn());
+    CharacterInstance->GetCombatComponent()->ArmsSetup(!CharacterInstance->GetCombatComponent()->WeaponDrawn());
 }
 
 void UCharacterAnimInstance::OnAmmoGrab()
 {
-    auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().state(ECombatState::Reload)->Info;
-    stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::AmmoGrabbed, true);
+    CharacterInstance->GetCombatComponent()->CombatFSM[ECombatState::Reload].ChangeAnimInfo(ECombatStateAnimInfo::WeaponGrabbed, true);
     Cast<URangeCombatStance>(CharacterInstance->GetCombatComponent()->GetCurrentCombatStance())->SpawnAttachAmmoActor();
 }
 
 void UCharacterAnimInstance::OnAmmoAttach()
 {
-    auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().state(ECombatState::Reload)->Info;
-    stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::AmmoAttach, true);
+    CharacterInstance->GetCombatComponent()->CombatFSM[ECombatState::Reload].ChangeAnimInfo(ECombatStateAnimInfo::AmmoAttach, true);
     Cast<URangeCombatStance>(CharacterInstance->GetCombatComponent()->GetCurrentCombatStance())->AttachAmmoActorToWeapon();
 }
 
 void UCharacterAnimInstance::OnProjectileFired()
 {
-    CharacterInstance->FireLoadedProjectile();
+    CharacterInstance->GetCombatComponent()->FireLoadedProjectile();
 }
 
 void UCharacterAnimInstance::OnBlockActivation(bool activate)
 {
-    if (CharacterInstance->GetCombatComponent()->GetCombatFSM().isInState(ECombatState::Block))
+    if (CharacterInstance->GetCombatComponent()->GetCombatFSM().is(ECombatState::Block))
     {
-        auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().state(ECombatState::Block)->Info;
-        stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::BlockOrParryActive, activate);
+        CharacterInstance->GetCombatComponent()->CombatFSM[ECombatState::Block].ChangeAnimInfo(ECombatStateAnimInfo::BlockOrParryActive, activate);
     }
 }
 
 void UCharacterAnimInstance::OnParryActivation(bool activate)
 {
-    if (CharacterInstance->GetCombatComponent()->GetCombatFSM().isInState(ECombatState::Parry))
+    if (CharacterInstance->GetCombatComponent()->GetCombatFSM().is(ECombatState::Parry))
     {
-        auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().state(ECombatState::Parry)->Info;
-        stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::BlockOrParryActive, activate);
+        CharacterInstance->GetCombatComponent()->CombatFSM[ECombatState::Parry].ChangeAnimInfo(ECombatStateAnimInfo::BlockOrParryActive, activate);
     }
 }
 
 void UCharacterAnimInstance::OnMovementAllowed(bool activate)
 {
-    auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().currentState()->Info;
-    stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::MovementBlocked, !activate);
+    CharacterInstance->GetCombatComponent()->CombatFSM.currentState()->ChangeAnimInfo(ECombatStateAnimInfo::MovementBlocked, !activate);
     CharacterInstance->GetMovementComponent()->MovementLock = !activate;
 }
 
 void UCharacterAnimInstance::OnRotationAllowed(bool activate)
 {
-    auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().currentState()->Info;
-    stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::RotationBlocked, !activate);
+    CharacterInstance->GetCombatComponent()->CombatFSM.currentState()->ChangeAnimInfo(ECombatStateAnimInfo::RotationBlocked, !activate);
     RootMotionMode = activate ? ERootMotionMode::IgnoreRootMotion : ERootMotionMode::RootMotionFromMontagesOnly;
     if (activate)
         CharacterInstance->GetCombatComponent()->ResetRotationRate();
@@ -78,7 +71,7 @@ void UCharacterAnimInstance::OnRotationAllowed(bool activate)
 
 void UCharacterAnimInstance::OnComboCanContinue()
 {
-    auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().state(ECombatState::Attack)->Info;
+    auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM()[ECombatState::Attack];
     if (CharacterInstance->GetCombatComponent()->GetCombatFSM().isInState(ECombatState::Attack))
     {
         if (!stateInfo.CheckAnimInfo(ECombatStateAnimInfo::ComboSaved))
@@ -95,13 +88,14 @@ void UCharacterAnimInstance::OnCollisionActivation(EArmsSlot WeaponSlot, bool ac
         return;
 
     ECombatState state = combatStance->IsMelee() ? ECombatState::Attack : ECombatState::Parry;  // ranged attack can come from parry only
-    if (CharacterInstance->GetCombatComponent()->GetCombatFSM().isInState(state))
+    if (CharacterInstance->GetCombatComponent()->CombatFSM.is(state))
     {
-        auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().state(state)->Info;
+        auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM()[state];
         stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CollisionOn, activate);
         if (activate)
             stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::ChargeAllowed, false);
-        AItemActor* weaponActor = CharacterInstance->GetCombatComponent()->GetCurrentCombatStance()->GetArmsActorFromSlot(WeaponSlot);
+        //AItemActor* weaponActor = CharacterInstance->GetCombatComponent()->GetCurrentCombatStance()->GetArmsActorFromSlot(WeaponSlot);
+        AItemActor* weaponActor = CharacterInstance->GetCombatComponent()->GetArmActor(WeaponSlot);
         check(weaponActor && "invalid weapon collision anim event");
         UCombatComponent::SetWeaponCollision(weaponActor, activate);
     }
@@ -116,8 +110,7 @@ void UCharacterAnimInstance::OnParriableActivation(bool activate)
     ECombatState state = combatStance->IsMelee() ? ECombatState::Attack : ECombatState::Parry;
     if (CharacterInstance->GetCombatComponent()->GetCombatFSM().isInState(state))
     {
-        auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().state(state)->Info;
-        stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanBeParried, activate);
+        CharacterInstance->GetCombatComponent()->CombatFSM[state].ChangeAnimInfo(ECombatStateAnimInfo::CanBeParried, activate);
     }
 }
 
@@ -127,8 +120,7 @@ bool UCharacterAnimInstance::IsMovementAllowed() const
         && CharacterInstance->GetCombatComponent()->HasCombatStance()
         && CharacterInstance->GetCombatComponent()->GetCombatFSM().currentState())
     {
-        const auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().currentState()->Info;
-        return !stateInfo.CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked);
+        return !CharacterInstance->GetCombatComponent()->CombatFSM.currentState()->CheckAnimInfo(ECombatStateAnimInfo::MovementBlocked);
     }
     return false;
 }
@@ -145,11 +137,7 @@ void UCharacterAnimInstance::OnDodgeInvulnerable(bool activate)
 
 void UCharacterAnimInstance::OnCounterChamber(bool activate)
 {
-    auto& stateInfo = CharacterInstance->GetCombatComponent()->GetCombatFSM().currentState()->Info;
-    stateInfo.ChangeAnimInfo(ECombatStateAnimInfo::CanCounterChamber, activate);
+    CharacterInstance->GetCombatComponent()->CombatFSM.currentState()->ChangeAnimInfo(ECombatStateAnimInfo::CanCounterChamber, activate);
 }
 
-void UCharacterAnimInstance::OnSectionEnd(const FName &SectionName) 
-{
 
-}

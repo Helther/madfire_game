@@ -1,12 +1,13 @@
 ﻿#pragma once
 
 #include "../Utils/FSM.h"
+#include "../Rules/GameRules.h"
 #include "CoreMinimal.h"
 #include "Animation/AimOffsetBlendSpace.h"
-#include "Animation/BlendSpace.h"
-#include "../Rules/GameRules.h"
-    
+#include "Animation/BlendSpace.h" 
+#include "Templates/SharedPointer.h"
 #include "CombatStance.generated.h"
+
 
 
 UENUM(BlueprintType)
@@ -33,6 +34,38 @@ enum class EWeaponCombination : uint8
     Ranged
 };
 ENUM_CLASS_FLAGS(EWeaponCombination)
+
+UENUM(BlueprintType)
+// Combat oriented Character Control sub CC modes (value represents priority order(the more the better))
+enum class ELossOfBalanceCCSubState : uint8
+{
+    None = 0,
+    HitWall,
+    BlockedAttack,
+    WasParried,
+    Chamber, // ударил об оружие противника
+    MAX UMETA(Hidden)
+};
+
+UENUM(BlueprintType)
+enum class ECombatMovementType : uint8 
+{
+    Block = 0,
+    Parry, 
+    Draw,
+    Sheath,
+    Reload,  
+    MAX UMETA(Hidden)
+};
+
+UENUM(BlueprintType)
+enum class ECombatMotion : uint8 
+{
+    Stand = 0,
+    Crouch, 
+    MAX UMETA(Hidden)
+};
+
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCustomAttackEvent, AActor *, AttackActor, AActor *, DefendActor);
 
@@ -94,7 +127,7 @@ struct CombatStateInfo : public StateInfoBase
     float ChargeTime = 0.f;
     int ChargeStage = -1;
     // pointer to relevant attack info from current stance
-    FAttackInfo *AttackInfo = nullptr;
+    const FAttackInfo *AttackInfo = nullptr;
 
     FORCEINLINE void ChangeAnimInfo(uint16 mask, bool set) { set ? (AnimInfo |= mask) : (AnimInfo &= ~mask); }
     FORCEINLINE bool CheckAnimInfo(uint16 mask) const { return (AnimInfo & mask) == mask; }
@@ -146,26 +179,52 @@ enum class EArmsSlot: uint8
 };
 ENUM_CLASS_FLAGS(EArmsSlot)
 
+USTRUCT(BlueprintType)
+struct FWeaponInfo
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TObjectPtr<class AItemActor> ItemActor;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool Shield;
+};
 
 class UCombatComponent;
 class ACharacterCreature;
 
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew)
-class MADFIRE_API UCombatStance : public UObject
+class MADFIRE_API UCombatStance : public UPrimaryDataAsset
 {
     GENERATED_BODY()
 
     friend class UCombatComponent;
 public:
-    // called when setting to current stance in combat component
-    virtual void StanceSwitched(ACharacterCreature* NewOwner, const UCombatStance* DefaultStance);
-    // called before switching to another stance
-    virtual void ResetStance();
+    virtual const FAttackInfo &GetCurrentAttackInfo(ESpecialType type = ESpecialType::None) const;
+
+    virtual bool IsLoaded() const;
+
+    virtual bool HasChargeAttack() const;
+
+    //TODO: Better name needed
+    virtual bool CanDoShit(ESpecialType type = ESpecialType::None) const;
+
+    bool CanDoShit(ECombatMovementType type) const;
+
+    bool CanDoShit(ECombatMotion type) const;
+
+    virtual void StanceSet(ACharacterCreature* NewOwner);
+
+    virtual void StanceUnSet();
+
     // check that weapons setup correctly
-    virtual bool IsStanceValid(const ACharacterCreature* NewOwner) const { return true; }
+    virtual bool IsStanceValid(const ACharacterCreature *NewOwner) const;
+
     // custom blueprint specific check
-    UFUNCTION(BlueprintCallable)
-    virtual bool IsMelee() const { return true; }
+    UFUNCTION(BlueprintPure)
+    virtual bool IsMelee() const;
+
     UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Stance Interface")
     bool CheckRequirement(ACharacterCreature* character) const;
     bool CheckRequirement_Implementation(ACharacterCreature* character) const { return true; }
@@ -174,22 +233,30 @@ public:
     // calls WeaponSetup for all weapons, attaches the weapons
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
     void ArmsSetup(bool Draw);
+
     // add check that vars are not setup, or else ...
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
-    void SetWeaponVars(ACharacterCreature* NewOwner);
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
-    void ResetWeaponVars();
+    //UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
+    //void SetWeaponVars(ACharacterCreature* NewOwner);
+
+    //UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
+    //void ResetWeaponVars();
+
     // returns correct variable for a given slot
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
-    UItemArms* GetArmsFromSlot(EArmsSlot Slot) const;
-    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
-    AItemActor* GetArmsActorFromSlot(EArmsSlot Slot) const;
-    ///
+    //UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
+    //UItemArms* GetArmsFromSlot(EArmsSlot Slot) const;
+
+    //UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
+    //AItemActor* GetArmsActorFromSlot(EArmsSlot Slot) const;
+    
+    UFUNCTION(BlueprintPure, BlueprintImplementableEvent, Category = "Stance Interface")
+    void AllocateWeapons(ACharacterCreature* NewOwner, TMap<EArmsSlot, FWeaponInfo> &Result) const;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool IsUsingDefaultWeapons = false;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     EWeaponCombination StanceType;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool IsBlockAllowed = true;
     // a set of weapon types in which character equipped weapons should all be present
@@ -206,37 +273,27 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Speeds")
     float MaxCombatSprintSpeed;
+
     // Max move speed during blocking or attacking if allowed (charging drawing)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat Speeds")
     float MaxBlockOrActionSpeed;
-    ////////////////////////// END combat mode speeds//////////////////////////
 
-    FSM<CombatStateInfo> CombatFSM;
-
-    // custom equipment specific animations for unique stances
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UAnimMontage *BlockAnim;// TODO modify anim speed according to shield weight after stance resolve
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UAnimMontage *ParryAnim;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UBlendSpace *StandLocomotion;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UBlendSpace *CrouchLocomotion;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
     UAimOffsetBlendSpace *AimOffset;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UAnimMontage *DrawAnim;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UAnimMontage *SheathAnim;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
-    UAnimMontage *HitWallAnim;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
-    UAnimMontage *WasParriedAnim;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
-    UAnimMontage *BlockedAttackAnim;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CC Anims")
-    UAnimMontage *ChamberAnim;
+    UPROPERTY(EditDefaultsOnly, meta=(ArraySizeEnum=ECombatMovementType))
+    UAnimMontage *CombatMoves[ECombatMovementType::MAX];
+    
+    UPROPERTY(EditDefaultsOnly, meta=(ArraySizeEnum=ECombatMovementType))
+    UBlendSpace *CombatMotions[ECombatMotion::MAX];
+
+    UPROPERTY(EditDefaultsOnly, meta=(ArraySizeEnum=ELossOfBalanceCCSubState))
+    UAnimMontage *CCLOBAnims[ELossOfBalanceCCSubState::MAX];
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool IsParryAllowed = true;
+    UPROPERTY(EditAnywhere)
+    float ParryStaminaCost = 15;
 
 
 protected:
@@ -247,18 +304,9 @@ protected:
     // resets buffs/debuffs and destroys default weapons (check if spawned it in the first place)
     UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Stance Interface")
     void OnStanceDeActivated();
-    ///
-    // Ability state funcs
-    void OnAbilityEnter();
-    void OnAbilityLeave();
-    bool IdleToAbility() const;
-    bool AbilityToIdle() const;
-
-    UCombatComponent* GetCombatComp() const;
-    virtual void UpdateOwnerAnims(const UCombatStance* DefaultStance);
 
     // used for req checks, set when gets stance resolved
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    UPROPERTY(BlueprintReadOnly)
     ACharacterCreature* Owner = nullptr;
 };
 
@@ -272,26 +320,21 @@ public:
     UMeleeCombatStance();
 
     bool IsStanceValid(const ACharacterCreature* NewOwner) const override;
-    bool IsMelee() const override { return true; }
 
-    FAttackInfo* GetAttackInfoForSpecial(ESpecialType type);
+    bool IsMelee() const override;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool IsParryAllowed = true;
-    UPROPERTY(EditAnywhere)
-    float ParryStaminaCost = 15;
     // use size as max combo count
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FComboInfo> ComboAttacks;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FAttackInfo> SpecialAttacks;
 
-    void ResetComboCount() { CurrentCombo = 0; }
-    int GetComboCount() const { return CurrentCombo; }
-    void IncreaseComboCount() { ++CurrentCombo; }
+    const FAttackInfo &GetCurrentAttackInfo(ESpecialType type) const override;
 
-protected:
-    int CurrentCombo = 0;
+    bool CanDoShit(ESpecialType type) const override;
+
+    bool HasChargeAttack() const override;
 };
 
 // load ammo handling, make a copy of ammo actor and store it in a stance, substact from equipment ammo
@@ -307,39 +350,48 @@ public:
     URangeCombatStance();
 
     bool IsStanceValid(const ACharacterCreature* NewOwner) const override;
+
     bool IsMelee() const override { return false; }
-    void StanceSwitched(ACharacterCreature* NewOwner, const UCombatStance* DefaultStance) override;
-    void ResetStance() override;
+
+    void StanceSet(ACharacterCreature* NewOwner) override;
+
+    void StanceUnSet() override;
+
     void FireLoadedAmmo();
     // called when character reached ammo during reload
     void SpawnAttachAmmoActor();
+
     void AttachAmmoActorToWeapon();
+
+    const FAttackInfo &GetCurrentAttackInfo(ESpecialType type) const override;
+
+    bool IsLoaded() const override {return IsWeaponLoaded;}
+
+    bool CanDoShit(ESpecialType type) const override;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FAttackInfo AttackInfo;
-protected:
-    void UpdateOwnerAnims(const UCombatStance* DefaultStance) override;
-    virtual float CalculateAmmoInitialSpeed(UItemWeaponRanged* Weapon) const;
 
-    // called when switched stance
-    void CleanUpAmmoActor();
-    UFUNCTION()
-    void OnReloadEnded(UAnimMontage* AnimMontage, bool bInterrupted);
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    EAttributes AnimRateMod;
 
+    UPROPERTY()
+    AItemActorProjectile* LoadedAmmo = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float ReloadStaminaCost = 10;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float MeleeAttackStaminaCost = 20;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animations")
-    UAnimMontage* ReloadAnim;
-    bool IsWeaponLoaded = false;
-    UPROPERTY()
-    AItemActorProjectile* LoadedAmmo = nullptr;
+
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     uint8 LoadAmmoCount = 1;
 
-    virtual EAttributes GetAnimRateModifier() const;
+    UPROPERTY(BlueprintReadOnly)
+    bool IsWeaponLoaded = false;
+
+protected:
+    // void UpdateOwnerAnims(const UCombatStance* DefaultStance) override;
+    virtual float CalculateAmmoInitialSpeed(UItemWeaponRanged* Weapon) const;
+    // called when switched stance
+    void CleanUpAmmoActor();
 };
 
 
@@ -354,18 +406,23 @@ public:
     UFUNCTION(BlueprintCallable)
     float GetDrawRatio() const;
 
+    float GetMaxDrawTime() const;
+
+    float GetLastDrawRatio() const;
+
     // set same as corresponding segment in attack montage for bow drawing
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     UAnimSequence* BowDrawingAnim;
+
     // time in seconds between stamina consume tick during draw
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float ChargeStaminaConsumeDelta;
 
     float LastChargeTimeStaminaConsume;
+
     float LastChargeTime;
-private:
-    float GetMaxDrawTime() const;
-    float GetLastDrawRatio() const;
+
+private:    
     float CalculateAmmoInitialSpeed(UItemWeaponRanged* Weapon) const override;
 };
 
@@ -377,6 +434,4 @@ class UCrossbowCombatStance : public URangeCombatStance
 
 public:
     UCrossbowCombatStance();
-
-    EAttributes GetAnimRateModifier() const override;
 };

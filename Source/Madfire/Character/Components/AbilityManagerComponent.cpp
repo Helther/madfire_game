@@ -11,7 +11,7 @@ UAbilityManagerComponent::UAbilityManagerComponent(const FObjectInitializer &Obj
 
 
 void UAbilityManagerComponent::BeginPlay() 
-{
+{    
     Super::BeginPlay();
     Owner = Cast<ACharacterCreature>(GetOwner());
     check(Owner != nullptr && "UCombatComponent: No pawn");

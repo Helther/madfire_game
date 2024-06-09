@@ -31,7 +31,6 @@ public:
     UAbilityManagerComponent(const class FObjectInitializer &ObjectInitializer);
 
     
-
     UFUNCTION(BlueprintCallable, Category = "")
     void Update();
 

@@ -58,8 +58,6 @@ public:
     FVector GetProjectileSpawnLocation(ESpawnPivot Pivot, FVector Offset) const;
 
     FCheats Cheats;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FObjectLogger Logger;
 
     UFUNCTION(BlueprintCallable, meta = (Tooltip = "Return AttributeComponent"), Category = "Character Components")
     FORCEINLINE UAttributeComponent *GetAttributeComponent() const {return AttributeComponent;}

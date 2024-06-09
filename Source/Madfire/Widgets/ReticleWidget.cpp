@@ -19,7 +19,8 @@ float UReticleWidget::ComputeSpreadAngle() const
         {
             if (PlayerCharacter->GetCombatComponent()->HasCombatStance() && !PlayerCharacter->GetCombatComponent()->GetCurrentCombatStance()->IsMelee())
             {
-                if (auto RangedWeapon = Cast<UItemWeaponRanged>(PlayerCharacter->GetCombatComponent()->GetCurrentCombatStance()->GetArmsFromSlot(EArmsSlot::MainHand)))
+                //if (auto RangedWeapon = Cast<UItemWeaponRanged>(PlayerCharacter->GetCombatComponent()->GetCurrentCombatStance()->GetArmsFromSlot(EArmsSlot::MainHand)))
+                if (auto RangedWeapon = Cast<UItemWeaponRanged>(PlayerCharacter->GetCombatComponent()->GetArmItem(EArmsSlot::MainHand)))
                 {
                     const float BaseSpreadAngle = RangedWeapon->GetCalculatedSpreadAngle();
                     const float SpreadAngleMultiplier = RangedWeapon->GetCalculatedSpreadAngleMultiplier();

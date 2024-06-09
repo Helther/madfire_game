@@ -56,15 +56,14 @@ void ACharacterPlayer::ClearAbilityCameraMode()
 
 void ACharacterPlayer::SetSprintCameraMode(bool activate)
 {
-    CameraComponent->UpdateCameraMode(activate ? CameraComponent->SprintCameraMode
-                                               : CameraComponent->GetDefaultCameraMode());
+    CameraComponent->UpdateCameraMode(activate ? CameraComponent->SprintCameraMode : CameraComponent->GetDefaultCameraMode());
 }
 
 void ACharacterPlayer::AdjustCameraZoom(float Offset) 
 {
     CameraComponent->AdjustActiveCameraZoom(Offset);
 }
-
+/*
 void ACharacterPlayer::FireLoadedProjectile()
 {
     ACharacterCreature::FireLoadedProjectile();
@@ -78,19 +77,14 @@ void ACharacterPlayer::FireLoadedProjectile()
             PlayerController->PlayerCameraManager->StartCameraShake(FireCameraShake, scale);
         }
     }
-}
+}*/
 
-void ACharacterPlayer::OnWalkingOffLedge_Implementation(
-  const FVector &PreviousFloorImpactNormal,
-  const FVector &PreviousFloorContactNormal,
-  const FVector &PreviousLocation,
-  float TimeDelta)
+void ACharacterPlayer::OnWalkingOffLedge_Implementation(const FVector &PreviousFloorImpactNormal, const FVector &PreviousFloorContactNormal,const FVector &PreviousLocation, float TimeDelta)
 {
-    Logger.Log(this,*FString::Printf(TEXT("OnWalkingOffLedge")));
+
     APlayerCharController *PlayerController = Cast<APlayerCharController>(GetController());
     if (PlayerController->IsActionKeyPressed(FInputKeyNames::ClimbDownTest))
     {
-        Logger.Log(this,*FString::Printf(TEXT("climb down")));
         GetMovementComponent()->ClimbDownWall();
     }
 }
@@ -105,7 +99,8 @@ void ACharacterPlayer::ApplyCameraShakeForCCState(unsigned NewState, unsigned Ne
     switch (NewState)
     {
         case ECCState::LossOfBalance:
-            if (NewSubState == ELossOfBalanceCCSubState::BlockedAttack)
+            //if (NewSubState == ELossOfBalanceCCSubState::BlockedAttack)
+            if (NewSubState == static_cast<int>(ELossOfBalanceCCSubState::BlockedAttack))
                 scale = BlockedHitShakeScale;
             else
                 scale = LossOfBalanceShakeScale;
