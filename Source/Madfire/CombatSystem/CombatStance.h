@@ -6,6 +6,7 @@
 #include "Animation/AimOffsetBlendSpace.h"
 #include "Animation/BlendSpace.h" 
 #include "Templates/SharedPointer.h"
+#include "Character/Components/CCComponent.h"
 #include "CombatStance.generated.h"
 
 
@@ -35,17 +36,6 @@ enum class EWeaponCombination : uint8
 };
 ENUM_CLASS_FLAGS(EWeaponCombination)
 
-UENUM(BlueprintType)
-// Combat oriented Character Control sub CC modes (value represents priority order(the more the better))
-enum class ELossOfBalanceCCSubState : uint8
-{
-    None = 0,
-    HitWall,
-    BlockedAttack,
-    WasParried,
-    Chamber, // ударил об оружие противника
-    MAX UMETA(Hidden)
-};
 
 UENUM(BlueprintType)
 enum class ECombatMovementType : uint8 

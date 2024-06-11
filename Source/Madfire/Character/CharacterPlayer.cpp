@@ -14,7 +14,7 @@ ACharacterPlayer::ACharacterPlayer(const FObjectInitializer &ObjectInitializer)
     CameraComponent = CreateDefaultSubobject<UPlayerPawnCameraComponent>(TEXT("CameraComponent"));
     CameraComponent->SetRelativeLocation(FVector(-300.0f, 0.0f, 75.0f));
     GetMovementComponent()->OnSprintModeChanged.AddDynamic(this, &ACharacterPlayer::SetSprintCameraMode);
-    OnCCStateChanged.AddDynamic(this, &ACharacterPlayer::ApplyCameraShakeForCCState);
+    GetССComponent()->OnCCStateChanged.AddDynamic(this, &ACharacterPlayer::ApplyCameraShakeForCCState);
     GetCombatComponent()->OnCombatStateChanged.AddDynamic(this, &ACharacterPlayer::UpdateDefaultCameraMode);
     CameraZoomStep = 70;
     LossOfBalanceShakeScale = 1.f;

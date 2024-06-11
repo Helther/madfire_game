@@ -490,8 +490,7 @@ void UCombatComponent::OnAttack(bool Started)
         if (CombatFSM.is(ECombatState::Attack))
         {
             auto& info = CombatFSM[ECombatState::Attack];            
-
-            if (Owner->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && Owner->CCStateManager.IsInCCSubMode(static_cast<int>(ELossOfBalanceCCSubState::Chamber)))
+            if (Owner->GetССComponent()->CheckCCMode(ECCState::LossOfBalance, Chamber))
             {
                 if (!info.CheckAnimInfo(CanCounterChamber)) // check if not ready to strike while in chamber
                     return;
@@ -590,8 +589,7 @@ void UCombatComponent::OnBlock(bool Started)
         return;
 
     BlockPressed = Started;
-    if (Owner->CCStateManager.IsInCCMode(ECCState::LossOfBalance) && 
-        Owner->CCStateManager.IsInCCSubMode(static_cast<int>(ELossOfBalanceCCSubState::BlockedAttack)))
+    if (Owner->GetССComponent()->CheckCCMode(ECCState::LossOfBalance, BlockedAttack))
         return;
     if (!BlockPressed && CombatFSM.is(ECombatState::Block)) // end block
     {

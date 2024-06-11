@@ -86,7 +86,7 @@ void UAbilityManagerComponent::OnUseAbility(bool Started)
 {
     AbilityPressed = Started;
 
-    if (Owner->CCStateManager.HasCC())
+    if (Owner->GetССComponent()->HasCC())
         return;
 
     if (CurrentAbility != nullptr)

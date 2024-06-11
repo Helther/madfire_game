@@ -8,76 +8,8 @@
 #include "Components/MovementComponentBase.h"
 #include "Components/Camera/CameraMode.h"
 #include "Components/AbilityManagerComponent.h"
+#include "Components/CCComponent.h"
 #include "CharacterCreature.generated.h"
-
-UENUM(BlueprintType)
-// Character Control Bit mask with values as priority order (the higher the better)
-enum ECCState
-{
-    NoCC = 0,
-    Sleep,
-    Charm,
-    LossOfBalance,
-    Stupor,
-    Fear,
-    Rage,
-    MindControl,
-    Stun,
-    KnockDown,
-    Stasis,
-    NumOfModes
-};
-
-
-// Класс, отвечающий за управление состоянием контроля над персом и для слежения степени станлока определенных режимов контроля
-USTRUCT(BlueprintType)
-struct FCCStateManager
-{
-    GENERATED_BODY()
-
-    FCCStateManager();
-
-    FORCEINLINE void Init(ACharacterCreature* InCharacter) { Character = InCharacter; }
-
-    static int GetHighestPriorityCC(int bitmask);
-
-    FORCEINLINE bool HasCC() const { return CurrentCCState != ECCState::NoCC; }
-    FORCEINLINE bool IsInCCMode(ECCState Mode) const { return CurrentCCState & (1u << Mode); }
-    FORCEINLINE bool IsInCCSubMode(unsigned int SubMode) const { return CurrentCCSubState & (1u << SubMode); }
-    // sets flag, starts cc timer and stunLock timer, time in seconds (time null means anim driven time)
-    void SetCCMode(ECCState Mode, unsigned int SubMode, float *Time = nullptr);
-    void ResetCCMode(ECCState Mode);
-    FORCEINLINE int CurrentCCPriority() const { return GetHighestPriorityCC(CurrentCCState); }
-    FORCEINLINE int CurrentCCSubPriority() const { return GetHighestPriorityCC(CurrentCCSubState); }
-
-    // во сколько раз уменьшается время повторного контроля
-    UPROPERTY(EditAnywhere, meta = (ClampMin = "1.0", UIMin = "1.0"))
-    float CCLockTimeDivider;
-
-    // время, через которое сбрасывается станлок, в секундах
-    UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
-    float CCLockTime;
-    
-private:
-    struct FCCTimers
-    {
-        FTimerHandle CCTimer;
-        FTimerHandle StunLockTimer;
-    };
-
-    void ResetCCLock(int index);
-    float GetCCLockTimeModifier(ECCState Mode) const;
-
-    ACharacterCreature* Character;
-    // массив пар таймер-счетчик станлока, где индекс соответствует енуму ECCState
-    TPair<FCCTimers,int> CCLocks[ECCState::NumOfModes];
-    unsigned int CurrentCCState; 
-    unsigned int CurrentCCSubState;
-};
-
-
-// used to start camera shakes for player if got CC'ed
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCCStateChanged, unsigned int, NewState, unsigned int, NewSubState);
 
 
 class UCharacterMeshComponent;
@@ -107,8 +39,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Character Animation")
     void InterruptAnimation(ECCState Source, int SubMode = 0);
 
+
     UHumanoidMovementComponent*         GetMovementComponent() const override;
     UCharacterMeshComponent*            GetMeshComponent() const;    
+    UCCComponent* GetССComponent() const { return CCComponent; }
     virtual UInventoryComponent*        GetInventoryComponent() const { return InventoryComponent; }    
     virtual UEquipmentComponent*        GetEquipmentComponent() const { return EquipmentComponent; }    
     virtual UCombatComponent*           GetCombatComponent() const { return CombatComponent; }    
@@ -127,14 +61,6 @@ public:
     // TODO уточнить при балансировке
     float CalculateKnockDownTime() const;
     void UpdateCCLOBAnims();
-    
-    // Deprecated
-    //UPROPERTY(EditAnywhere, BlueprintReadWrite,
-    //          meta = (Bitmask, BitmaskEnum = "ECCState", Category = "Character Stats"))
-    //int CurrentCCState;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character Stats")
-    FCCStateManager CCStateManager;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Stats")
     float MaxWeight;
@@ -163,6 +89,8 @@ private:
     TObjectPtr<UCombatComponent>        CombatComponent;
     UPROPERTY(BlueprintReadOnly, VisibleAnywhere,Category = "Character Components", meta=(AllowPrivateAccess = "true"))
     TObjectPtr<UAbilityManagerComponent> AbilityManager;
+    UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Character Components", meta=(AllowPrivateAccess = "true"))
+    TObjectPtr<UCCComponent>     CCComponent;
 
 protected:
     void PostInitializeComponents() override;
@@ -177,8 +105,4 @@ protected:
     void CCKnockDownEnded(UAnimMontage *animMontage, bool bInterrupted);
 
     TMap<ECCState, void (ACharacterCreature::*)(UAnimMontage *, bool)> CCInterruptDelegates;
-    TMap<ECCState, UAnimMontage *> CCAnims;
-    // loss of balance sub mode anims
-    //TMap<ELossOfBalanceCCSubState, UAnimMontage *> CCLOBAnims;
-    FCCStateChanged OnCCStateChanged;
 };
