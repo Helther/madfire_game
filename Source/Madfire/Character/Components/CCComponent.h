@@ -28,14 +28,14 @@ enum ECCState
 
 UENUM(BlueprintType)
 // Combat oriented Character Control sub CC modes (value represents priority order(the more the better))
-enum ELossOfBalanceCCSubState
+enum class ELossOfBalanceCCSubState : uint8 
 {
     None = 0,
-    HitWall,
-    BlockedAttack,
-    WasParried,
-    Chamber, // ударил об оружие противника
-    MAX
+    HitWall         UMETA(DisplayName = "HitWall"),
+    BlockedAttack   UMETA(DisplayName = "BlockedAttack"),
+    WasParried      UMETA(DisplayName = "WasParried"),
+    Chamber         UMETA(DisplayName = "Chamber"), // ударил об оружие противника
+    MAX             UMETA(Hidden)
 };
 
 /**

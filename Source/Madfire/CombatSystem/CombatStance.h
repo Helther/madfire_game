@@ -274,7 +274,7 @@ public:
     UPROPERTY(EditDefaultsOnly, meta=(ArraySizeEnum=ECombatMovementType))
     UAnimMontage *CombatMoves[ECombatMovementType::MAX];
     
-    UPROPERTY(EditDefaultsOnly, meta=(ArraySizeEnum=ECombatMovementType))
+    UPROPERTY(EditDefaultsOnly, meta=(ArraySizeEnum=ECombatMotion))
     UBlendSpace *CombatMotions[ECombatMotion::MAX];
 
     UPROPERTY(EditDefaultsOnly, meta=(ArraySizeEnum=ELossOfBalanceCCSubState))

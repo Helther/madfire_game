@@ -354,7 +354,7 @@ void ACharacterCreature::CCStunEnded(UAnimMontage *animMontage, bool bInterrupte
 
 void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted)
 {
-    if (CCComponent->IsInCCSubMode(BlockedAttack))
+    if (CCComponent->IsInCCSubMode(static_cast<int>(ELossOfBalanceCCSubState::BlockedAttack)))
     {
         if (CombatComponent->IsBlockButtonPressed())
         {
@@ -368,7 +368,7 @@ void ACharacterCreature::CCLOBEnded(UAnimMontage *animMontage, bool bInterrupted
             CombatComponent->UpdateCombatFSM();
         }
     }
-    else if (CCComponent->IsInCCSubMode(Chamber))
+    else if (CCComponent->IsInCCSubMode(static_cast<int>(ELossOfBalanceCCSubState::Chamber)))
     {
         //auto& stateInfo = CombatComponent->GetCombatFSM().currentState()->Info;
         auto& stateInfo = *CombatComponent->GetCombatFSM().currentState();
