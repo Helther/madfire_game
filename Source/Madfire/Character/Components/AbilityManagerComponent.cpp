@@ -93,9 +93,7 @@ void UAbilityManagerComponent::OnUseAbility(bool Started)
     {
         if (AbilityPressed)
         {
-            auto CombatComp = Owner->GetCombatComponent();
-            if (!CurrentAbility->bIsActive)
-                CombatComp->UpdateCombatFSM();
+            ActivateAbility();
         }
         else
             ReleaseAbility();
@@ -114,6 +112,7 @@ void UAbilityManagerComponent::ActivateAbility()
         CurrentAbility->ActivateAbility();
         CurrentAbility->Activate();
         Owner->SetAbilityCameraMode(CurrentAbility->AbilityCameraMode);
+        Owner->GetCombatComponent()->OnAbilityEnter();
     }
 }
 
@@ -123,6 +122,7 @@ void UAbilityManagerComponent::ReleaseAbility()
     {
         CurrentAbility->ReleaseAbility();
         CurrentAbility->Release();
+        Owner->GetCombatComponent()->OnAbilityLeave();
     }
     
 }
@@ -156,8 +156,5 @@ void UAbilityManagerComponent::SetGlobalCooldown()
 
 bool UAbilityManagerComponent::IsUsingAbility() const
 {
-    if(!Owner) return false;
-    check(Owner != nullptr && "Shit ");
-    auto CombatComp = Owner->GetCombatComponent();
-    return CombatComp->HasCombatStance() && CombatComp->GetCombatFSM().isInState(ECombatState::Ability);
+    return CurrentAbility && CurrentAbility->bIsActive;
 }

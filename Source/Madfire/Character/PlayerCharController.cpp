@@ -193,9 +193,9 @@ void APlayerCharController::MoveForward(float AxisValue)
         {
             if (FMath::Abs(AxisValue) >= MovementDeadZone && !PlayerRef->GetССComponent()->HasCC() && PlayerRef->GetMovementComponent()->CanMove())
             {
-                if (PlayerRef->GetCombatComponent()->HasCombatStance() && PlayerRef->GetCombatComponent()->GetCombatFSM().isInState(ECombatState::Ability)) // check if can move during cast, interrupt then
+                if (PlayerRef->GetAbilityManager()->IsUsingAbility()) // check if can move during cast, interrupt then
                 {
-                    if (PlayerRef->GetAbilityManager()->CurrentAbility && PlayerRef->GetAbilityManager()->CurrentAbility->MoveAbilities == EMoveAbilities::NoMove)
+                    if (PlayerRef->GetAbilityManager()->CurrentAbility->MoveAbilities == EMoveAbilities::NoMove)
                         PlayerRef->InterruptAnimation(ECCState::NoCC);
                 }
                 if (PlayerRef->GetMovementComponent()->MovementMode == EMovementMode::MOVE_Swimming)
@@ -259,7 +259,7 @@ void APlayerCharController::MoveRight(float AxisValue)
         {
             if (FMath::Abs(AxisValue) >= MovementDeadZone && !PlayerRef->GetССComponent()->HasCC() && PlayerRef->GetMovementComponent()->CanMove())
             {
-                if (PlayerRef->GetCombatComponent()->HasCombatStance() && PlayerRef->GetCombatComponent()->GetCombatFSM().isInState(ECombatState::Ability))// check if can move during cast, interrupt then
+                if (PlayerRef->GetAbilityManager()->IsUsingAbility())// check if can move during cast, interrupt then
                 {
                     if (PlayerRef->GetAbilityManager()->CurrentAbility->MoveAbilities == 0)
                         PlayerRef->InterruptAnimation(ECCState::NoCC);

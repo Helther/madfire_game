@@ -214,7 +214,7 @@ void ACharacterCreature::InterruptAnimation(ECCState Source, int SubMode)
                 if (AnimInstance->Montage_IsActive(AnimInstance->GetMove(ECombatMovementType::Parry)))
                     AnimInstance->Montage_Stop(0.f, AnimInstance->GetMove(ECombatMovementType::Parry));
             }
-            if (CombatComponent->GetCombatFSM().isInState(ECombatState::Ability))
+            if (AbilityManager->IsUsingAbility())
             {
                 if (AnimInstance->Montage_IsActive(AbilityManager->CurrentAbility->CastAnimMontage))
                     AnimInstance->Montage_Stop(0.f, AbilityManager->CurrentAbility->CastAnimMontage);

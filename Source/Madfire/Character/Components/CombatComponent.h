@@ -2,7 +2,6 @@
 
 #include "../../Items/ItemEquipment.h"
 #include "../../CombatSystem/CombatStance.h"
-#include "../../AbilitySystem/AbstractAbility.h"
 #include "Components/ActorComponent.h"
 #include "CoreMinimal.h"
 
@@ -303,9 +302,7 @@ public: //New Revision
 
     FSMv2<CombatStateInfo> CombatFSM;
     
-    void InitMeleeFSM();
-    void InitCrosbowFSM();
-    void InitBowFSM();
+    void InitFSM();
 
     bool InState(ECombatState State);
 
@@ -315,13 +312,11 @@ public: //New Revision
     UFUNCTION()
     bool IdleToAttack() const;
     UFUNCTION()
-    bool IdleToAbility() const;
-    UFUNCTION()
     bool IdleToWeaponSwitch() const;
     UFUNCTION()
-    bool WeaponSwitchToIdle() const;
+    bool IdleToReload() const;
     UFUNCTION()
-    bool AbilityToIdle() const;
+    bool WeaponSwitchToIdle() const;
     UFUNCTION()
     bool AttackToBlock() const;
     UFUNCTION()
@@ -335,13 +330,13 @@ public: //New Revision
     UFUNCTION()
     bool ParryToIdle() const;
     UFUNCTION()
+    bool ReloadToAttack() const;
+    UFUNCTION()
+    bool ReloadToIdle() const;
+    UFUNCTION()
     void OnIdleEnter();
     UFUNCTION()
     void OnIdleLeave();
-    UFUNCTION()
-    void OnAbilityEnter();
-    UFUNCTION()
-    void OnAbilityLeave();
     UFUNCTION()
     void OnAttackEnter();
     UFUNCTION()
@@ -358,6 +353,13 @@ public: //New Revision
     void OnParryEnter();
     UFUNCTION()
     void OnParryLeave();
+    UFUNCTION()
+    void OnReloadEnter();
+    UFUNCTION()
+    void OnReloadLeave();
+
+    void OnAbilityEnter();
+    void OnAbilityLeave();
 
     void OnReloadEnded(UAnimMontage* AnimMontage, bool bInterrupted);
 
@@ -367,8 +369,10 @@ public: //New Revision
     bool IsRangedDraw(float &DrawRatio) const;
 
     float GetMaxDrawTime(UBowCombatStance *Stance) const;
-    float GetLastDrawRatio(UBowCombatStance *Stance) const;
+    float GetLastDrawRatio() const;
     float CalculateAmmoInitialSpeed(UItemWeaponRanged* Weapon) const;
+    UFUNCTION(BlueprintCallable)
+    float GetCurrentDrawRatio() const;
 
     int CurrentCombo = 0; // Must be private or blueprintReadOnly
 
@@ -380,8 +384,6 @@ public: //New Revision
 
     UPROPERTY(BlueprintReadOnly)
     bool IsWeaponLoaded = false;
-
-    bool IsLoaded() const {return IsWeaponLoaded;}
 
     //FCombatStateChangedNew OnCombatStateChangedN;
     void FireLoadedProjectile();

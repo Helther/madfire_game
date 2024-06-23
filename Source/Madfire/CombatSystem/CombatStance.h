@@ -134,7 +134,6 @@ enum ECombatState
     Attack,
     Block,
     Parry,
-    Ability,
     Reload
 };
 
@@ -355,8 +354,6 @@ public:
 
     const FAttackInfo &GetCurrentAttackInfo(ESpecialType type) const override;
 
-    bool IsLoaded() const override {return IsWeaponLoaded;}
-
     bool CanDoShit(ESpecialType type) const override;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -374,9 +371,6 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     uint8 LoadAmmoCount = 1;
 
-    UPROPERTY(BlueprintReadOnly)
-    bool IsWeaponLoaded = false;
-
 protected:
     // void UpdateOwnerAnims(const UCombatStance* DefaultStance) override;
     virtual float CalculateAmmoInitialSpeed(UItemWeaponRanged* Weapon) const;
@@ -393,13 +387,6 @@ class UBowCombatStance : public URangeCombatStance
 public:
     UBowCombatStance();
 
-    UFUNCTION(BlueprintCallable)
-    float GetDrawRatio() const;
-
-    float GetMaxDrawTime() const;
-
-    float GetLastDrawRatio() const;
-
     // set same as corresponding segment in attack montage for bow drawing
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     UAnimSequence* BowDrawingAnim;
@@ -407,13 +394,6 @@ public:
     // time in seconds between stamina consume tick during draw
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     float ChargeStaminaConsumeDelta;
-
-    float LastChargeTimeStaminaConsume;
-
-    float LastChargeTime;
-
-private:    
-    float CalculateAmmoInitialSpeed(UItemWeaponRanged* Weapon) const override;
 };
 
 

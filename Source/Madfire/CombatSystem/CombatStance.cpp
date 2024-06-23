@@ -192,7 +192,7 @@ FVector VRandConeNormalDistribution(const FVector& Dir, const float ConeHalfAngl
 void URangeCombatStance::FireLoadedAmmo()
 {
     check(LoadedAmmo);
-    IsWeaponLoaded = false;
+    Owner->GetCombatComponent()->IsWeaponLoaded = false;
 
     FVector CameraLocation;
     FRotator CameraRotation;
@@ -239,8 +239,8 @@ void URangeCombatStance::FireLoadedAmmo()
         LaunchDirection = CameraLocation + (MuzzleDirection * MaxFocalDistance) - AmmoLocation;
     LaunchDirection.Normalize();
     LaunchDirection = LaunchDirection.Rotation().Vector();
-
-    float LaunchInitialSpeed = CalculateAmmoInitialSpeed(rangedWeapon);
+    
+    float LaunchInitialSpeed = Owner->GetCombatComponent()->CalculateAmmoInitialSpeed(rangedWeapon);
     LoadedAmmo->StackCount = 1;
     LoadedAmmo->LaunchProjectile(LaunchDirection, LaunchInitialSpeed, rangedWeapon->AmmoDamageCoefficient);
     LoadedAmmo = nullptr;
@@ -289,7 +289,7 @@ inline const FAttackInfo &URangeCombatStance::GetCurrentAttackInfo(ESpecialType 
 
 void URangeCombatStance::CleanUpAmmoActor()
 {
-    IsWeaponLoaded = false;
+    Owner->GetCombatComponent()->IsWeaponLoaded = false;
     if (LoadedAmmo)
     {
         auto ammoItem = LoadedAmmo->ItemBase;
@@ -301,45 +301,13 @@ void URangeCombatStance::CleanUpAmmoActor()
 
 bool URangeCombatStance::CanDoShit(ESpecialType type) const
 {
-    return IsWeaponLoaded && AttackInfo.AttackMontage != nullptr;
+    return Owner->GetCombatComponent()->IsWeaponLoaded && AttackInfo.AttackMontage != nullptr;
 }
 
 UBowCombatStance::UBowCombatStance() : 
     URangeCombatStance(),
-    ChargeStaminaConsumeDelta(0.5f),
-    LastChargeTimeStaminaConsume(0),
-    LastChargeTime(0)
+    ChargeStaminaConsumeDelta(0.5f)
 {}
-
-float UBowCombatStance::GetDrawRatio() const
-{
-    return Owner->GetCombatComponent()->CombatFSM.currentState()->ChargeTime / GetMaxDrawTime();
-}
-
-float UBowCombatStance::CalculateAmmoInitialSpeed(UItemWeaponRanged* Weapon) const
-{
-    return Weapon->MaxTensionStrength * Weapon->TensionCoefficient * GetLastDrawRatio();
-}
-
-float UBowCombatStance::GetMaxDrawTime() const
-{
-    //AItemActor* weaponActor = Owner->GetCombatComponent()->GetCurrentCombatStance()->GetArmsActorFromSlot(EArmsSlot::MainHand);
-    AItemActor* weaponActor = Owner->GetCombatComponent()->GetArmActor(EArmsSlot::MainHand);
-    check(weaponActor);
-    auto weaponItem = Cast<UItemWeaponRanged>(weaponActor->ItemBase);
-    check(weaponItem);
-    EAttributes modAttribute = weaponItem->WeaponType == EWeaponType::Longbow ? EAttributes::Str : EAttributes::Dex;
-    check(BowDrawingAnim);
-    float animDuration = BowDrawingAnim->GetPlayLength();
-    float animRateModifier = Owner->GetAttributeComponent()->GetAnimRateFromModifier(modAttribute);
-    float playRate = animDuration / (weaponItem->MaxTensionStrength / animRateModifier) * Owner->GetCombatComponent()->DrawTimeModFromTension;
-    return animDuration / playRate;
-}
-
-float UBowCombatStance::GetLastDrawRatio() const
-{
-    return LastChargeTime / GetMaxDrawTime();
-}
 
 UCrossbowCombatStance::UCrossbowCombatStance() :
     URangeCombatStance()    
