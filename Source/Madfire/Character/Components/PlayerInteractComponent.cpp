@@ -49,37 +49,39 @@ TScriptInterface<IInteractableInterface> UPlayerInteractComponent::GetInteractab
 
     Owner->Controller->GetPlayerViewPoint(cameraLocation, cameraRotation);
 
-    FVector startTrace = Owner->GetActorLocation();
-    startTrace.Z += 50;
+    FVector actorLocation = Owner->GetActorLocation();
+    actorLocation.Z += 50;
     FVector direction = cameraRotation.Vector();
     float cv = FMath::Abs(sin((cameraRotation.Pitch/180)*PI));
 
-    FVector endTrace  = startTrace + (direction * (MaxInteractionDistance + CorrectionValue*cv));
+    float cameraOffset = (cameraLocation - actorLocation).Length();
+
+    FVector cameraEndTrace = cameraLocation + (direction * (MaxInteractionDistance + cameraOffset + CorrectionValue*cv));
+    FVector endTrace  = actorLocation + (direction * (MaxInteractionDistance + CorrectionValue*cv));
 
     FTraceParams traceParams;
     traceParams.isDebug = drawTrace;
 
     traceParams.ActorsToIgnore.Add(Owner);
     FTraceSpawnParams traceSpawnParams;
-    traceSpawnParams.Start = startTrace;
-    traceSpawnParams.End   = endTrace;
+    traceSpawnParams.Start = cameraLocation;
+    traceSpawnParams.End   = cameraEndTrace;
 
-
+    
     FHitResult hit(ForceInit);
     check(GetWorld() != nullptr && "Interactable Component: No world");
+    TScriptInterface<IInteractableInterface> result;
 
     if(UTraceManager::LineTraceSingleByChannel(GetWorld(), traceParams, traceSpawnParams, hit, ECollisionChannel::ECC_Visibility))
     {
-        traceSpawnParams.End = startTrace + ((direction) * hit.Distance);
+        traceSpawnParams.End = actorLocation + ((direction) * hit.Distance);
     }
 
 
     hit = FHitResult(ForceInit);
 
     UTraceManager::SphereTraceSingleByChannel(GetWorld(),SphereRadius,traceParams, traceSpawnParams, hit, EInteractChannel);
-
-    TScriptInterface<IInteractableInterface> result;
-
+    
     //auto interactable = Cast<IInteractableInterface*>(hit.GetActor()); //old Version
 
     const auto actor = hit.GetActor();

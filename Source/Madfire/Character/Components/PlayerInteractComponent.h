@@ -31,8 +31,7 @@ protected:
 
 public:
     // Called every frame
-    virtual void TickComponent(float DeltaTime, ELevelTick TickType,
-                               FActorComponentTickFunction *ThisTickFunction) override;
+    virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 
 protected:
     UPROPERTY(BlueprintReadWrite, Category = "Interaction")
@@ -49,6 +48,9 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
     float CorrectionValue = 400;
+
+    TScriptInterface<IInteractableInterface> GetInteractaleInCameraView();
+    
 
     TScriptInterface<IInteractableInterface> GetInteractableInView();
 
