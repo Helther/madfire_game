@@ -92,61 +92,22 @@ UCLASS()
 class UTraceManager : public UBlueprintFunctionLibrary
 {
     GENERATED_BODY()
+
 public:
-    ///***COMPLETED***///
-    //Line Traces
-    UFUNCTION(BlueprintPure, Category = "Trace")
-    static FORCEINLINE bool   LineTraceSingleByChannel(UWorld *World,
-                               const FTraceParams &TraceParams,
-                               const FTraceSpawnParams &TraceSpawnParams,
-                               FHitResult &HitOut,
-                               ECollisionChannel CollisionChannel = ECC_Pawn,
-                               bool ReturnPhysMat                 = false)
-    {
-
-        if (!World)
-        {
-            return false;
-        }
-
-        FCollisionQueryParams Params(TraceParams);
-        HitOut = FHitResult(ForceInit);
-        FCollisionResponseParams ResponseParams;
-        ResponseParams.CollisionResponse = TraceSpawnParams.CollisionResponse;
-
-        if (TraceParams.isDebug)
-        {
-            //World->DebugDrawTraceTag = Params.TraceTag;
-        }
-
-        bool isHit = World->LineTraceSingleByChannel(
-          HitOut, TraceSpawnParams.Start, TraceSpawnParams.End, CollisionChannel, Params);
-
-        if (TraceParams.isDebug && isHit)
-        {
-            FColor color;
-            DrawDebugLine(World, HitOut.TraceStart, HitOut.ImpactPoint,
-                          color.MakeRandomColor(), false, 10, 0, 1);
-        }
-
-        return isHit;
-    }
-
     UFUNCTION(BlueprintPure, Category = "Trace")
     static FORCEINLINE UWorld *GetWorldOf(AActor *Actor) { return Actor->GetWorld(); }
 
-
     ///TODO: MAKE ROTATION OF THIS JOHN
     UFUNCTION(BlueprintPure, Category = "Trace")
-    static FORCEINLINE bool TraceSpawnParamsEvaluation(
-      ACharacter *Character, FVector &Start, FVector &End, FQuat &Rotation,
-      FRotator RotationOffset = FRotator(0, 0, 0),
-      FVector LocationOffset = FVector(0, 0, 0), float Length = 1.0f)
+    static FORCEINLINE bool TraceSpawnParamsEvaluation(ACharacter *Character, 
+                                                       FVector &Start, 
+                                                       FVector &End, 
+                                                       FQuat &Rotation,
+                                                       FRotator RotationOffset = FRotator(0, 0, 0),
+                                                       FVector LocationOffset = FVector(0, 0, 0), 
+                                                       float Length = 1.0f)
     {
-        if (!Character)
-        {
-            return false;
-        }
+        check(Character != nullptr && "No character");
 
         FVector ActorRotation = Character->GetControlRotation().Vector();
         Rotation.X            = ActorRotation.X;
@@ -160,331 +121,281 @@ public:
         return true;
     }
 
+        ///***COMPLETED***///
+    //Line Traces
     UFUNCTION(BlueprintPure, Category = "Trace")
-    static FORCEINLINE bool
-      LineTraceMultiByChannel(UWorld *World,
-                              const FTraceParams &TraceParams,
-                              const FTraceSpawnParams &TraceSpawnParams,
-                              TArray<struct FHitResult> &HitOut,
-                              ECollisionChannel CollisionChannel = ECC_Pawn,
-                              bool ReturnPhysMat                 = false)
+    static FORCEINLINE bool LineTraceSingleByChannel(UWorld *World,
+                                                     const FTraceParams &TraceParams,
+                                                     const FTraceSpawnParams &TraceSpawnParams,
+                                                     FHitResult &HitOut,
+                                                     ECollisionChannel CollisionChannel = ECC_Pawn,
+                                                     bool ReturnPhysMat                 = false)
     {
 
-        if (!World)
-        {
-            return false;
-        }
-
+        check(World != nullptr && "No world");
         FCollisionQueryParams Params(TraceParams);
+        HitOut = FHitResult(ForceInit);
 
-        if (TraceParams.isDebug)
-        {
-            //World->DebugDrawTraceTag = Params.TraceTag;
-        }
-
-        bool isHit = World->LineTraceMultiByChannel(
-          HitOut, TraceSpawnParams.Start, TraceSpawnParams.End, CollisionChannel, Params);
+        bool isHit = World->LineTraceSingleByChannel(HitOut,
+                                                     TraceSpawnParams.Start, 
+                                                     TraceSpawnParams.End, 
+                                                     CollisionChannel, 
+                                                     Params);
 
         if (TraceParams.isDebug && isHit)
-        {
-            FColor color;
-            for (auto &hits : HitOut)
-            {
-                DrawDebugLine(World, hits.TraceStart, hits.ImpactPoint,
-                              color.MakeRandomColor(), false, 10, 0, 1);
-            }
-        }
+            DrawDebugLine(World, HitOut.TraceStart, HitOut.ImpactPoint, FColor::MakeRandomColor(), false, 10, 0, 1);
+        
+        return isHit;
+    }
 
+    UFUNCTION(BlueprintPure, Category = "Trace")
+    static FORCEINLINE bool LineTraceMultiByChannel(UWorld *World,
+                                                    const FTraceParams &TraceParams,
+                                                    const FTraceSpawnParams &TraceSpawnParams,
+                                                    TArray<struct FHitResult> &HitOut,
+                                                    ECollisionChannel CollisionChannel = ECC_Pawn,
+                                                    bool ReturnPhysMat                 = false)
+    {
+
+        check(World != nullptr && "No world");
+        FCollisionQueryParams Params(TraceParams);
+
+        bool isHit = World->LineTraceMultiByChannel(HitOut, 
+                                                    TraceSpawnParams.Start, 
+                                                    TraceSpawnParams.End, 
+                                                    CollisionChannel, 
+                                                    Params);
+
+        if (TraceParams.isDebug && isHit)
+            for (auto &hits : HitOut)
+                DrawDebugLine(World, hits.TraceStart, hits.ImpactPoint, FColor::MakeRandomColor(), false, 10, 0, 1);
+        
+        return isHit;
+    }
+
+    static bool AreaTraceSingleByChannel(UWorld *World, 
+                                         FCollisionShape Shape,                                  
+                                         const FTraceParams &TraceParams,
+                                         const FTraceSpawnParams &TraceSpawnParams,
+                                         FHitResult &HitOut,
+                                         ECollisionChannel CollisionChannel = ECC_Pawn,
+                                         bool ReturnPhysMat                 = false)
+    {
+        check(World != nullptr && "No world");
+        FCollisionQueryParams Params(TraceParams);
+        FCollisionResponseParams ResponseParams(TraceSpawnParams.CollisionResponse);
+
+        bool isHit = World->SweepSingleByChannel(HitOut, 
+                                                 TraceSpawnParams.Start, 
+                                                 TraceSpawnParams.End, 
+                                                 TraceSpawnParams.Rotation,
+                                                 CollisionChannel, 
+                                                 Shape, 
+                                                 Params, 
+                                                 ResponseParams);
+
+        if (TraceParams.isDebug && isHit)
+            DrawDebugLine(World, HitOut.TraceStart, HitOut.ImpactPoint, FColor::MakeRandomColor(), false, 10, 0, 1);
+        
+        return isHit;
+    }
+
+    static bool AreaTraceMultiByChannel(UWorld *World, 
+                                        FCollisionShape Shape,                                  
+                                        const FTraceParams &TraceParams,
+                                        const FTraceSpawnParams &TraceSpawnParams,
+                                        TArray<struct FHitResult> &OutHits,
+                                        ECollisionChannel CollisionChannel = ECC_Pawn,
+                                        bool ReturnPhysMat                 = false)
+    {
+        check(World != nullptr && "No world");
+        FCollisionQueryParams Params(TraceParams);
+        FCollisionResponseParams ResponseParams(TraceSpawnParams.CollisionResponse);
+
+        bool isHit = World->SweepMultiByChannel(OutHits, 
+                                                TraceSpawnParams.Start, 
+                                                TraceSpawnParams.End, 
+                                                TraceSpawnParams.Rotation,
+                                                CollisionChannel, 
+                                                Shape, 
+                                                Params, 
+                                                ResponseParams);
+
+        if (TraceParams.isDebug && isHit)
+            for (auto &hits : OutHits)
+                DrawDebugLine(World, hits.TraceStart, hits.ImpactPoint, FColor::MakeRandomColor(), false, 10, 0, 1);
+        
         return isHit;
     }
 
     //Sphere Traces
     UFUNCTION(BlueprintPure, Category = "Trace")
-    static FORCEINLINE bool
-      SphereTraceSingleByChannel(UWorld *World,
-                                 const float Radius,
-                                 const FTraceParams &TraceParams,
-                                 const FTraceSpawnParams &TraceSpawnParams,
-                                 FHitResult &HitOut,
-                                 ECollisionChannel CollisionChannel = ECC_Pawn,
-                                 bool ReturnPhysMat                 = false)
+    static FORCEINLINE bool SphereTraceSingleByChannel(UWorld *World,
+                                                       const float Radius,
+                                                       const FTraceParams &TraceParams,
+                                                       const FTraceSpawnParams &TraceSpawnParams,
+                                                       FHitResult &HitOut,
+                                                       ECollisionChannel CollisionChannel = ECC_Pawn,
+                                                       bool ReturnPhysMat                 = false)
     {
-        if (!World)
-        {
-            return false;
-        }
-
-        FCollisionQueryParams Params(TraceParams);
-        HitOut = FHitResult(ForceInit);
-        FCollisionResponseParams ResponseParams;
-        ResponseParams.CollisionResponse = TraceSpawnParams.CollisionResponse;
-
-        if (TraceParams.isDebug)
-        {
-            //World->DebugDrawTraceTag = Params.TraceTag;
-        }
-
-        bool isHit = World->SweepSingleByChannel(
-          HitOut, TraceSpawnParams.Start, TraceSpawnParams.End, TraceSpawnParams.Rotation,
-          CollisionChannel, FCollisionShape::MakeSphere(Radius), Params, ResponseParams);
-
-        if (TraceParams.isDebug && isHit)
-        {
-            FColor color;
-            DrawDebugLine(World, HitOut.TraceStart, HitOut.ImpactPoint,
-                          color.MakeRandomColor(), false, 10, 0, 1);
-        }
-
-        return isHit;
+        return AreaTraceSingleByChannel(World,
+                                       FCollisionShape::MakeSphere(Radius), 
+                                       TraceParams,
+                                       TraceSpawnParams,
+                                       HitOut,
+                                       CollisionChannel,
+                                       ReturnPhysMat);
     }
 
 
     UFUNCTION(BlueprintPure, Category = "Trace")
-    static FORCEINLINE bool
-      SphereTraceMultiByChannel(UWorld *World,
-                                const float Radius,
-                                const FTraceParams &TraceParams,
-                                const FTraceSpawnParams &TraceSpawnParams,
-                                TArray<struct FHitResult> &OutHits,
-                                ECollisionChannel CollisionChannel = ECC_Pawn,
-                                bool ReturnPhysMat                 = false)
+    static FORCEINLINE bool SphereTraceMultiByChannel(UWorld *World,
+                                                      const float Radius,
+                                                      const FTraceParams &TraceParams,
+                                                      const FTraceSpawnParams &TraceSpawnParams,
+                                                      TArray<struct FHitResult> &OutHits,
+                                                      ECollisionChannel CollisionChannel = ECC_Pawn,
+                                                      bool ReturnPhysMat                 = false)
     {
-
-        if (!World)
-        {
-            return false;
-        }
-
-        FCollisionQueryParams Params(TraceParams);
-
-        FCollisionResponseParams ResponseParams;
-        ResponseParams.CollisionResponse = TraceSpawnParams.CollisionResponse;
-
-        if (TraceParams.isDebug)
-        {
-            //World->DebugDrawTraceTag = Params.TraceTag;
-        }
-
-        bool isHit = World->SweepMultiByChannel(
-          OutHits, TraceSpawnParams.Start, TraceSpawnParams.End,
-          TraceSpawnParams.Rotation, CollisionChannel,
-          FCollisionShape::MakeSphere(Radius), Params, ResponseParams);
-
-        if (TraceParams.isDebug && isHit)
-        {
-            FColor color;
-            for (auto &hits : OutHits)
-            {
-                DrawDebugLine(World, hits.TraceStart, hits.ImpactPoint,
-                              color.MakeRandomColor(), false, 10, 0, 1);
-            }
-        }
-
-        return isHit;
+        return AreaTraceMultiByChannel(World,
+                                       FCollisionShape::MakeSphere(Radius), 
+                                       TraceParams,
+                                       TraceSpawnParams,
+                                       OutHits,
+                                       CollisionChannel,
+                                       ReturnPhysMat);
     }
 
     //Box Trace
     UFUNCTION(BlueprintPure, Category = "Trace")
-    static FORCEINLINE bool
-      BoxTraceSingleByChannel(UWorld *World,
-                              const FVector &BoxHalfExtent,
-                              const FTraceParams &TraceParams,
-                              const FTraceSpawnParams &TraceSpawnParams,
-                              FHitResult &HitOut,
-                              ECollisionChannel CollisionChannel = ECC_Pawn,
-                              bool ReturnPhysMat                 = false)
+    static FORCEINLINE bool BoxTraceSingleByChannel(UWorld *World,
+                                                    const FVector &BoxHalfExtent,
+                                                    const FTraceParams &TraceParams,
+                                                    const FTraceSpawnParams &TraceSpawnParams,
+                                                    FHitResult &HitOut,
+                                                    ECollisionChannel CollisionChannel = ECC_Pawn,
+                                                    bool ReturnPhysMat                 = false)
     {
-
-        if (!World)
-        {
-            return false;
-        }
-
-        FCollisionQueryParams Params(TraceParams);
-        HitOut = FHitResult(ForceInit);
-        FCollisionResponseParams ResponseParams;
-        ResponseParams.CollisionResponse = TraceSpawnParams.CollisionResponse;
-
-        if (TraceParams.isDebug)
-        {
-            //World->DebugDrawTraceTag = Params.TraceTag;
-        }
-
-        auto Rotation = TraceSpawnParams.Rotation;
-
-        if (!Rotation.IsNormalized())
-        {
-            Rotation.Normalize();
-        }
-
-        bool isHit = World->SweepSingleByChannel(
-          HitOut, TraceSpawnParams.Start, TraceSpawnParams.End, Rotation,
-          CollisionChannel, FCollisionShape::MakeBox(BoxHalfExtent), Params,
-          ResponseParams);
-
-        if (TraceParams.isDebug && isHit)
-        {
-            FColor color;
-            DrawDebugLine(World, HitOut.TraceStart, HitOut.ImpactPoint,
-                          color.MakeRandomColor(), false, 10, 0, 1);
-        }
-
-        return isHit;
+        return AreaTraceSingleByChannel(World,
+                                       FCollisionShape::MakeBox(BoxHalfExtent), 
+                                       TraceParams,
+                                       TraceSpawnParams,
+                                       HitOut,
+                                       CollisionChannel,
+                                       ReturnPhysMat);
     }
 
     UFUNCTION(BlueprintPure, Category = "Trace")
-    static FORCEINLINE bool
-      BoxTraceMultiByChannel(UWorld *World,
-                             const FVector &BoxHalfExtent,
-                             const FTraceParams &TraceParams,
-                             const FTraceSpawnParams &TraceSpawnParams,
-                             TArray<FHitResult> &OutHits,
-                             ECollisionChannel CollisionChannel = ECC_Pawn,
-                             bool ReturnPhysMat                 = false)
+    static FORCEINLINE bool BoxTraceMultiByChannel(UWorld *World,
+                                                   const FVector &BoxHalfExtent,
+                                                   const FTraceParams &TraceParams,
+                                                   const FTraceSpawnParams &TraceSpawnParams,
+                                                   TArray<FHitResult> &OutHits,
+                                                   ECollisionChannel CollisionChannel = ECC_Pawn,
+                                                   bool ReturnPhysMat                 = false)
     {
-
-        if (!World)
-        {
-            return false;
-        }
-
-        FCollisionQueryParams Params(TraceParams);
-
-        FCollisionResponseParams ResponseParams;
-        ResponseParams.CollisionResponse = TraceSpawnParams.CollisionResponse;
-
-        if (TraceParams.isDebug)
-        {
-            //World->DebugDrawTraceTag = Params.TraceTag;
-        }
-
-        auto Rotation = TraceSpawnParams.Rotation;
-
-        if (!Rotation.IsNormalized())
-        {
-            Rotation.Normalize();
-        }
-
-        bool isHit = World->SweepMultiByChannel(
-          OutHits, TraceSpawnParams.Start, TraceSpawnParams.End, Rotation,
-          CollisionChannel, FCollisionShape::MakeBox(BoxHalfExtent), Params,
-          ResponseParams);
-
-        if (TraceParams.isDebug && isHit)
-        {
-            FColor color;
-            for (auto &hits : OutHits)
-            {
-                DrawDebugLine(World, hits.TraceStart, hits.ImpactPoint,
-                              color.MakeRandomColor(), false, 10, 0, 1);
-            }
-        }
-
-        return isHit;
+        return AreaTraceMultiByChannel(World,
+                                       FCollisionShape::MakeBox(BoxHalfExtent), 
+                                       TraceParams,
+                                       TraceSpawnParams,
+                                       OutHits,
+                                       CollisionChannel,
+                                       ReturnPhysMat);
     }
 
     //Capsule Trace
     UFUNCTION(BlueprintPure, Category = "Trace")
-    static FORCEINLINE bool
-      CapsuleTraceSingleByChannel(UWorld *World,
-                                  float CapsuleRadius,
-                                  float CapsuleHalfHeight,
-                                  const FTraceParams &TraceParams,
-                                  const FTraceSpawnParams &TraceSpawnParams,
-                                  FHitResult &HitOut,
-                                  ECollisionChannel CollisionChannel = ECC_Pawn,
-                                  bool ReturnPhysMat                 = false)
+    static FORCEINLINE bool CapsuleTraceSingleByChannel(UWorld *World,
+                                                        float CapsuleRadius,
+                                                        float CapsuleHalfHeight,
+                                                        const FTraceParams &TraceParams,
+                                                        const FTraceSpawnParams &TraceSpawnParams,
+                                                        FHitResult &HitOut,
+                                                        ECollisionChannel CollisionChannel = ECC_Pawn,
+                                                        bool ReturnPhysMat                 = false)
     {
-
-        if (!World)
-        {
-            return false;
-        }
-
-        FCollisionQueryParams Params(TraceParams);
-        HitOut = FHitResult(ForceInit);
-        FCollisionResponseParams ResponseParams;
-        ResponseParams.CollisionResponse = TraceSpawnParams.CollisionResponse;
-
-        if (TraceParams.isDebug)
-        {
-            //World->DebugDrawTraceTag = Params.TraceTag;
-        }
-
-        auto Rotation = TraceSpawnParams.Rotation;
-
-        if (!Rotation.IsNormalized())
-        {
-            Rotation.Normalize();
-        }
-
-        bool isHit = World->SweepSingleByChannel(
-          HitOut, TraceSpawnParams.Start, TraceSpawnParams.End, Rotation,
-          CollisionChannel,
-          FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight), Params,
-          ResponseParams);
-
-        if (TraceParams.isDebug && isHit)
-        {
-            FColor color;
-            DrawDebugLine(World, HitOut.TraceStart, HitOut.ImpactPoint,
-                          color.MakeRandomColor(), false, 10, 0, 1);
-        }
-
-        return isHit;
+        return AreaTraceSingleByChannel(World,
+                                       FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight), 
+                                       TraceParams,
+                                       TraceSpawnParams,
+                                       HitOut,
+                                       CollisionChannel,
+                                       ReturnPhysMat);
     }
 
     UFUNCTION(BlueprintPure, Category = "Trace")
-    static FORCEINLINE bool
-      CapsuleTraceMultiByChannel(UWorld *World,
-                                 float CapsuleRadius,
-                                 float CapsuleHalfHeight,
-                                 const FTraceParams &TraceParams,
-                                 const FTraceSpawnParams &TraceSpawnParams,
-                                 TArray<struct FHitResult> &OutHits,
-                                 ECollisionChannel CollisionChannel = ECC_Pawn,
-                                 bool ReturnPhysMat                 = false)
+    static FORCEINLINE bool CapsuleTraceMultiByChannel(UWorld *World,
+                                                       float CapsuleRadius,
+                                                       float CapsuleHalfHeight,
+                                                       const FTraceParams &TraceParams,
+                                                       const FTraceSpawnParams &TraceSpawnParams,
+                                                       TArray<struct FHitResult> &OutHits,
+                                                       ECollisionChannel CollisionChannel = ECC_Pawn,
+                                                       bool ReturnPhysMat                 = false)
     {
-
-        if (!World)
-        {
-            return false;
-        }
-
-        FCollisionQueryParams Params(TraceParams);
-
-        FCollisionResponseParams ResponseParams;
-        ResponseParams.CollisionResponse = TraceSpawnParams.CollisionResponse;
-
-        if (TraceParams.isDebug)
-        {
-            //World->DebugDrawTraceTag = Params.TraceTag;
-        }
-
-        auto Rotation = TraceSpawnParams.Rotation;
-
-        if (!Rotation.IsNormalized())
-        {
-            Rotation.Normalize();
-        }
-
-        bool isHit = World->SweepMultiByChannel(
-          OutHits, TraceSpawnParams.Start, TraceSpawnParams.End, Rotation,
-          CollisionChannel,
-          FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight), Params,
-          ResponseParams);
-
-        if (TraceParams.isDebug && isHit)
-        {
-            FColor color;
-            for (auto &hits : OutHits)
-            {
-                DrawDebugLine(World, hits.TraceStart, hits.ImpactPoint,
-                              color.MakeRandomColor(), false, 10, 0, 1);
-            }
-        }
-
-        return isHit;
+        return AreaTraceMultiByChannel(World,
+                                       FCollisionShape::MakeCapsule(CapsuleRadius, CapsuleHalfHeight), 
+                                       TraceParams,
+                                       TraceSpawnParams,
+                                       OutHits,
+                                       CollisionChannel,
+                                       ReturnPhysMat);
     }
     ///***COMPLETED***///
+
+    static bool AreaTraceSignleByObjectType(UWorld *World, 
+                                            FCollisionShape Shape,                                  
+                                            const FTraceParams &TraceParams,
+                                            const FTraceSpawnParams &TraceSpawnParams,                                            
+                                            FHitResult &OutHit,
+                                            ECollisionChannel CollisionChannel = ECC_Pawn,
+                                            bool ReturnPhysMat                 = false)
+    {
+        check(World != nullptr && "No world");
+        FCollisionQueryParams Params(TraceParams);
+        FCollisionObjectQueryParams ObjectTypes;
+        ObjectTypes.AddObjectTypesToQuery(CollisionChannel);
+
+        bool isHit = World->SweepSingleByObjectType(OutHit, 
+                                                    TraceSpawnParams.Start,
+                                                    TraceSpawnParams.End,
+                                                    TraceSpawnParams.Rotation,
+                                                    ObjectTypes,
+                                                    Shape,
+                                                    Params);
+
+        if (TraceParams.isDebug && isHit)
+            DrawDebugLine(World, OutHit.TraceStart, OutHit.ImpactPoint, FColor::MakeRandomColor(), false, 10, 0, 1);
+        
+        return isHit;
+    }
+
+    static bool AreaTraceMultiByObjectType(UWorld *World, 
+                                           FCollisionShape Shape,                                  
+                                           const FTraceParams &TraceParams,
+                                           const FTraceSpawnParams &TraceSpawnParams,                                                   
+                                           TArray<struct FHitResult> &OutHits,
+                                           ECollisionChannel CollisionChannel = ECC_Pawn,
+                                           bool ReturnPhysMat         = false)
+    {
+        check(World != nullptr && "No world");
+        FCollisionQueryParams Params(TraceParams);
+        FCollisionResponseParams ResponseParams(TraceSpawnParams.CollisionResponse);
+        FCollisionObjectQueryParams ObjectTypes;
+        ObjectTypes.AddObjectTypesToQuery(CollisionChannel);
+
+        bool isHit = World->SweepMultiByObjectType(OutHits, 
+                                                   TraceSpawnParams.Start,
+                                                   TraceSpawnParams.End,
+                                                   TraceSpawnParams.Rotation,
+                                                   ObjectTypes,
+                                                   Shape,
+                                                   Params);
+
+        if (TraceParams.isDebug && isHit)
+            for (auto &hit : OutHits)
+                DrawDebugLine(World, hit.TraceStart, hit.ImpactPoint, FColor::MakeRandomColor(), false, 10, 0, 1);
+        
+        return isHit;
+    }
 };
