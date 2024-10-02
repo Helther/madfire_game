@@ -14,7 +14,7 @@ class UAbstractAbility;
 * Тут тоже немного изменилось. Компонент теперь хранит кастера как чарактера,
 * а не Актора. В Скиле он тоже теперь чарактер. (Думаю понятно почему)
 */
-UCLASS(EditInlineNew, Abstract, BlueprintType)
+UCLASS(EditInlineNew, Abstract, BlueprintType, meta=(BlueprintSpawnableComponent))
 class UAbilityComponent : public UObject
 {
     GENERATED_BODY()
@@ -45,15 +45,16 @@ public:
 
     UFUNCTION(BlueprintPure, Category="Ability Components", meta=(Keywords = "Actor Owning Parent"))
     UAbstractAbility *GetOwner() const;
-    
+
+    UFUNCTION(BlueprintPure, Category="Ability Components", meta=(Keywords = "Actor Owning Parent"))
+    AActor *GetActorOwner() const;
+
+    UFUNCTION(BlueprintImplementableEvent, Category="Ability Components")
+    void Tick(float Delta);    
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Ability Components")
+    bool bIsTickable = false;
+
+    virtual void Tick_Implementation(float Delta) {Tick(Delta);}
 };
 
-/*
-Нужные компонентов:
-	Проджектай (Хоминг Проджектайл)
-	Область (Компонент Область)
-	СамПерсонаж - тут просто прослойка которая будет выполнять все экшоны на персонаже,
-				  который создал этот компонент.
-	Луч до первого таргета (Луч на определённое растояние)
-	
-*/

@@ -18,14 +18,18 @@ class UAbstractAbility;
  * Empowerment - который должен определять степерь усиления, если нужно.
  * Ну и Экшон Колекшон переехал сюда
  */
-UCLASS(Abstract, Blueprintable, HideDropdown, EditInlineNew)
+UCLASS(BlueprintType, Blueprintable, HideDropdown, EditInlineNew)
 class UAbilityAction : public UAbilityComponent
 {
     GENERATED_BODY()
 
 public:
+    UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = "Ability Components")
+    void Execute(const FHitResult &result);
 
-
-
+    UFUNCTION(BlueprintCallable, Category = "Ability Components")
+    void ExecuteActor(AActor *Actor);
 };
+
+
 

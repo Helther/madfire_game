@@ -7,11 +7,11 @@ DEFINE_LOG_CATEGORY(AbilitySystemLog);
 
 UAbstractAbility::UAbstractAbility(const FObjectInitializer &f) :
     Super(f)
-{
-}
+{}
 
 void UAbstractAbility::AbilitySetup(ACharacter *Character)
 {    
+    Created();
     CharacterOwner = Character;
     /*for(auto &component : AbilityComponents)
     {
@@ -63,6 +63,13 @@ void UAbstractAbility::Tick(float DeltaTime)
             bIsCooldown = false;
         }
     }
+
+    for(const auto &Comp : AbilityComponents)
+    {
+        if(Comp->bIsTickable)
+            Comp->Tick_Implementation(DeltaTime);
+    }
+        
 }
 
 bool UAbstractAbility::IsTickable() const
@@ -204,6 +211,7 @@ UAbstractAbility *UAbstractAbility::SpawnAbility(UObject *Parent, TSubclassOf<UA
         return nullptr;
     }
     NewAbility->AbilityInit();
+    NewAbility->Created();
     return NewAbility;
 }
 

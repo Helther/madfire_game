@@ -1239,38 +1239,6 @@ void UCombatComponent::OnIdleLeave()
     ResetRotationRate();
 }
 
-void UCombatComponent::OnAbilityEnter()
-{
-    if (!WeaponDrawn())// not in combat mode
-    {
-        Owner->GetMovementComponent()->maxSpeedBlock = true;
-        Owner->GetMovementComponent()->bUseControllerDesiredRotation = true;
-        Owner->GetMovementComponent()->bOrientRotationToMovement = false;
-    }
-    Owner->GetAbilityManager()->CalculateMaxCastingSpeed(Owner->GetMovementComponent()->GetSpeedModifier());
-    Owner->GetAttributeComponent()->Stamina->Consume(Owner->GetAbilityManager()->CurrentAbility->StaminaCost);
-    Owner->GetAttributeComponent()->Stamina->BlockRegen();
-    Owner->GetMovementComponent()->MoveAbilitiesCurrent = Owner->GetAbilityManager()->CurrentAbility->MoveAbilities;
-    Owner->GetAbilityManager()->ActivateAbility();
-}
-
-void UCombatComponent::OnAbilityLeave()
-{
-    if (WeaponDrawn())// in combat mode
-        CalculateMaxCombatSpeeds();
-    else
-    {
-        Owner->GetMovementComponent()->maxSpeedBlock = false;
-        Owner->GetMovementComponent()->CalculateMaxSpeeds(Owner->GetMovementComponent()->GetSpeedModifier());
-        Owner->GetMovementComponent()->bUseControllerDesiredRotation = false;
-        Owner->GetMovementComponent()->bOrientRotationToMovement = true;
-    }
-    Owner->GetAttributeComponent()->Stamina->UnblockRegen();
-    Owner->GetMovementComponent()->MoveAbilitiesCurrent = Owner->GetMovementComponent()->MoveAbilitiesDefault; // TODO think how to restore it to last state
-    Owner->GetAbilityManager()->SetGlobalCooldown();
-    Owner->ClearAbilityCameraMode();
-}
-
 void UCombatComponent::OnAttackEnter() 
 {
     auto callBack = FOnMontageBlendingOutStarted::CreateUObject(this, &UCombatComponent::OnAttackEnded);

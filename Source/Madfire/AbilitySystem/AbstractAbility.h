@@ -117,8 +117,8 @@ public:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AbilitySystem")
     UDataTable *InfoDataTable = nullptr;
 
-    UPROPERTY(EditDefaultsOnly, Instanced, BlueprintReadWrite, Category = "Ability Components")
-    TArray<UAbilityComponent*> AbilityComponents;
+    UPROPERTY(BlueprintReadOnly, Category = "Ability Components")
+    TArray<UAbilityComponent*> AbilityComponents; //TODO TSharedPtr
 
     //Interface
     virtual void AbilityInit();
@@ -186,7 +186,7 @@ public:
     UFUNCTION(BlueprintPure, Category = "AbilitySystem")
     static const FAbilityInfo &GetAbilityInfo(UDataTable *AbilityInfoDT, FName AblName);
 
-    UFUNCTION(BlueprintCallable, Category="Ability Components", meta=(Keywords = "Actor Owning Parent", DeprecatedFunction))
+    UFUNCTION(BlueprintPure, Category="Ability Components", meta=(Keywords = "Actor Owning Parent"))
 	AActor* GetOwner() const;
 
     UFUNCTION(BlueprintPure, Category = "Ability Components")
@@ -209,6 +209,9 @@ public:
 
     UFUNCTION(BlueprintImplementableEvent, Category = "Ability Interface")
     void Created(); //Call when ability manager create this ability 
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "Ability Interface")
+    void PostCreated(); //Call when ability manager create this ability 
 
     UFUNCTION(BlueprintImplementableEvent, Category = "Ability Interface")
     void Selected(); //Call when ability manager select this ability

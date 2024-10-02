@@ -14,7 +14,7 @@ void UInstantAbility_Sample::AbilityInit()
 
     if(TargetComponent)
     {
-        TargetComponent->OnExecuteEvent.BindUObject(this, &UAbstractAbility::OnExecute);
+        //TargetComponent->OnExecuteEvent.BindUObject(this, &UAbstractAbility::OnExecute);
         AddComponent(TargetComponent);
     }
     else
@@ -45,7 +45,7 @@ void UCastedAbility_Sample::AbilityInit()
     if(TargetComponent)
     {
         AddComponent(TargetComponent);
-        TargetComponent->OnExecuteEvent.BindUObject(this, &UAbstractAbility::OnExecute);
+        //TargetComponent->OnExecuteEvent.BindUObject(this, &UAbstractAbility::OnExecute);
     }
     else
     {
@@ -103,7 +103,7 @@ void UChannelAbility_Sample::AbilityInit()
     if(TargetComponent)
     {
         AddComponent(TargetComponent);
-        TargetComponent->OnExecuteEvent.BindUObject(this, &UAbstractAbility::OnExecute);
+        //TargetComponent->OnExecuteEvent.BindUObject(this, &UAbstractAbility::OnExecute);
     }
     else
     {

@@ -17,6 +17,37 @@ void UAbilityManagerComponent::BeginPlay()
     check(Owner != nullptr && "UCombatComponent: No pawn");
 }
 
+inline void UAbilityManagerComponent::OnAbilityEnter()
+{
+    if (!Owner->GetCombatComponent()->WeaponDrawn()) // not in combat mode
+    {
+        Owner->GetMovementComponent()->maxSpeedBlock                 = true;
+        Owner->GetMovementComponent()->bUseControllerDesiredRotation = true;
+        Owner->GetMovementComponent()->bOrientRotationToMovement     = false;
+    }
+    CalculateMaxCastingSpeed(Owner->GetMovementComponent()->GetSpeedModifier());
+    Owner->GetAttributeComponent()->Stamina->Consume(Owner->GetAbilityManager()->CurrentAbility->StaminaCost);
+    Owner->GetAttributeComponent()->Stamina->BlockRegen();
+    Owner->GetMovementComponent()->MoveAbilitiesCurrent = CurrentAbility->MoveAbilities;
+}
+
+inline void UAbilityManagerComponent::OnAbilityLeave()
+{
+    if (Owner->GetCombatComponent()->WeaponDrawn()) // in combat mode
+        Owner->GetCombatComponent()->CalculateMaxCombatSpeeds();
+    else
+    {
+        Owner->GetMovementComponent()->maxSpeedBlock = false;
+        Owner->GetMovementComponent()->CalculateMaxSpeeds(Owner->GetMovementComponent()->GetSpeedModifier());
+        Owner->GetMovementComponent()->bUseControllerDesiredRotation = false;
+        Owner->GetMovementComponent()->bOrientRotationToMovement     = true;
+    }
+    Owner->GetAttributeComponent()->Stamina->UnblockRegen();
+    Owner->GetMovementComponent()->MoveAbilitiesCurrent = Owner->GetMovementComponent()->MoveAbilitiesDefault; // TODO think how to restore it to last state
+    SetGlobalCooldown();
+    Owner->ClearAbilityCameraMode();
+}
+
 void UAbilityManagerComponent::Update()
 {
     auto character = Cast<ACharacterBase>(GetOwner());
@@ -112,7 +143,7 @@ void UAbilityManagerComponent::ActivateAbility()
         CurrentAbility->ActivateAbility();
         CurrentAbility->Activate();
         Owner->SetAbilityCameraMode(CurrentAbility->AbilityCameraMode);
-        Owner->GetCombatComponent()->OnAbilityEnter();
+        OnAbilityEnter();
     }
 }
 
@@ -122,7 +153,7 @@ void UAbilityManagerComponent::ReleaseAbility()
     {
         CurrentAbility->ReleaseAbility();
         CurrentAbility->Release();
-        Owner->GetCombatComponent()->OnAbilityLeave();
+        OnAbilityLeave();
     }
     
 }

@@ -109,4 +109,9 @@ public:
 
 protected:
     void BeginPlay() override;
+
+
+    void OnAbilityEnter();
+
+    void OnAbilityLeave();
 };

@@ -199,6 +199,8 @@ public:
     UPROPERTY(BlueprintAssignable)
     FCombatStateChanged OnCombatStateChanged;
 
+    void CalculateMaxCombatSpeeds();
+
 protected:
     struct PendingStanceInfo
     {
@@ -222,8 +224,7 @@ protected:
     void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction *ThisTickFunction) override;
 
     // action states are attack and parry, so far
-    void ResetActionState(int StateId);
-    void CalculateMaxCombatSpeeds();
+    void ResetActionState(int StateId);    
     void CalculateMaxBlockingSpeed(float SpeedModifier);
     bool CanBeInterruptedWithBlock(int CurrentState) const;
     bool HasAlreadyHitTarget(AActor *Target, UItemArms* Weapon) const;
@@ -357,9 +358,6 @@ public: //New Revision
     void OnReloadEnter();
     UFUNCTION()
     void OnReloadLeave();
-
-    void OnAbilityEnter();
-    void OnAbilityLeave();
 
     void OnReloadEnded(UAnimMontage* AnimMontage, bool bInterrupted);
 
